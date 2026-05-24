@@ -31,6 +31,10 @@ class ProductRepository:
             statement = self._apply_cursor(statement, Product, cursor_product)
         return self._page(statement, limit)
 
+    def list_products_for_search(self) -> list[Product]:
+        statement = select(Product).order_by(Product.created_at.desc(), Product.id.desc())
+        return list(self.session.scalars(statement))
+
     def create_deal(self, deal: Deal) -> Deal:
         self.session.add(deal)
         self.session.flush()
@@ -58,6 +62,10 @@ class ProductRepository:
             statement = self._apply_cursor(statement, Deal, cursor_deal)
         return self._page(statement, limit)
 
+    def list_deals_for_search(self) -> list[Deal]:
+        statement = select(Deal).order_by(Deal.created_at.desc(), Deal.id.desc())
+        return list(self.session.scalars(statement))
+
     def create_auction(self, auction: Auction) -> Auction:
         self.session.add(auction)
         self.session.flush()
@@ -84,6 +92,10 @@ class ProductRepository:
                 raise InvalidSearchCursorException(cursor)
             statement = self._apply_cursor(statement, Auction, cursor_auction)
         return self._page(statement, limit)
+
+    def list_auctions_for_search(self) -> list[Auction]:
+        statement = select(Auction).order_by(Auction.created_at.desc(), Auction.id.desc())
+        return list(self.session.scalars(statement))
 
     def _page(self, statement: Select[tuple[T]], limit: int) -> CursorPage[T]:
         results = list(self.session.scalars(statement.limit(limit + 1)))

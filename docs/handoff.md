@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Product API MVP work continues on:
+Current integration branch is `develop`. Active Search Index MVP work continues on:
 
 ```text
-feature/product-api-mvp
+feature/search-index-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Product API MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Search Index MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -64,10 +64,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/product-api-mvp`.
+1. Continue on `feature/search-index-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify local PostgreSQL migration/runtime, API tests, and Web CI checks before declaring the slice ready.
-4. Open a PR into `develop` only when Product API MVP is integration-ready or when the user explicitly asks.
+3. Verify local PostgreSQL + Elasticsearch reindex/search runtime, API tests, and Web CI checks before declaring the slice ready.
+4. Open a PR into `develop` only when Search Index MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -80,7 +80,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - PostgreSQL, Redis, Elasticsearch + Nori in local infra.
 - GitHub Actions CI with backend/frontend lightweight checks.
 
-## Active Product API MVP Scope
+## Completed Product API MVP Scope
 
 - Product, Deal, Auction SQLAlchemy models and Alembic migration.
 - Product create/list/get API.
@@ -88,6 +88,15 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Deal/Auction single-resource get API.
 - Cursor pagination with `limit`, `cursor`, and `nextCursor`.
 - Common error response shape for Product API not-found and invalid cursor errors.
+
+## Active Search Index MVP Scope
+
+- Versioned Elasticsearch index specs for `products_v1`, `deals_v1`, and `auctions_v1`.
+- Current aliases: `products_current`, `deals_current`, and `auctions_current`.
+- Nori analyzer and autocomplete fields for Korean/product text search.
+- Product/Deal/Auction document builders from PostgreSQL models.
+- Search APIs for products, deals, and auctions under `/api/v1/search`.
+- MVP reindex endpoint under `/api/v1/admin/search/reindex`.
 
 ## Cautions
 
