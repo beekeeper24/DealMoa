@@ -5,8 +5,8 @@
 Use the harness stack automatically by task type and risk. Do not ask the user to name a harness for ordinary work.
 
 - Keep simple tasks in the main Codex flow. Do not add orchestration overhead for trivial edits, typo fixes, formatting-only changes, clear one-file fixes, straightforward scaffolding, or implementation already covered by fixed `docs/` decisions.
-- Codex should decide when to use OMX team, Codex native subagents, or other orchestration based on task shape and risk. The user does not need to explicitly request sub-agents for substantial work.
-- Use OMX team/orchestration or Codex native subagents proactively when work can be split into independent implementation, review, research, or verification tracks without creating file conflicts.
+- Codex should use the main flow by default and choose OMX team, Codex native subagents, or other orchestration only when task shape and risk make parallel work useful.
+- The user does not need to explicitly request sub-agents; Codex may use them for clearly separable implementation, research, review, or verification tracks that do not create file conflicts.
 - If the active runtime blocks sub-agent or team execution, state the constraint briefly and continue with the best available harness fallback.
 - Use OMX `deep-interview` when requirements, boundaries, or acceptance criteria are unclear.
 - Use Superpowers `brainstorming` only for new product decisions, UX decisions, behavior changes, or scope changes not already covered by `docs/`.
@@ -14,8 +14,8 @@ Use the harness stack automatically by task type and risk. Do not ask the user t
 - Use Superpowers `test-driven-development` for ranking logic, authentication, authorization, token handling, error-code behavior, event processing, data migrations, concurrency, state transitions, and high-risk backend behavior.
 - Use Superpowers `systematic-debugging` when the bug cause is unclear.
 - Use Superpowers `verification-before-completion` before claiming completion on meaningful work.
-- Use focused security review for OAuth2, JWT, refresh tokens, secrets, `.env` handling, admin authorization, Kafka event handling, notification fan-out, external URLs, AI prompt handling, and user-generated content moderation.
-- Use Compound Engineering after meaningful work to codify operational learnings, missed assumptions, reusable project rules, and repetition-prevention notes. Keep these notes separate from human-facing work logs.
+- Use gstack `cso` / `/cso` for focused security review on OAuth2, JWT, refresh tokens, secrets, `.env` handling, admin authorization, Kafka event handling, notification fan-out, external URLs, AI prompt handling, and user-generated content moderation.
+- Use Compound Engineering only for important lessons or when the same mistake repeats at least three times. Keep these notes separate from human-facing work logs.
 
 ## Harness Composition
 
@@ -52,11 +52,11 @@ Use harnesses together when they cover different parts of the work. The default 
   - Add orchestration when one track can reproduce the issue while another inspects code/history/config.
 - Security-sensitive change:
   - Use the appropriate implementation harness first.
-  - Then run focused security review.
+  - Then run gstack `cso` / `/cso` for focused security review.
   - Applies to OAuth2, JWT, refresh tokens, secrets, deployment security, data exposure, admin authorization, notification fan-out, external URLs, AI prompt handling, and user-generated content moderation.
 - Meaningful completed work:
   - Use Superpowers `verification-before-completion` before claiming completion.
-  - Use Compound Engineering after review or implementation to capture repeated mistakes, missed assumptions, reusable project rules, and prevention notes.
+  - Use Compound Engineering only when review or implementation reveals an important lesson, or when the same mistake has repeated at least three times and needs a prevention note.
   - Update Notion work logs for human-facing study/progress context when the work is meaningful.
 
 OMX team/orchestration or Codex native subagents are preferred when at least two of these are true:
@@ -90,7 +90,7 @@ For meaningful work, use this loop:
 1. Route the task through the lightest suitable harness.
 2. Implement or investigate.
 3. Verify with tests, build, lint, typecheck, focused runtime checks, or documented fallback verification as appropriate.
-4. Run focused security review when the change affects OAuth2, authentication, authorization, secrets, `.env` handling, deployment security, data exposure, admin authorization, Kafka event handling, notification fan-out, external URLs, AI prompt handling, or user-generated content moderation.
+4. Run gstack `cso` / `/cso` when the change affects OAuth2, authentication, authorization, secrets, `.env` handling, deployment security, data exposure, admin authorization, Kafka event handling, notification fan-out, external URLs, AI prompt handling, or user-generated content moderation.
 5. Capture what should make the next similar task easier.
 
 Learning notes split:
