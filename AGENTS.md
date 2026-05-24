@@ -196,18 +196,23 @@ Learning notes split:
 
 - Use Git Flow-style branch management.
 - `main` is the stable release branch. Do not commit or push routine work directly to `main`.
-- `develop` is the integration branch. Feature work is merged into `develop` only after local verification.
+- `develop` is the integration branch. Merge into `develop` only after a coherent feature/MVP slice is locally verified and PR-ready.
 - Create feature branches from `develop`.
+- A feature branch represents one coherent deliverable, such as Milestone 1 scaffolding, OAuth login, search indexing, ranking, notifications, or admin review workflow. Do not open and merge a PR merely because one intermediate task ended.
+- Keep incremental checkpoint commits on the same feature branch while that deliverable is still in progress.
+- Split a large milestone into multiple PRs only when each PR leaves `develop` coherent, runnable, and understandable on its own.
 - Use branch prefixes: `feature/...`, `fix/...`, `test/...`, `refactor/...`, `chore/...`, `docs/...`, `release/...`, and `hotfix/...`.
 - Do not use a `codex/` branch prefix.
 - Push work branches and `develop` as needed. Promote to `main` only through an intentional release step.
 - Split commits by reviewable intent, not by tool run.
-- When the user asks to commit and organize work as a PR, treat the default completion path as:
-  1. commit the verified work;
-  2. open or update a PR into `develop`;
-  3. mark the PR ready;
-  4. merge it into `develop`;
-  5. sync local `develop`.
+- When the user asks to commit during an active feature branch, commit the verified checkpoint and push the branch if useful; do not open or merge a PR unless the feature/MVP slice is ready or the user explicitly asks for a PR.
+- When the feature/MVP slice is ready for integration, treat the default completion path as:
+  1. commit all verified work on the feature branch;
+  2. push the feature branch;
+  3. open or update a PR into `develop`;
+  4. mark the PR ready after local verification and any required CI/review checks;
+  5. merge it into `develop`;
+  6. sync local `develop`.
 - Stop at a draft/open PR only when the user explicitly asks for review-only handling, when verification is incomplete, or when CI/conflicts/blockers make merge unsafe. State the blocker and next activation step clearly.
 
 ## Reporting
