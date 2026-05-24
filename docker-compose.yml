@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["core"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dealmoa}
+      POSTGRES_USER: ${POSTGRES_USER:-dealmoa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dealmoa-local-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["core"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    build:
+      context: .
+      dockerfile: infra/elasticsearch/Dockerfile
+    profiles: ["core"]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles: ["core"]
+    environment:
+      API_ENV: ${API_ENV:-local}
+      API_PROJECT_NAME: ${API_PROJECT_NAME:-DealMoa API}
+      API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    profiles: ["core"]
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${WEB_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
