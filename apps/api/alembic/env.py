@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+from os import environ
 
 from alembic import context
 from app.db.base import Base
@@ -9,6 +10,9 @@ config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+if database_url := environ.get("DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata
 

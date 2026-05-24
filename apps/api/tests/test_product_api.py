@@ -69,6 +69,33 @@ def test_list_products_returns_created_products() -> None:
 
     assert response.status_code == 200
     assert response.json()["items"] == [created]
+    assert response.json()["nextCursor"] is None
+
+
+def test_list_products_supports_cursor_pagination() -> None:
+    client = make_test_client()
+    first = create_product(client)
+    second = create_product(client)
+    third = create_product(client)
+
+    first_page = client.get("/api/v1/products?limit=2")
+    second_page = client.get(f"/api/v1/products?limit=2&cursor={first_page.json()['nextCursor']}")
+
+    assert first_page.status_code == 200
+    assert [item["id"] for item in first_page.json()["items"]] == [third["id"], second["id"]]
+    assert first_page.json()["nextCursor"] == second["id"]
+    assert second_page.status_code == 200
+    assert [item["id"] for item in second_page.json()["items"]] == [first["id"]]
+    assert second_page.json()["nextCursor"] is None
+
+
+def test_invalid_product_cursor_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/products?cursor=not-a-product")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_SEARCH_CURSOR"
 
 
 def test_create_and_list_product_deals() -> None:
@@ -95,6 +122,67 @@ def test_create_and_list_product_deals() -> None:
     assert created["salePrice"] == 1090000
     assert list_response.status_code == 200
     assert list_response.json()["items"] == [created]
+    assert list_response.json()["nextCursor"] is None
+
+
+def test_get_deal_by_id() -> None:
+    client = make_test_client()
+    product = create_product(client)
+    create_response = client.post(
+        f"/api/v1/products/{product['id']}/deals",
+        json={
+            "title": "Galaxy S26 launch deal",
+            "sourceUrl": "https://example.com/deals/galaxy-s26",
+            "salePrice": 1090000,
+        },
+    )
+    created = create_response.json()
+
+    response = client.get(f"/api/v1/deals/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_missing_deal_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/deals/missing-deal")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "DEAL_NOT_FOUND"
+    assert response.json()["error"]["details"] == {"dealId": "missing-deal"}
+
+
+def test_list_product_deals_supports_cursor_pagination() -> None:
+    client = make_test_client()
+    product = create_product(client)
+
+    created_deals: list[dict[str, object]] = []
+    for index in range(3):
+        response = client.post(
+            f"/api/v1/products/{product['id']}/deals",
+            json={
+                "title": f"Galaxy S26 launch deal {index}",
+                "sourceUrl": f"https://example.com/deals/galaxy-s26-{index}",
+                "salePrice": 1090000 + index,
+            },
+        )
+        assert response.status_code == 201
+        created_deals.append(response.json())
+
+    first_page = client.get(f"/api/v1/products/{product['id']}/deals?limit=2")
+    second_page = client.get(
+        f"/api/v1/products/{product['id']}/deals?limit=2"
+        f"&cursor={first_page.json()['nextCursor']}"
+    )
+
+    assert [item["id"] for item in first_page.json()["items"]] == [
+        created_deals[2]["id"],
+        created_deals[1]["id"],
+    ]
+    assert first_page.json()["nextCursor"] == created_deals[1]["id"]
+    assert [item["id"] for item in second_page.json()["items"]] == [created_deals[0]["id"]]
 
 
 def test_create_and_list_product_auctions() -> None:
@@ -121,6 +209,78 @@ def test_create_and_list_product_auctions() -> None:
     assert created["currentPrice"] == 720000
     assert list_response.status_code == 200
     assert list_response.json()["items"] == [created]
+    assert list_response.json()["nextCursor"] is None
+
+
+def test_get_auction_by_id() -> None:
+    client = make_test_client()
+    product = create_product(client)
+    create_response = client.post(
+        f"/api/v1/products/{product['id']}/auctions",
+        json={
+            "title": "Galaxy S26 sealed auction",
+            "sourceUrl": "https://example.com/auctions/galaxy-s26",
+            "currentPrice": 720000,
+        },
+    )
+    created = create_response.json()
+
+    response = client.get(f"/api/v1/auctions/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_missing_auction_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/auctions/missing-auction")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "AUCTION_NOT_FOUND"
+    assert response.json()["error"]["details"] == {"auctionId": "missing-auction"}
+
+
+def test_list_product_auctions_supports_cursor_pagination() -> None:
+    client = make_test_client()
+    product = create_product(client)
+
+    created_auctions: list[dict[str, object]] = []
+    for index in range(3):
+        response = client.post(
+            f"/api/v1/products/{product['id']}/auctions",
+            json={
+                "title": f"Galaxy S26 sealed auction {index}",
+                "sourceUrl": f"https://example.com/auctions/galaxy-s26-{index}",
+                "currentPrice": 720000 + index,
+            },
+        )
+        assert response.status_code == 201
+        created_auctions.append(response.json())
+
+    first_page = client.get(f"/api/v1/products/{product['id']}/auctions?limit=2")
+    second_page = client.get(
+        f"/api/v1/products/{product['id']}/auctions?limit=2"
+        f"&cursor={first_page.json()['nextCursor']}"
+    )
+
+    assert [item["id"] for item in first_page.json()["items"]] == [
+        created_auctions[2]["id"],
+        created_auctions[1]["id"],
+    ]
+    assert first_page.json()["nextCursor"] == created_auctions[1]["id"]
+    assert [item["id"] for item in second_page.json()["items"]] == [
+        created_auctions[0]["id"]
+    ]
+
+
+def test_list_limit_validation_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/products?limit=0")
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_missing_product_uses_common_error_shape() -> None:

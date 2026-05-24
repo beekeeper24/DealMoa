@@ -9,6 +9,21 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "상품을 찾을 수 없습니다.",
     )
+    DEAL_NOT_FOUND = (
+        "DEAL_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "핫딜을 찾을 수 없습니다.",
+    )
+    AUCTION_NOT_FOUND = (
+        "AUCTION_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "경매를 찾을 수 없습니다.",
+    )
+    INVALID_SEARCH_CURSOR = (
+        "INVALID_SEARCH_CURSOR",
+        HTTPStatus.BAD_REQUEST,
+        "목록 커서가 올바르지 않습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -48,4 +63,36 @@ class ProductNotFoundException(ProductException):
         super().__init__(
             ErrorCode.PRODUCT_NOT_FOUND,
             details={"productId": product_id},
+        )
+
+
+class DealException(DealMoaException):
+    pass
+
+
+class DealNotFoundException(DealException):
+    def __init__(self, deal_id: str) -> None:
+        super().__init__(
+            ErrorCode.DEAL_NOT_FOUND,
+            details={"dealId": deal_id},
+        )
+
+
+class AuctionException(DealMoaException):
+    pass
+
+
+class AuctionNotFoundException(AuctionException):
+    def __init__(self, auction_id: str) -> None:
+        super().__init__(
+            ErrorCode.AUCTION_NOT_FOUND,
+            details={"auctionId": auction_id},
+        )
+
+
+class InvalidSearchCursorException(DealMoaException):
+    def __init__(self, cursor: str) -> None:
+        super().__init__(
+            ErrorCode.INVALID_SEARCH_CURSOR,
+            details={"cursor": cursor},
         )

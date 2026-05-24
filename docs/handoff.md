@@ -14,7 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current branch is `develop`. The initial planning baseline has already been pushed to GitHub. The current local work is documentation hardening before scaffolding.
+Current integration branch is `develop`. Active Product API MVP work continues on:
+
+```text
+feature/product-api-mvp
+```
+
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Product API MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -49,6 +55,7 @@ Current branch is `develop`. The initial planning baseline has already been push
 - `docs/planning.md`: product plan, features, stack, milestones.
 - `docs/architecture.md`: monorepo, domain, API, Elasticsearch, Kafka/Celery, runtime architecture.
 - `docs/api-error-handling.md`: error response, exception hierarchy, error-code policy.
+- `docs/product-api.md`: Product/Deal/Auction REST baseline, cursor pagination, Product API error codes.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
 - `docs/performance.md`: JMeter and Playwright verification direction.
@@ -57,17 +64,12 @@ Current branch is `develop`. The initial planning baseline has already been push
 
 ## Next Activation Steps
 
-1. Review `AGENTS.md` against the fixed DealMoa plan.
-2. Create a Milestone 1 branch.
-3. Scaffold the project structure.
-4. Add root `.env.example`.
-5. Configure `uv` and `pnpm` workspaces.
-6. Add Docker Compose `core` profile.
-7. Add FastAPI health API.
-8. Add Next.js shell.
-9. Add initial CI.
+1. Continue on `feature/product-api-mvp`.
+2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
+3. Verify local PostgreSQL migration/runtime, API tests, and Web CI checks before declaring the slice ready.
+4. Open a PR into `develop` only when Product API MVP is integration-ready or when the user explicitly asks.
 
-## Milestone 1 Scope
+## Completed Foundation Scope
 
 - Monorepo folder structure.
 - `uv` / `pnpm` workspace setup.
@@ -77,6 +79,15 @@ Current branch is `develop`. The initial planning baseline has already been push
 - Next.js app shell.
 - PostgreSQL, Redis, Elasticsearch + Nori in local infra.
 - GitHub Actions CI with backend/frontend lightweight checks.
+
+## Active Product API MVP Scope
+
+- Product, Deal, Auction SQLAlchemy models and Alembic migration.
+- Product create/list/get API.
+- Product-scoped Deal/Auction create/list API.
+- Deal/Auction single-resource get API.
+- Cursor pagination with `limit`, `cursor`, and `nextCursor`.
+- Common error response shape for Product API not-found and invalid cursor errors.
 
 ## Cautions
 

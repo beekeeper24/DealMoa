@@ -1,6 +1,11 @@
 from datetime import UTC, datetime
 
-from app.core.exceptions import ProductNotFoundException
+from app.core.exceptions import (
+    AuctionNotFoundException,
+    DealNotFoundException,
+    ProductNotFoundException,
+)
+from app.core.pagination import CursorPage
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
@@ -37,8 +42,8 @@ class ProductUseCases:
             raise ProductNotFoundException(product_id)
         return product
 
-    def list_products(self) -> list[Product]:
-        return self.repository.list_products()
+    def list_products(self, *, limit: int, cursor: str | None) -> CursorPage[Product]:
+        return self.repository.list_products(limit=limit, cursor=cursor)
 
     def create_deal(self, product_id: str, request: DealCreateRequest) -> Deal:
         self.get_product(product_id)
@@ -57,9 +62,21 @@ class ProductUseCases:
         )
         return self.repository.create_deal(deal)
 
-    def list_deals_for_product(self, product_id: str) -> list[Deal]:
+    def get_deal(self, deal_id: str) -> Deal:
+        deal = self.repository.get_deal(deal_id)
+        if deal is None:
+            raise DealNotFoundException(deal_id)
+        return deal
+
+    def list_deals_for_product(
+        self,
+        product_id: str,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[Deal]:
         self.get_product(product_id)
-        return self.repository.list_deals_for_product(product_id)
+        return self.repository.list_deals_for_product(product_id, limit=limit, cursor=cursor)
 
     def create_auction(self, product_id: str, request: AuctionCreateRequest) -> Auction:
         self.get_product(product_id)
@@ -78,6 +95,18 @@ class ProductUseCases:
         )
         return self.repository.create_auction(auction)
 
-    def list_auctions_for_product(self, product_id: str) -> list[Auction]:
+    def get_auction(self, auction_id: str) -> Auction:
+        auction = self.repository.get_auction(auction_id)
+        if auction is None:
+            raise AuctionNotFoundException(auction_id)
+        return auction
+
+    def list_auctions_for_product(
+        self,
+        product_id: str,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[Auction]:
         self.get_product(product_id)
-        return self.repository.list_auctions_for_product(product_id)
+        return self.repository.list_auctions_for_product(product_id, limit=limit, cursor=cursor)
