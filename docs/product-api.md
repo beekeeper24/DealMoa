@@ -4,7 +4,7 @@
 
 Product API MVP는 상품 중심 데이터의 최소 REST 계약이다. `Product`가 안정적인 상품 identity이고, `Deal`과 `Auction`은 각각 특정 상품에 연결된 offer/listing이다.
 
-이번 범위는 PostgreSQL 원천 데이터와 API 계약을 고정하는 데 집중한다. 인증, 검색 색인, 랭킹 계산, 즐겨찾기, 알림, 관리자 워크플로는 별도 slice로 다룬다.
+이번 범위는 PostgreSQL 원천 데이터와 API 계약을 고정하는 데 집중한다. 검색 색인과 검색 API는 `docs/search-ranking.md`의 Search API MVP에서 별도 slice로 다룬다. 인증, 랭킹 계산, 즐겨찾기, 알림, 관리자 워크플로는 별도 slice로 다룬다.
 
 ## Routes
 

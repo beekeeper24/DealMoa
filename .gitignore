@@ -1,4 +1,5 @@
 ﻿.omx/
+.idea/
 .env
 .env.*
 !.env.example

@@ -24,6 +24,11 @@ class ErrorCode(Enum):
         HTTPStatus.BAD_REQUEST,
         "목록 커서가 올바르지 않습니다.",
     )
+    SEARCH_UNAVAILABLE = (
+        "SEARCH_UNAVAILABLE",
+        HTTPStatus.SERVICE_UNAVAILABLE,
+        "검색 서비스를 사용할 수 없습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -96,3 +101,12 @@ class InvalidSearchCursorException(DealMoaException):
             ErrorCode.INVALID_SEARCH_CURSOR,
             details={"cursor": cursor},
         )
+
+
+class SearchException(DealMoaException):
+    pass
+
+
+class SearchUnavailableException(SearchException):
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.SEARCH_UNAVAILABLE)
