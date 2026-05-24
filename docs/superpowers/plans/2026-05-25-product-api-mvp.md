@@ -39,8 +39,9 @@
 
 ### Task 3: Checkpoint Commit
 
-- [ ] Run API ruff, mypy, pytest.
-- [ ] Run Web lint, typecheck, test, build because CI gates both jobs.
-- [ ] Commit a Korean checkpoint message on `feature/product-api-mvp`.
-- [ ] Push the branch for backup/shared visibility.
+- [x] Run API ruff, mypy, pytest.
+- [x] Run Web lint, typecheck, test, build because CI gates both jobs.
+- [x] Verify PostgreSQL runtime with Docker Compose, Alembic `upgrade head`, and HTTP create/list smoke checks.
+- [x] Commit Korean checkpoint messages on `feature/product-api-mvp`.
+- [x] Push the branch for backup/shared visibility.
 - [ ] Do not open a PR yet.
