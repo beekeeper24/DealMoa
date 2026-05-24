@@ -19,6 +19,7 @@ from app.modules.products.schemas import (
 from app.modules.products.use_cases import ProductUseCases
 
 router = APIRouter(prefix="/products", tags=["products"])
+offer_router = APIRouter(tags=["offers"])
 
 
 def get_product_use_cases(
@@ -108,3 +109,19 @@ def list_product_auctions(
         items=[AuctionResponse.model_validate(auction) for auction in page.items],
         nextCursor=page.next_cursor,
     )
+
+
+@offer_router.get("/deals/{deal_id}", response_model=DealResponse)
+def get_deal(
+    deal_id: str,
+    use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+) -> DealResponse:
+    return DealResponse.model_validate(use_cases.get_deal(deal_id))
+
+
+@offer_router.get("/auctions/{auction_id}", response_model=AuctionResponse)
+def get_auction(
+    auction_id: str,
+    use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+) -> AuctionResponse:
+    return AuctionResponse.model_validate(use_cases.get_auction(auction_id))

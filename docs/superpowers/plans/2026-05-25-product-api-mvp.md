@@ -33,7 +33,7 @@
 - Modify API module files as needed.
 - Test under `apps/api/tests/`.
 
-- [ ] Add `DEAL_NOT_FOUND` and `AUCTION_NOT_FOUND` when single-resource routes are introduced.
+- [x] Add `DEAL_NOT_FOUND` and `AUCTION_NOT_FOUND` when single-resource routes are introduced.
 - [ ] Add cursor pagination to future search/list endpoints consistently.
 - [ ] Keep repository/use case tests focused on business behavior, not FastAPI wiring.
 

@@ -1,13 +1,24 @@
 from typing import cast
 
 import pytest
-from app.core.exceptions import InvalidSearchCursorException, ProductNotFoundException
+from app.core.exceptions import (
+    AuctionNotFoundException,
+    DealNotFoundException,
+    InvalidSearchCursorException,
+    ProductNotFoundException,
+)
 from app.modules.products.repository import ProductRepository
 from app.modules.products.use_cases import ProductUseCases
 
 
 class EmptyProductRepository:
     def get_product(self, product_id: str) -> None:
+        return None
+
+    def get_deal(self, deal_id: str) -> None:
+        return None
+
+    def get_auction(self, auction_id: str) -> None:
         return None
 
 
@@ -37,3 +48,23 @@ def test_list_products_raises_domain_exception_for_invalid_cursor() -> None:
 
     assert exc_info.value.error_code.code == "INVALID_SEARCH_CURSOR"
     assert exc_info.value.details == {"cursor": "bad-cursor"}
+
+
+def test_get_deal_raises_domain_exception_for_missing_deal() -> None:
+    use_cases = ProductUseCases(cast(ProductRepository, EmptyProductRepository()))
+
+    with pytest.raises(DealNotFoundException) as exc_info:
+        use_cases.get_deal("missing-deal")
+
+    assert exc_info.value.error_code.code == "DEAL_NOT_FOUND"
+    assert exc_info.value.details == {"dealId": "missing-deal"}
+
+
+def test_get_auction_raises_domain_exception_for_missing_auction() -> None:
+    use_cases = ProductUseCases(cast(ProductRepository, EmptyProductRepository()))
+
+    with pytest.raises(AuctionNotFoundException) as exc_info:
+        use_cases.get_auction("missing-auction")
+
+    assert exc_info.value.error_code.code == "AUCTION_NOT_FOUND"
+    assert exc_info.value.details == {"auctionId": "missing-auction"}

@@ -125,6 +125,35 @@ def test_create_and_list_product_deals() -> None:
     assert list_response.json()["nextCursor"] is None
 
 
+def test_get_deal_by_id() -> None:
+    client = make_test_client()
+    product = create_product(client)
+    create_response = client.post(
+        f"/api/v1/products/{product['id']}/deals",
+        json={
+            "title": "Galaxy S26 launch deal",
+            "sourceUrl": "https://example.com/deals/galaxy-s26",
+            "salePrice": 1090000,
+        },
+    )
+    created = create_response.json()
+
+    response = client.get(f"/api/v1/deals/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_missing_deal_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/deals/missing-deal")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "DEAL_NOT_FOUND"
+    assert response.json()["error"]["details"] == {"dealId": "missing-deal"}
+
+
 def test_list_product_deals_supports_cursor_pagination() -> None:
     client = make_test_client()
     product = create_product(client)
@@ -181,6 +210,35 @@ def test_create_and_list_product_auctions() -> None:
     assert list_response.status_code == 200
     assert list_response.json()["items"] == [created]
     assert list_response.json()["nextCursor"] is None
+
+
+def test_get_auction_by_id() -> None:
+    client = make_test_client()
+    product = create_product(client)
+    create_response = client.post(
+        f"/api/v1/products/{product['id']}/auctions",
+        json={
+            "title": "Galaxy S26 sealed auction",
+            "sourceUrl": "https://example.com/auctions/galaxy-s26",
+            "currentPrice": 720000,
+        },
+    )
+    created = create_response.json()
+
+    response = client.get(f"/api/v1/auctions/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_missing_auction_uses_common_error_shape() -> None:
+    client = make_test_client()
+
+    response = client.get("/api/v1/auctions/missing-auction")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "AUCTION_NOT_FOUND"
+    assert response.json()["error"]["details"] == {"auctionId": "missing-auction"}
 
 
 def test_list_product_auctions_supports_cursor_pagination() -> None:

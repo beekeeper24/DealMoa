@@ -1,6 +1,10 @@
 from datetime import UTC, datetime
 
-from app.core.exceptions import ProductNotFoundException
+from app.core.exceptions import (
+    AuctionNotFoundException,
+    DealNotFoundException,
+    ProductNotFoundException,
+)
 from app.core.pagination import CursorPage
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
@@ -58,6 +62,12 @@ class ProductUseCases:
         )
         return self.repository.create_deal(deal)
 
+    def get_deal(self, deal_id: str) -> Deal:
+        deal = self.repository.get_deal(deal_id)
+        if deal is None:
+            raise DealNotFoundException(deal_id)
+        return deal
+
     def list_deals_for_product(
         self,
         product_id: str,
@@ -84,6 +94,12 @@ class ProductUseCases:
             updated_at=now,
         )
         return self.repository.create_auction(auction)
+
+    def get_auction(self, auction_id: str) -> Auction:
+        auction = self.repository.get_auction(auction_id)
+        if auction is None:
+            raise AuctionNotFoundException(auction_id)
+        return auction
 
     def list_auctions_for_product(
         self,

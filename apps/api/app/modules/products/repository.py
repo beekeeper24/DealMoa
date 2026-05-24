@@ -36,6 +36,9 @@ class ProductRepository:
         self.session.flush()
         return deal
 
+    def get_deal(self, deal_id: str) -> Deal | None:
+        return self.session.get(Deal, deal_id)
+
     def list_deals_for_product(
         self,
         product_id: str,
@@ -59,6 +62,9 @@ class ProductRepository:
         self.session.add(auction)
         self.session.flush()
         return auction
+
+    def get_auction(self, auction_id: str) -> Auction | None:
+        return self.session.get(Auction, auction_id)
 
     def list_auctions_for_product(
         self,
