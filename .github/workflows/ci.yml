@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install API dependencies
+        run: uv sync --all-packages --dev
+
+      - name: Lint API
+        run: uv run ruff check apps/api
+
+      - name: Typecheck API
+        run: uv run mypy apps/api/app apps/api/tests
+
+      - name: Test API
+        run: uv run pytest apps/api/tests
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install web dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint web
+        run: pnpm --filter @dealmoa/web lint
+
+      - name: Typecheck web
+        run: pnpm --filter @dealmoa/web typecheck
+
+      - name: Test web
+        run: pnpm --filter @dealmoa/web test
+
+      - name: Build web
+        run: pnpm --filter @dealmoa/web build

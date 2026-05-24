@@ -1,0 +1,17 @@
+{
+  "name": "dealmoa",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "api:dev": "cd apps/api && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "api:lint": "uv run ruff check apps/api",
+    "api:typecheck": "uv run mypy apps/api/app apps/api/tests",
+    "api:test": "uv run pytest apps/api/tests",
+    "web:dev": "pnpm --filter @dealmoa/web dev",
+    "web:build": "pnpm --filter @dealmoa/web build",
+    "web:lint": "pnpm --filter @dealmoa/web lint",
+    "web:typecheck": "pnpm --filter @dealmoa/web typecheck",
+    "web:test": "pnpm --filter @dealmoa/web test"
+  }
+}
