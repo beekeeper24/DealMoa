@@ -9,6 +9,11 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "상품을 찾을 수 없습니다.",
     )
+    INVALID_SEARCH_CURSOR = (
+        "INVALID_SEARCH_CURSOR",
+        HTTPStatus.BAD_REQUEST,
+        "목록 커서가 올바르지 않습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -48,4 +53,12 @@ class ProductNotFoundException(ProductException):
         super().__init__(
             ErrorCode.PRODUCT_NOT_FOUND,
             details={"productId": product_id},
+        )
+
+
+class InvalidSearchCursorException(DealMoaException):
+    def __init__(self, cursor: str) -> None:
+        super().__init__(
+            ErrorCode.INVALID_SEARCH_CURSOR,
+            details={"cursor": cursor},
         )

@@ -41,6 +41,7 @@ class ProductResponse(BaseModel):
 
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]
+    next_cursor: str | None = Field(alias="nextCursor")
 
 
 class DealCreateRequest(BaseModel):
@@ -77,6 +78,7 @@ class DealResponse(BaseModel):
 
 class DealListResponse(BaseModel):
     items: list[DealResponse]
+    next_cursor: str | None = Field(alias="nextCursor")
 
 
 class AuctionCreateRequest(BaseModel):
@@ -112,3 +114,4 @@ class AuctionResponse(BaseModel):
 
 class AuctionListResponse(BaseModel):
     items: list[AuctionResponse]
+    next_cursor: str | None = Field(alias="nextCursor")

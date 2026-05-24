@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
@@ -38,9 +38,13 @@ def create_product(
 @router.get("", response_model=ProductListResponse)
 def list_products(
     use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
 ) -> ProductListResponse:
+    page = use_cases.list_products(limit=limit, cursor=cursor)
     return ProductListResponse(
-        items=[ProductResponse.model_validate(product) for product in use_cases.list_products()]
+        items=[ProductResponse.model_validate(product) for product in page.items],
+        nextCursor=page.next_cursor,
     )
 
 
@@ -69,12 +73,13 @@ def create_deal(
 def list_product_deals(
     product_id: str,
     use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
 ) -> DealListResponse:
+    page = use_cases.list_deals_for_product(product_id, limit=limit, cursor=cursor)
     return DealListResponse(
-        items=[
-            DealResponse.model_validate(deal)
-            for deal in use_cases.list_deals_for_product(product_id)
-        ]
+        items=[DealResponse.model_validate(deal) for deal in page.items],
+        nextCursor=page.next_cursor,
     )
 
 
@@ -95,10 +100,11 @@ def create_auction(
 def list_product_auctions(
     product_id: str,
     use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
 ) -> AuctionListResponse:
+    page = use_cases.list_auctions_for_product(product_id, limit=limit, cursor=cursor)
     return AuctionListResponse(
-        items=[
-            AuctionResponse.model_validate(auction)
-            for auction in use_cases.list_auctions_for_product(product_id)
-        ]
+        items=[AuctionResponse.model_validate(auction) for auction in page.items],
+        nextCursor=page.next_cursor,
     )
