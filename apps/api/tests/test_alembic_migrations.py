@@ -11,7 +11,7 @@ def make_alembic_config(database_url: str) -> Config:
     return config
 
 
-def test_alembic_upgrade_head_creates_product_offer_tables(tmp_path: Path) -> None:
+def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     database_path = tmp_path / "dealmoa.db"
     database_url = f"sqlite:///{database_path}"
 
@@ -20,13 +20,25 @@ def test_alembic_upgrade_head_creates_product_offer_tables(tmp_path: Path) -> No
     engine = create_engine(database_url)
     inspector = inspect(engine)
 
-    assert set(inspector.get_table_names()) >= {"alembic_version", "products", "deals", "auctions"}
+    assert set(inspector.get_table_names()) >= {
+        "alembic_version",
+        "products",
+        "deals",
+        "auctions",
+        "users",
+        "oauth_accounts",
+        "refresh_tokens",
+    }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
     auction_foreign_keys = inspector.get_foreign_keys("auctions")
+    oauth_foreign_keys = inspector.get_foreign_keys("oauth_accounts")
+    refresh_foreign_keys = inspector.get_foreign_keys("refresh_tokens")
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
     assert auction_foreign_keys[0]["referred_table"] == "products"
+    assert oauth_foreign_keys[0]["referred_table"] == "users"
+    assert refresh_foreign_keys[0]["referred_table"] == "users"
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

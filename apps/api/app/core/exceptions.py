@@ -19,6 +19,31 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "경매를 찾을 수 없습니다.",
     )
+    UNAUTHORIZED = (
+        "UNAUTHORIZED",
+        HTTPStatus.UNAUTHORIZED,
+        "로그인이 필요합니다.",
+    )
+    TOKEN_EXPIRED = (
+        "TOKEN_EXPIRED",
+        HTTPStatus.UNAUTHORIZED,
+        "토큰이 만료되었습니다.",
+    )
+    INVALID_REFRESH_TOKEN = (
+        "INVALID_REFRESH_TOKEN",
+        HTTPStatus.UNAUTHORIZED,
+        "리프레시 토큰이 올바르지 않습니다.",
+    )
+    UNSUPPORTED_OAUTH_PROVIDER = (
+        "UNSUPPORTED_OAUTH_PROVIDER",
+        HTTPStatus.BAD_REQUEST,
+        "지원하지 않는 OAuth 제공자입니다.",
+    )
+    OAUTH_PROVIDER_ERROR = (
+        "OAUTH_PROVIDER_ERROR",
+        HTTPStatus.BAD_GATEWAY,
+        "OAuth 제공자 인증에 실패했습니다.",
+    )
     INVALID_SEARCH_CURSOR = (
         "INVALID_SEARCH_CURSOR",
         HTTPStatus.BAD_REQUEST,
@@ -92,6 +117,41 @@ class AuctionNotFoundException(AuctionException):
         super().__init__(
             ErrorCode.AUCTION_NOT_FOUND,
             details={"auctionId": auction_id},
+        )
+
+
+class AuthException(DealMoaException):
+    pass
+
+
+class UnauthorizedException(AuthException):
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.UNAUTHORIZED)
+
+
+class TokenExpiredException(AuthException):
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.TOKEN_EXPIRED)
+
+
+class InvalidRefreshTokenException(AuthException):
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.INVALID_REFRESH_TOKEN)
+
+
+class UnsupportedOAuthProviderException(AuthException):
+    def __init__(self, provider: str) -> None:
+        super().__init__(
+            ErrorCode.UNSUPPORTED_OAUTH_PROVIDER,
+            details={"provider": provider},
+        )
+
+
+class OAuthProviderException(AuthException):
+    def __init__(self, provider: str) -> None:
+        super().__init__(
+            ErrorCode.OAUTH_PROVIDER_ERROR,
+            details={"provider": provider},
         )
 
 

@@ -19,6 +19,33 @@ class Settings(BaseSettings):
         default="http://localhost:9200",
         validation_alias="ELASTICSEARCH_URL",
     )
+    jwt_secret_key: str = Field(
+        default="replace-with-local-jwt-secret-minimum-32-bytes",
+        validation_alias="JWT_SECRET_KEY",
+    )
+    jwt_access_token_expire_minutes: int = Field(
+        default=30,
+        validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
+    jwt_refresh_token_expire_days: int = Field(
+        default=14,
+        validation_alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS",
+    )
+    oauth_google_client_id: str = Field(default="", validation_alias="OAUTH_GOOGLE_CLIENT_ID")
+    oauth_google_client_secret: str = Field(
+        default="",
+        validation_alias="OAUTH_GOOGLE_CLIENT_SECRET",
+    )
+    oauth_kakao_client_id: str = Field(default="", validation_alias="OAUTH_KAKAO_CLIENT_ID")
+    oauth_kakao_client_secret: str = Field(
+        default="",
+        validation_alias="OAUTH_KAKAO_CLIENT_SECRET",
+    )
+    oauth_naver_client_id: str = Field(default="", validation_alias="OAUTH_NAVER_CLIENT_ID")
+    oauth_naver_client_secret: str = Field(
+        default="",
+        validation_alias="OAUTH_NAVER_CLIENT_SECRET",
+    )
 
 
 @lru_cache

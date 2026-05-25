@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Search UI MVP work continues on:
+Current integration branch is `develop`. Active Auth MVP work continues on:
 
 ```text
-feature/search-ui-mvp
+feature/auth-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Search UI MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auth MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -56,6 +56,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `docs/architecture.md`: monorepo, domain, API, Elasticsearch, Kafka/Celery, runtime architecture.
 - `docs/api-error-handling.md`: error response, exception hierarchy, error-code policy.
 - `docs/product-api.md`: Product/Deal/Auction REST baseline, cursor pagination, Product API error codes.
+- `docs/auth.md`: OAuth/JWT/refresh token Auth MVP contract.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
 - `docs/performance.md`: JMeter and Playwright verification direction.
@@ -64,10 +65,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/search-ui-mvp`.
+1. Continue on `feature/auth-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify Web unit tests, Playwright browser smoke, build/typecheck/lint, and API regression checks before declaring the slice ready.
-4. Open a PR into `develop` only when Search UI MVP is integration-ready or when the user explicitly asks.
+3. Verify Auth API tests, migration runtime, API/Web regression checks, and focused auth security checks before declaring the slice ready.
+4. Open a PR into `develop` only when Auth MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -98,12 +99,20 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Search APIs for products, deals, and auctions under `/api/v1/search`.
 - MVP reindex endpoint under `/api/v1/admin/search/reindex`.
 
-## Active Search UI MVP Scope
+## Completed Search UI MVP Scope
 
 - Typed web search client for Product, Deal, and Auction search endpoints.
 - Search workspace with query input, product/deal/auction tabs, loading, empty, error, result, and load-more states.
 - Vitest + Testing Library coverage for API client and UI behavior.
 - Playwright browser smoke test for the product search path with mocked API response.
+
+## Active Auth MVP Scope
+
+- User, OAuthAccount, and RefreshToken SQLAlchemy models and Alembic migration.
+- OAuth authorization URL and callback API for Google/Kakao/Naver provider boundaries.
+- DealMoa JWT access token issuance and verification.
+- Opaque refresh token hashing, storage, rotation, and logout revocation.
+- `GET /api/v1/auth/me` bearer-token current-user lookup.
 
 ## Cautions
 
