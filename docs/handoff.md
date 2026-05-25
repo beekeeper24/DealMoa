@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Search Index MVP work continues on:
+Current integration branch is `develop`. Active Search UI MVP work continues on:
 
 ```text
-feature/search-index-mvp
+feature/search-ui-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Search Index MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Search UI MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -64,10 +64,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/search-index-mvp`.
+1. Continue on `feature/search-ui-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify local PostgreSQL + Elasticsearch reindex/search runtime, API tests, and Web CI checks before declaring the slice ready.
-4. Open a PR into `develop` only when Search Index MVP is integration-ready or when the user explicitly asks.
+3. Verify Web unit tests, Playwright browser smoke, build/typecheck/lint, and API regression checks before declaring the slice ready.
+4. Open a PR into `develop` only when Search UI MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -89,7 +89,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Cursor pagination with `limit`, `cursor`, and `nextCursor`.
 - Common error response shape for Product API not-found and invalid cursor errors.
 
-## Active Search Index MVP Scope
+## Completed Search Index MVP Scope
 
 - Versioned Elasticsearch index specs for `products_v1`, `deals_v1`, and `auctions_v1`.
 - Current aliases: `products_current`, `deals_current`, and `auctions_current`.
@@ -97,6 +97,13 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Product/Deal/Auction document builders from PostgreSQL models.
 - Search APIs for products, deals, and auctions under `/api/v1/search`.
 - MVP reindex endpoint under `/api/v1/admin/search/reindex`.
+
+## Active Search UI MVP Scope
+
+- Typed web search client for Product, Deal, and Auction search endpoints.
+- Search workspace with query input, product/deal/auction tabs, loading, empty, error, result, and load-more states.
+- Vitest + Testing Library coverage for API client and UI behavior.
+- Playwright browser smoke test for the product search path with mocked API response.
 
 ## Cautions
 
