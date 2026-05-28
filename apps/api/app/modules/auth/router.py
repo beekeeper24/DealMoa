@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.exceptions import UnauthorizedException
+from app.core.exceptions import InvalidRefreshTokenException, UnauthorizedException
 from app.db.session import get_session
 from app.modules.auth.oauth import HttpOAuthClient, OAuthProviderConfig
 from app.modules.auth.repository import AuthRepository
@@ -13,7 +13,6 @@ from app.modules.auth.schemas import (
     AuthorizationUrlResponse,
     AuthSessionResponse,
     OAuthCallbackRequest,
-    RefreshTokenRequest,
     UserResponse,
 )
 from app.modules.auth.tokens import AuthTokenService
@@ -84,6 +83,7 @@ def build_oauth_authorization_url(
 def login_with_oauth_callback(
     provider: str,
     request: OAuthCallbackRequest,
+    response: Response,
     use_cases: Annotated[AuthUseCases, Depends(get_auth_use_cases)],
 ) -> AuthSessionResponse:
     session = use_cases.login_with_oauth_callback(
@@ -91,24 +91,39 @@ def login_with_oauth_callback(
         code=request.code,
         redirect_uri=request.redirect_uri,
     )
+    set_refresh_cookie(response, session.refresh_token)
     return auth_session_response(session)
 
 
 @router.post("/token/refresh", response_model=AuthSessionResponse)
 def refresh_token(
-    request: RefreshTokenRequest,
+    request: Request,
+    response: Response,
     use_cases: Annotated[AuthUseCases, Depends(get_auth_use_cases)],
 ) -> AuthSessionResponse:
-    return auth_session_response(use_cases.refresh_session(request.refresh_token))
+    settings = get_settings()
+    refresh_token_cookie = request.cookies.get(settings.auth_refresh_cookie_name)
+    if refresh_token_cookie is None:
+        raise InvalidRefreshTokenException()
+    session = use_cases.refresh_session(refresh_token_cookie)
+    set_refresh_cookie(response, session.refresh_token)
+    return auth_session_response(session)
 
 
 @router.post("/logout", status_code=204)
 def logout(
-    request: RefreshTokenRequest,
+    request: Request,
+    response: Response,
     use_cases: Annotated[AuthUseCases, Depends(get_auth_use_cases)],
 ) -> Response:
-    use_cases.revoke_refresh_token(request.refresh_token)
-    return Response(status_code=204)
+    settings = get_settings()
+    refresh_token_cookie = request.cookies.get(settings.auth_refresh_cookie_name)
+    if refresh_token_cookie is None:
+        raise InvalidRefreshTokenException()
+    use_cases.revoke_refresh_token(refresh_token_cookie)
+    delete_refresh_cookie(response)
+    response.status_code = 204
+    return response
 
 
 @router.get("/me", response_model=UserResponse)
@@ -125,6 +140,29 @@ def auth_session_response(session: AuthSession) -> AuthSessionResponse:
     return AuthSessionResponse(
         user=UserResponse(**session.user.__dict__),
         accessToken=session.access_token,
-        refreshToken=session.refresh_token,
         tokenType=session.token_type,
+    )
+
+
+def set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    settings = get_settings()
+    response.set_cookie(
+        key=settings.auth_refresh_cookie_name,
+        value=refresh_token,
+        max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,
+        httponly=True,
+        secure=settings.auth_refresh_cookie_secure,
+        samesite=settings.auth_refresh_cookie_samesite,
+        path=f"{settings.api_v1_prefix}/auth",
+    )
+
+
+def delete_refresh_cookie(response: Response) -> None:
+    settings = get_settings()
+    response.delete_cookie(
+        key=settings.auth_refresh_cookie_name,
+        httponly=True,
+        secure=settings.auth_refresh_cookie_secure,
+        samesite=settings.auth_refresh_cookie_samesite,
+        path=f"{settings.api_v1_prefix}/auth",
     )

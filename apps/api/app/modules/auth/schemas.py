@@ -10,10 +10,6 @@ class OAuthCallbackRequest(BaseModel):
     redirect_uri: str = Field(alias="redirectUri", min_length=1)
 
 
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str = Field(alias="refreshToken", min_length=1)
-
-
 class UserResponse(BaseModel):
     id: str
     email: str
@@ -24,5 +20,4 @@ class UserResponse(BaseModel):
 class AuthSessionResponse(BaseModel):
     user: UserResponse
     access_token: str = Field(alias="accessToken")
-    refresh_token: str = Field(alias="refreshToken")
     token_type: str = Field(alias="tokenType")

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +11,10 @@ class Settings(BaseSettings):
     environment: str = Field(default="local", validation_alias="API_ENV")
     project_name: str = Field(default="DealMoa API", validation_alias="API_PROJECT_NAME")
     api_v1_prefix: str = Field(default="/api/v1", validation_alias="API_V1_PREFIX")
+    api_cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:3100",
+        validation_alias="API_CORS_ORIGINS",
+    )
     database_url: str = Field(
         default="postgresql+psycopg://dealmoa:dealmoa-local-password@localhost:5432/dealmoa",
         validation_alias="DATABASE_URL",
@@ -30,6 +35,18 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = Field(
         default=14,
         validation_alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS",
+    )
+    auth_refresh_cookie_name: str = Field(
+        default="dm_refresh_token",
+        validation_alias="AUTH_REFRESH_COOKIE_NAME",
+    )
+    auth_refresh_cookie_secure: bool = Field(
+        default=False,
+        validation_alias="AUTH_REFRESH_COOKIE_SECURE",
+    )
+    auth_refresh_cookie_samesite: Literal["lax", "strict", "none"] = Field(
+        default="lax",
+        validation_alias="AUTH_REFRESH_COOKIE_SAMESITE",
     )
     oauth_google_client_id: str = Field(
         default="",

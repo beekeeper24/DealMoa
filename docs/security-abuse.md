@@ -30,12 +30,12 @@ Reports never automatically hide or down-rank content. They create admin review 
 - OAuth login issues DealMoa-owned access and refresh tokens.
 - Access tokens are JWTs and must be signed with `JWT_SECRET_KEY`.
 - `JWT_SECRET_KEY` must not be committed and should be at least 32 bytes in local/dev examples.
-- Refresh tokens are opaque and stored only as HMAC-SHA256 hashes.
+- Refresh tokens are opaque, transported only as HttpOnly cookies, and stored only as HMAC-SHA256 hashes.
 - Refresh token use rotates the token and revokes the previous token.
-- Logout revokes the supplied refresh token.
+- Logout revokes the refresh token from the HttpOnly cookie and deletes the cookie.
 - Bearer-token failures use stable auth error codes, not framework-default response shapes.
 - OAuth `state` is supplied by the client in the MVP; later full-stack auth should move state persistence to Redis or another server-side short-lived store.
-- The web MVP stores access and refresh tokens in `sessionStorage` only. Before production release, move refresh-token transport to server-managed HttpOnly cookies and keep browser-readable access tokens short-lived.
+- The web MVP stores only the short-lived access token and user in `sessionStorage`; refresh tokens must not be exposed to browser-readable storage.
 
 ## External URLs
 

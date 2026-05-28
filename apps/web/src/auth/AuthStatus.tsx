@@ -58,7 +58,7 @@ export function AuthStatus({ navigate = defaultNavigate, origin }: AuthStatusPro
     setIsLoggingOut(true);
     setErrorMessage(null);
     try {
-      await logout(session.refreshToken);
+      await logout();
       clearAuthSession();
       setSession(null);
     } catch {

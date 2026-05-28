@@ -4,7 +4,7 @@
 
 **Goal:** Add the first usable web login flow for Google, Kakao, and Naver OAuth on top of the existing Auth API.
 
-**Architecture:** Keep auth UI and auth API client code inside `apps/web/src/auth`. The browser starts login by requesting an authorization URL from the API, stores a short-lived OAuth state in `sessionStorage`, redirects to the provider, verifies state on callback, exchanges the code through the API, then stores the returned session in `sessionStorage` for the MVP.
+**Architecture:** Keep auth UI and auth API client code inside `apps/web/src/auth`. The browser starts login by requesting an authorization URL from the API, stores a short-lived OAuth state in `sessionStorage`, redirects to the provider, verifies state on callback, exchanges the code through the API, then stores the returned access-token session in `sessionStorage` for the MVP. Refresh tokens moved to HttpOnly cookie transport in `2026-05-28-auth-httponly-cookie.md`.
 
 **Tech Stack:** Next.js App Router, React client components, TypeScript, Tailwind CSS, Vitest, Testing Library, Playwright.
 
@@ -25,7 +25,7 @@ Cover state generation, state validation, session persistence, and malformed sto
 
 - [x] **Step 2: Implement minimal session storage**
 
-Use `sessionStorage`, not `localStorage`. Store only the returned MVP session and a provider-scoped OAuth state.
+Use `sessionStorage`, not `localStorage`. Store only the returned access-token MVP session and a provider-scoped OAuth state.
 
 - [x] **Step 3: Write failing tests for Auth API client**
 
@@ -83,7 +83,7 @@ Mock API responses and verify login redirect plus callback storage behavior in C
 
 - [x] **Step 1: Document frontend auth behavior**
 
-Record callback routes, sessionStorage MVP decision, and later migration target to server-managed HttpOnly cookies.
+Record callback routes, access-token sessionStorage MVP decision, and refresh-token HttpOnly cookie transport.
 
 - [ ] **Step 2: Run verification**
 

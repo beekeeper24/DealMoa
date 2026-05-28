@@ -11,7 +11,7 @@ Included:
 - Web login entry and callback route for Google, Kakao, and Naver.
 - User and OAuth account persistence.
 - DealMoa-owned JWT access token issuance.
-- Opaque refresh token issuance, hashing, storage, rotation, and logout revocation.
+- Opaque refresh token issuance, HttpOnly cookie transport, hashing, storage, rotation, and logout revocation.
 - Authenticated current-user lookup with `Authorization: Bearer <accessToken>`.
 
 Not included:
@@ -20,7 +20,6 @@ Not included:
 - Admin role management.
 - Favorites and notifications.
 - OAuth state persistence. In this MVP, the client supplies and verifies `state`; later server-side state storage can move into Redis or a short-lived signed state table.
-- HttpOnly cookie session transport. The web MVP uses `sessionStorage` because the current API returns JSON tokens; production auth should move refresh-token transport to server-managed HttpOnly cookies.
 
 ## Routes
 
@@ -53,10 +52,11 @@ Supported `provider` values:
 - Access tokens are JWTs signed with `JWT_SECRET_KEY`.
 - Access tokens contain `sub`, `iat`, `exp`, and `typ=access`.
 - Refresh tokens are opaque random strings.
+- Refresh tokens are sent to the browser only through the `dm_refresh_token` HttpOnly cookie.
 - Only refresh token hashes are stored in PostgreSQL.
 - Refresh token use rotates the token: the previous token is revoked and a new one is issued.
-- Logout revokes the supplied refresh token.
-- The web MVP stores the returned access and refresh token in `sessionStorage`.
+- Logout revokes the refresh token from the HttpOnly cookie and deletes that cookie.
+- The web MVP stores the returned access token and user in `sessionStorage`.
 - OAuth `state` is provider-scoped and stored in `sessionStorage` until the callback consumes it once.
 
 ## Environment Variables
@@ -73,6 +73,16 @@ OAUTH_NAVER_CLIENT_SECRET=...
 ```
 
 The API also accepts the `OAUTH2_...` prefix aliases for local convenience, for example `OAUTH2_GOOGLE_CLIENT_ID`.
+
+Refresh cookie variables:
+
+```env
+AUTH_REFRESH_COOKIE_NAME=dm_refresh_token
+AUTH_REFRESH_COOKIE_SECURE=false
+AUTH_REFRESH_COOKIE_SAMESITE=lax
+```
+
+Use `AUTH_REFRESH_COOKIE_SECURE=true` on HTTPS environments.
 
 Provider console redirect URI examples for local web development:
 
@@ -95,7 +105,6 @@ Token response:
     "role": "USER"
   },
   "accessToken": "jwt",
-  "refreshToken": "opaque-refresh-token",
   "tokenType": "Bearer"
 }
 ```

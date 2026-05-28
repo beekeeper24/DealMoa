@@ -54,7 +54,6 @@ function isAuthSession(value: unknown): value is AuthSession {
   const session = value as AuthSession;
   return (
     typeof session.accessToken === "string" &&
-    typeof session.refreshToken === "string" &&
     session.tokenType === "Bearer" &&
     typeof session.user === "object" &&
     session.user !== null &&

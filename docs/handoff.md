@@ -111,9 +111,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - User, OAuthAccount, and RefreshToken SQLAlchemy models and Alembic migration.
 - OAuth authorization URL and callback API for Google/Kakao/Naver provider boundaries.
 - DealMoa JWT access token issuance and verification.
-- Opaque refresh token hashing, storage, rotation, and logout revocation.
+- Opaque refresh token HttpOnly cookie transport, hashing, storage, rotation, and logout revocation.
 - `GET /api/v1/auth/me` bearer-token current-user lookup.
-- Web login buttons, provider callback routes, OAuth state validation, and MVP session storage.
+- Web login buttons, provider callback routes, OAuth state validation, and MVP access-token session storage.
 
 ## Cautions
 

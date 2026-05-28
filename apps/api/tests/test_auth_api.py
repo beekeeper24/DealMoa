@@ -88,7 +88,7 @@ def test_build_oauth_authorization_url() -> None:
     }
 
 
-def test_oauth_callback_returns_tokens_and_user() -> None:
+def test_oauth_callback_returns_access_token_user_and_refresh_cookie() -> None:
     client = make_client(FakeAuthUseCases())
 
     response = client.post(
@@ -98,41 +98,60 @@ def test_oauth_callback_returns_tokens_and_user() -> None:
 
     assert response.status_code == 200
     assert response.json()["accessToken"] == "access-google-code-1"
-    assert response.json()["refreshToken"] == "refresh-1"
+    assert "refreshToken" not in response.json()
     assert response.json()["tokenType"] == "Bearer"
     assert response.json()["user"]["email"] == "user@example.com"
+    refresh_cookie = response.cookies.get("dm_refresh_token")
+    assert refresh_cookie == "refresh-1"
+    assert "HttpOnly" in response.headers["set-cookie"]
+    assert "SameSite=lax" in response.headers["set-cookie"]
 
 
-def test_refresh_rotates_tokens() -> None:
+def test_refresh_rotates_tokens_from_cookie() -> None:
     use_cases = FakeAuthUseCases()
     client = make_client(use_cases)
+    client.cookies.set("dm_refresh_token", "refresh-1")
 
-    response = client.post("/api/v1/auth/token/refresh", json={"refreshToken": "refresh-1"})
+    response = client.post("/api/v1/auth/token/refresh")
 
     assert response.status_code == 200
     assert response.json()["accessToken"] == "access-2"
-    assert response.json()["refreshToken"] == "refresh-2"
+    assert "refreshToken" not in response.json()
+    assert response.cookies.get("dm_refresh_token") == "refresh-2"
     assert use_cases.refreshed_token == "refresh-1"
 
 
 def test_invalid_refresh_uses_common_error_shape() -> None:
     client = make_client(FakeAuthUseCases())
+    client.cookies.set("dm_refresh_token", "bad-refresh")
 
-    response = client.post("/api/v1/auth/token/refresh", json={"refreshToken": "bad-refresh"})
+    response = client.post("/api/v1/auth/token/refresh")
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "INVALID_REFRESH_TOKEN"
 
 
-def test_logout_revokes_refresh_token() -> None:
+def test_missing_refresh_cookie_uses_common_error_shape() -> None:
+    client = make_client(FakeAuthUseCases())
+
+    response = client.post("/api/v1/auth/token/refresh")
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "INVALID_REFRESH_TOKEN"
+
+
+def test_logout_revokes_refresh_token_cookie() -> None:
     use_cases = FakeAuthUseCases()
     client = make_client(use_cases)
+    client.cookies.set("dm_refresh_token", "refresh-1")
 
-    response = client.post("/api/v1/auth/logout", json={"refreshToken": "refresh-1"})
+    response = client.post("/api/v1/auth/logout")
 
     assert response.status_code == 204
     assert response.content == b""
     assert use_cases.revoked_token == "refresh-1"
+    assert "dm_refresh_token=" in response.headers["set-cookie"]
+    assert "Max-Age=0" in response.headers["set-cookie"]
 
 
 def test_me_returns_current_user_from_bearer_token() -> None:

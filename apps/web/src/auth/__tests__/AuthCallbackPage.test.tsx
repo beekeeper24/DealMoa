@@ -62,7 +62,6 @@ describe("AuthCallbackPage", () => {
               role: "USER"
             },
             accessToken: "access-token",
-            refreshToken: "refresh-token",
             tokenType: "Bearer"
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
@@ -81,5 +80,6 @@ describe("AuthCallbackPage", () => {
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
     expect(getStoredAuthSession()?.user.email).toBe("user@example.com");
+    expect(sessionStorage.getItem("dealmoa.authSession")).not.toContain("refreshToken");
   });
 });

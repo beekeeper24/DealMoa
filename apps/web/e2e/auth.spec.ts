@@ -22,7 +22,6 @@ test("logs in through the mocked oauth callback flow", async ({ page }) => {
           role: "USER"
         },
         accessToken: "access-token",
-        refreshToken: "refresh-token",
         tokenType: "Bearer"
       })
     });

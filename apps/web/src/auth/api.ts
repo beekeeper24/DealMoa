@@ -39,18 +39,22 @@ export async function loginWithOAuthCallback(request: {
   code: string;
   redirectUri: string;
 }): Promise<AuthSession> {
-  return postJson<AuthSession>(`/auth/oauth/${request.provider}/callback`, {
-    code: request.code,
-    redirectUri: request.redirectUri
-  });
+  return postJson<AuthSession>(
+    `/auth/oauth/${request.provider}/callback`,
+    {
+      code: request.code,
+      redirectUri: request.redirectUri
+    },
+    { includeCredentials: true }
+  );
 }
 
-export async function refreshAuthSession(refreshToken: string): Promise<AuthSession> {
-  return postJson<AuthSession>("/auth/token/refresh", { refreshToken });
+export async function refreshAuthSession(): Promise<AuthSession> {
+  return postWithoutBody<AuthSession>("/auth/token/refresh", { includeCredentials: true });
 }
 
-export async function logout(refreshToken: string): Promise<void> {
-  await postJson<void>("/auth/logout", { refreshToken });
+export async function logout(): Promise<void> {
+  await postWithoutBody<void>("/auth/logout", { includeCredentials: true });
 }
 
 export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
@@ -64,10 +68,31 @@ export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
   return body as AuthUser;
 }
 
-async function postJson<T>(path: string, body: object): Promise<T> {
+async function postJson<T>(
+  path: string,
+  body: object,
+  options: { includeCredentials?: boolean } = {}
+): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     body: JSON.stringify(body),
+    credentials: options.includeCredentials ? "include" : undefined,
     headers: { Accept: "application/json", "Content-Type": "application/json" },
+    method: "POST"
+  });
+  const parsed = await parseJson(response);
+  if (!response.ok) {
+    throwAuthError(parsed);
+  }
+  return parsed as T;
+}
+
+async function postWithoutBody<T>(
+  path: string,
+  options: { includeCredentials?: boolean } = {}
+): Promise<T> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    credentials: options.includeCredentials ? "include" : undefined,
+    headers: { Accept: "application/json" },
     method: "POST"
   });
   const parsed = await parseJson(response);

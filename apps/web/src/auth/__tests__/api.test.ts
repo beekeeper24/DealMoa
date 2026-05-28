@@ -29,7 +29,6 @@ const authSessionResponse = {
     role: "USER"
   },
   accessToken: "access-token",
-  refreshToken: "refresh-token",
   tokenType: "Bearer"
 };
 
@@ -72,10 +71,12 @@ describe("auth api client", () => {
         code: "code-1",
         redirectUri: "http://localhost:3000/auth/callback/kakao"
       }),
+      credentials: "include",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       method: "POST"
     });
     expect(session.user.email).toBe("user@example.com");
+    expect("refreshToken" in session).toBe(false);
   });
 
   it("uses bearer token for current user requests", async () => {
@@ -90,24 +91,24 @@ describe("auth api client", () => {
     expect(user.email).toBe("user@example.com");
   });
 
-  it("refreshes and logs out with refresh token payloads", async () => {
+  it("refreshes and logs out with the HttpOnly refresh cookie", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(authSessionResponse))
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await refreshAuthSession("refresh-token");
-    await logout("refresh-token");
+    await refreshAuthSession();
+    await logout();
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/v1/auth/token/refresh", {
-      body: JSON.stringify({ refreshToken: "refresh-token" }),
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { Accept: "application/json" },
       method: "POST"
     });
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/auth/logout", {
-      body: JSON.stringify({ refreshToken: "refresh-token" }),
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { Accept: "application/json" },
       method: "POST"
     });
   });

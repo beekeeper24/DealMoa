@@ -58,10 +58,10 @@ describe("AuthStatus", () => {
         role: "USER"
       },
       accessToken: "access-token",
-      refreshToken: "refresh-token",
       tokenType: "Bearer"
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
 
     render(<AuthStatus />);
 
@@ -70,6 +70,11 @@ describe("AuthStatus", () => {
     await user.click(screen.getByRole("button", { name: "로그아웃" }));
 
     await waitFor(() => expect(getStoredAuthSession()).toBeNull());
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/logout", {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      method: "POST"
+    });
     expect(screen.getByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
   });
 });

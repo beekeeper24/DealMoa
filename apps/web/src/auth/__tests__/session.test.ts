@@ -18,7 +18,6 @@ const authSession: AuthSession = {
     role: "USER"
   },
   accessToken: "access-token",
-  refreshToken: "refresh-token",
   tokenType: "Bearer"
 };
 
@@ -43,6 +42,7 @@ describe("auth session storage", () => {
     saveAuthSession(authSession);
 
     expect(getStoredAuthSession()).toEqual(authSession);
+    expect(sessionStorage.getItem("dealmoa.authSession")).not.toContain("refresh-token");
 
     clearAuthSession();
 
