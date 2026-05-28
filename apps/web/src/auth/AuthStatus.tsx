@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 
 import { buildOAuthAuthorizationUrl, logout } from "./api";
-import { clearAuthSession, createOAuthState, getStoredAuthSession } from "./session";
-import type { AuthSession, OAuthProvider } from "./types";
+import { createOAuthState } from "./session";
+import type { OAuthProvider } from "./types";
+import { useAuthSession, type UseAuthSessionResult } from "./useAuthSession";
 
 type ProviderOption = {
   provider: OAuthProvider;
@@ -18,17 +19,19 @@ const providers: ProviderOption[] = [
 ];
 
 type AuthStatusProps = {
+  authSession?: UseAuthSessionResult;
   navigate?: (url: string) => void;
   origin?: string;
 };
 
-export function AuthStatus({ navigate = defaultNavigate, origin }: AuthStatusProps) {
-  const [session, setSession] = useState<AuthSession | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-    return getStoredAuthSession();
-  });
+export function AuthStatus({
+  authSession: controlledAuthSession,
+  navigate = defaultNavigate,
+  origin
+}: AuthStatusProps) {
+  const internalAuthSession = useAuthSession();
+  const authSession = controlledAuthSession ?? internalAuthSession;
+  const { session, status } = authSession;
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -59,13 +62,23 @@ export function AuthStatus({ navigate = defaultNavigate, origin }: AuthStatusPro
     setErrorMessage(null);
     try {
       await logout();
-      clearAuthSession();
-      setSession(null);
+      authSession.clear();
     } catch {
       setErrorMessage("로그아웃에 실패했습니다.");
     } finally {
       setIsLoggingOut(false);
     }
+  }
+
+  if (status === "loading") {
+    return (
+      <div
+        aria-label="인증 상태 확인 중"
+        className="flex min-h-14 min-w-40 items-center rounded-md border border-black/10 bg-paper px-3 py-2 text-xs font-semibold text-black/50"
+      >
+        인증 상태 확인 중
+      </div>
+    );
   }
 
   if (session) {

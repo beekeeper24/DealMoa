@@ -4,6 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "../AuthStatus";
@@ -17,6 +18,13 @@ afterEach(() => {
 });
 
 describe("AuthStatus", () => {
+  it("server-renders a neutral session-checking state", () => {
+    const markup = renderToString(<AuthStatus />);
+
+    expect(markup).toContain("인증 상태 확인 중");
+    expect(markup).not.toContain("Google 로그인");
+  });
+
   it("renders oauth provider login buttons", () => {
     render(<AuthStatus />);
 

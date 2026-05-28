@@ -57,6 +57,7 @@ Supported `provider` values:
 - Refresh token use rotates the token: the previous token is revoked and a new one is issued.
 - Logout revokes the refresh token from the HttpOnly cookie and deletes that cookie.
 - The web MVP stores the returned access token and user in `sessionStorage`.
+- The web UI reads that `sessionStorage` session only after browser mount. Server render and the first client render use a neutral auth-checking state so login, notification, and favorite controls do not create hydration mismatches.
 - OAuth `state` is provider-scoped and stored in `sessionStorage` until the callback consumes it once.
 
 ## Environment Variables
