@@ -48,6 +48,21 @@ Supported `provider` values:
 - Refresh token use rotates the token: the previous token is revoked and a new one is issued.
 - Logout revokes the supplied refresh token.
 
+## Environment Variables
+
+Canonical OAuth variable names:
+
+```env
+OAUTH_GOOGLE_CLIENT_ID=...
+OAUTH_GOOGLE_CLIENT_SECRET=...
+OAUTH_KAKAO_CLIENT_ID=...
+OAUTH_KAKAO_CLIENT_SECRET=...
+OAUTH_NAVER_CLIENT_ID=...
+OAUTH_NAVER_CLIENT_SECRET=...
+```
+
+The API also accepts the `OAUTH2_...` prefix aliases for local convenience, for example `OAUTH2_GOOGLE_CLIENT_ID`.
+
 ## Response Shape
 
 Token response:

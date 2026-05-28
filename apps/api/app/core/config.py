@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,20 +31,38 @@ class Settings(BaseSettings):
         default=14,
         validation_alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS",
     )
-    oauth_google_client_id: str = Field(default="", validation_alias="OAUTH_GOOGLE_CLIENT_ID")
+    oauth_google_client_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("OAUTH_GOOGLE_CLIENT_ID", "OAUTH2_GOOGLE_CLIENT_ID"),
+    )
     oauth_google_client_secret: str = Field(
         default="",
-        validation_alias="OAUTH_GOOGLE_CLIENT_SECRET",
+        validation_alias=AliasChoices(
+            "OAUTH_GOOGLE_CLIENT_SECRET",
+            "OAUTH2_GOOGLE_CLIENT_SECRET",
+        ),
     )
-    oauth_kakao_client_id: str = Field(default="", validation_alias="OAUTH_KAKAO_CLIENT_ID")
+    oauth_kakao_client_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("OAUTH_KAKAO_CLIENT_ID", "OAUTH2_KAKAO_CLIENT_ID"),
+    )
     oauth_kakao_client_secret: str = Field(
         default="",
-        validation_alias="OAUTH_KAKAO_CLIENT_SECRET",
+        validation_alias=AliasChoices(
+            "OAUTH_KAKAO_CLIENT_SECRET",
+            "OAUTH2_KAKAO_CLIENT_SECRET",
+        ),
     )
-    oauth_naver_client_id: str = Field(default="", validation_alias="OAUTH_NAVER_CLIENT_ID")
+    oauth_naver_client_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("OAUTH_NAVER_CLIENT_ID", "OAUTH2_NAVER_CLIENT_ID"),
+    )
     oauth_naver_client_secret: str = Field(
         default="",
-        validation_alias="OAUTH_NAVER_CLIENT_SECRET",
+        validation_alias=AliasChoices(
+            "OAUTH_NAVER_CLIENT_SECRET",
+            "OAUTH2_NAVER_CLIENT_SECRET",
+        ),
     )
 
 
