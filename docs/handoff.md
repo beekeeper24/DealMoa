@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Notifications MVP work continues on:
+Current integration branch is `develop`. Active Notification Generation MVP work continues on:
 
 ```text
-feature/notifications-mvp
+feature/notification-generation-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notifications MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notification Generation MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -69,10 +69,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/notifications-mvp`.
+1. Continue on `feature/notification-generation-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify notification API tests, migration runtime, API/Web regression checks, and focused notification fan-out/access-control checks before declaring the slice ready.
-4. Open a PR into `develop` only when Notifications MVP is integration-ready or when the user explicitly asks.
+3. Verify notification generation tests, migration runtime, API/Web regression checks, and focused notification fan-out/access-control checks before declaring the slice ready.
+4. Open a PR into `develop` only when Notification Generation MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -133,12 +133,19 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Railway-compatible API container port handling through `PORT`.
 - Docker Compose role clarified as local infrastructure/demo tooling.
 
-## Active Notifications MVP Scope
+## Completed Notifications MVP Scope
 
 - `notifications` SQLAlchemy model and Alembic migration.
 - Authenticated `/api/v1/notifications` list and unread count APIs.
 - Read-one and read-all APIs scoped to the current user.
 - Notification types for new deal, new auction, and auction ending-soon alerts.
+
+## Active Notification Generation MVP Scope
+
+- Product favorite users receive `new_deal` notifications when a deal is created.
+- Product favorite users receive `new_auction` notifications when an auction is created.
+- Duplicate notifications are prevented per `(user, type, targetType, targetId)`.
+- Generation use case is reusable by a later Kafka consumer; actual Kafka/Celery runtime remains deferred.
 
 ## Cautions
 

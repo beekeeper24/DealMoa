@@ -24,6 +24,22 @@ class NotificationsRepository:
         )
         return self.session.scalar(statement)
 
+    def get_notification_for_target(
+        self,
+        *,
+        user_id: str,
+        notification_type: str,
+        target_type: str,
+        target_id: str,
+    ) -> Notification | None:
+        statement = select(Notification).where(
+            Notification.user_id == user_id,
+            Notification.type == notification_type,
+            Notification.target_type == target_type,
+            Notification.target_id == target_id,
+        )
+        return self.session.scalar(statement)
+
     def list_notifications(
         self,
         *,

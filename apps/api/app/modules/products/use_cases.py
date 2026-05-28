@@ -6,6 +6,7 @@ from app.core.exceptions import (
     ProductNotFoundException,
 )
 from app.core.pagination import CursorPage
+from app.modules.notifications.generation import NotificationGenerationUseCases
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
@@ -20,8 +21,13 @@ def utc_now() -> datetime:
 
 
 class ProductUseCases:
-    def __init__(self, repository: ProductRepository) -> None:
+    def __init__(
+        self,
+        repository: ProductRepository,
+        notification_generation: NotificationGenerationUseCases | None = None,
+    ) -> None:
         self.repository = repository
+        self.notification_generation = notification_generation
 
     def create_product(self, request: ProductCreateRequest) -> Product:
         now = utc_now()
@@ -60,7 +66,10 @@ class ProductUseCases:
             created_at=now,
             updated_at=now,
         )
-        return self.repository.create_deal(deal)
+        created = self.repository.create_deal(deal)
+        if self.notification_generation is not None:
+            self.notification_generation.notify_new_deal(created)
+        return created
 
     def get_deal(self, deal_id: str) -> Deal:
         deal = self.repository.get_deal(deal_id)
@@ -93,7 +102,10 @@ class ProductUseCases:
             created_at=now,
             updated_at=now,
         )
-        return self.repository.create_auction(auction)
+        created = self.repository.create_auction(auction)
+        if self.notification_generation is not None:
+            self.notification_generation.notify_new_auction(created)
+        return created
 
     def get_auction(self, auction_id: str) -> Auction:
         auction = self.repository.get_auction(auction_id)
