@@ -6,6 +6,7 @@ from app.core.exceptions import (
     ProductNotFoundException,
 )
 from app.core.pagination import CursorPage
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.notifications.generation import NotificationGenerationUseCases
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
@@ -25,9 +26,11 @@ class ProductUseCases:
         self,
         repository: ProductRepository,
         notification_generation: NotificationGenerationUseCases | None = None,
+        domain_events: DomainEventsUseCases | None = None,
     ) -> None:
         self.repository = repository
         self.notification_generation = notification_generation
+        self.domain_events = domain_events
 
     def create_product(self, request: ProductCreateRequest) -> Product:
         now = utc_now()
@@ -40,7 +43,10 @@ class ProductUseCases:
             created_at=now,
             updated_at=now,
         )
-        return self.repository.create_product(product)
+        created = self.repository.create_product(product)
+        if self.domain_events is not None:
+            self.domain_events.record_product_updated(created)
+        return created
 
     def get_product(self, product_id: str) -> Product:
         product = self.repository.get_product(product_id)
@@ -67,6 +73,8 @@ class ProductUseCases:
             updated_at=now,
         )
         created = self.repository.create_deal(deal)
+        if self.domain_events is not None:
+            self.domain_events.record_deal_created(created)
         if self.notification_generation is not None:
             self.notification_generation.notify_new_deal(created)
         return created
@@ -103,6 +111,8 @@ class ProductUseCases:
             updated_at=now,
         )
         created = self.repository.create_auction(auction)
+        if self.domain_events is not None:
+            self.domain_events.record_auction_created(created)
         if self.notification_generation is not None:
             self.notification_generation.notify_new_auction(created)
         return created

@@ -29,6 +29,39 @@ services:
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.6
+    profiles: ["event"]
+    command:
+      - redpanda
+      - start
+      - --mode
+      - dev-container
+      - --smp
+      - "1"
+      - --memory
+      - 512M
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://kafka:9092
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${REDPANDA_ADMIN_PORT:-9644}:9644"
+    volumes:
+      - kafka_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
   elasticsearch:
     build:
       context: .
@@ -62,6 +95,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_DOMAIN_EVENTS_TOPIC: ${KAFKA_DOMAIN_EVENTS_TOPIC:-dealmoa.domain-events}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-replace-with-local-jwt-secret-minimum-32-bytes}
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-14}
@@ -96,7 +131,37 @@ services:
     depends_on:
       - api
 
+  consumer:
+    build:
+      context: .
+      dockerfile: apps/consumer/Dockerfile
+    profiles: ["event"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_DOMAIN_EVENTS_TOPIC: ${KAFKA_DOMAIN_EVENTS_TOPIC:-dealmoa.domain-events}
+      CONSUMER_POLL_INTERVAL_SECONDS: ${CONSUMER_POLL_INTERVAL_SECONDS:-1}
+      CONSUMER_BATCH_SIZE: ${CONSUMER_BATCH_SIZE:-100}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    profiles: ["worker"]
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
   elasticsearch_data:
+  kafka_data:

@@ -145,6 +145,8 @@ Korean search strategy:
 
 Kafka is for domain events. Celery is for long-running or scheduled jobs.
 
+The first implementation uses a transactional outbox table. API use cases write outbox rows in the same DB transaction as Product, Deal, and Auction mutations; `apps/consumer` publishes unpublished rows to Kafka and marks them published after the broker write succeeds.
+
 Initial Kafka events:
 
 - `deal.created`
@@ -153,6 +155,7 @@ Initial Kafka events:
 
 Initial consumers:
 
+- Outbox publisher from PostgreSQL to Kafka.
 - Elasticsearch index synchronization.
 - Interest-based notification candidate creation.
 
