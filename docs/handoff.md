@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Deployment Baseline work continues on:
+Current integration branch is `develop`. Active Notifications MVP work continues on:
 
 ```text
-feature/deployment-baseline
+feature/notifications-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Deployment Baseline slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notifications MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -59,6 +59,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `docs/product-api.md`: Product/Deal/Auction REST baseline, cursor pagination, Product API error codes.
 - `docs/auth.md`: OAuth/JWT/refresh token Auth MVP contract.
 - `docs/favorites.md`: Product/Deal/Auction favorite API contract.
+- `docs/notifications.md`: authenticated notification inbox API contract.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
@@ -68,10 +69,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/deployment-baseline`.
+1. Continue on `feature/notifications-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify API Docker startup assumptions, env contract docs, Docker Compose config, API/Web regression checks, and focused deployment security checks before declaring the slice ready.
-4. Open a PR into `develop` only when Deployment Baseline is integration-ready or when the user explicitly asks.
+3. Verify notification API tests, migration runtime, API/Web regression checks, and focused notification fan-out/access-control checks before declaring the slice ready.
+4. Open a PR into `develop` only when Notifications MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -125,12 +126,19 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - User-scoped uniqueness and cursor pagination.
 - Web search-result favorite buttons using the current access-token session.
 
-## Active Deployment Baseline Scope
+## Completed Deployment Baseline Scope
 
 - Vercel `apps/web` and Railway API/backend service deployment contract.
 - Production-facing env variable naming and `.env.example` guidance.
 - Railway-compatible API container port handling through `PORT`.
 - Docker Compose role clarified as local infrastructure/demo tooling.
+
+## Active Notifications MVP Scope
+
+- `notifications` SQLAlchemy model and Alembic migration.
+- Authenticated `/api/v1/notifications` list and unread count APIs.
+- Read-one and read-all APIs scoped to the current user.
+- Notification types for new deal, new auction, and auction ending-soon alerts.
 
 ## Cautions
 

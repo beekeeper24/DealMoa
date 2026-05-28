@@ -54,6 +54,11 @@ class ErrorCode(Enum):
         HTTPStatus.SERVICE_UNAVAILABLE,
         "검색 서비스를 사용할 수 없습니다.",
     )
+    NOTIFICATION_NOT_FOUND = (
+        "NOTIFICATION_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "알림을 찾을 수 없습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -170,3 +175,15 @@ class SearchException(DealMoaException):
 class SearchUnavailableException(SearchException):
     def __init__(self) -> None:
         super().__init__(ErrorCode.SEARCH_UNAVAILABLE)
+
+
+class NotificationException(DealMoaException):
+    pass
+
+
+class NotificationNotFoundException(NotificationException):
+    def __init__(self, notification_id: str) -> None:
+        super().__init__(
+            ErrorCode.NOTIFICATION_NOT_FOUND,
+            details={"notificationId": notification_id},
+        )
