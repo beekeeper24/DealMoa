@@ -44,14 +44,19 @@ The outbox publisher sends messages with this envelope:
 
 ## Kafka Consumer Runtime
 
-`apps/consumer` currently publishes outbox events to the configured Kafka topic.
+`apps/consumer` has two explicit commands:
+
+- `publish-outbox`: polls unpublished PostgreSQL outbox rows and publishes them to Kafka.
+- `consume-search-index`: consumes Kafka domain events and updates the matching Elasticsearch document.
 
 Environment:
 
 ```text
 DATABASE_URL=postgresql+psycopg://...
+ELASTICSEARCH_URL=http://elasticsearch:9200
 KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 KAFKA_DOMAIN_EVENTS_TOPIC=dealmoa.domain-events
+KAFKA_SEARCH_INDEX_GROUP_ID=dealmoa-search-indexer
 CONSUMER_POLL_INTERVAL_SECONDS=1
 CONSUMER_BATCH_SIZE=100
 ```
@@ -61,6 +66,19 @@ Local runtime:
 ```bash
 docker compose --profile core --profile event up --build
 ```
+
+The compose `consumer` service runs `publish-outbox` by default. To run the search indexing subscriber locally:
+
+```bash
+docker compose --profile core --profile event run --rm consumer \
+  uv run python -m consumer_app.main consume-search-index
+```
+
+The search indexer currently handles:
+
+- `product.updated` -> upsert one `products_current` document.
+- `deal.created` -> upsert one `deals_current` document.
+- `auction.created` -> upsert one `auctions_current` document.
 
 ## Celery Worker Runtime
 
@@ -85,7 +103,6 @@ docker compose --profile core --profile worker up --build
 
 ## Next Steps
 
-- Move Elasticsearch index synchronization behind Kafka events.
 - Move product favorite notification generation behind `deal.created` and `auction.created`.
 - Add Celery beat for scheduled auction-ending notification jobs.
 - Add idempotent consumer tables when consumers begin producing side effects.

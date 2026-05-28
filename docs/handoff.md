@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Async Events Foundation work continues on:
+Current integration branch is `develop`. Active Event Search Indexing work continues on:
 
 ```text
-feature/async-events-foundation
+feature/event-search-indexing
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Async Events Foundation slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Event Search Indexing slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/async-events-foundation`.
+1. Continue on `feature/event-search-indexing`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify outbox, Kafka publisher, Celery task, Docker Compose profile, Docker image, and focused Kafka/Celery security checks before declaring the slice ready.
-4. Open a PR into `develop` only when Async Events Foundation is integration-ready or when the user explicitly asks.
+3. Verify event search indexing tests, Kafka subscriber tests, Docker Compose profile, Docker image, and focused Kafka/search side-effect checks before declaring the slice ready.
+4. Open a PR into `develop` only when Event Search Indexing is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -148,12 +148,19 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Duplicate notifications are prevented per `(user, type, targetType, targetId)`.
 - Generation use case is reusable by a later Kafka consumer; actual Kafka/Celery runtime remains deferred.
 
-## Active Async Events Foundation Scope
+## Completed Async Events Foundation Scope
 
 - API writes `product.updated`, `deal.created`, and `auction.created` rows to a transactional outbox.
 - `apps/consumer` publishes unpublished outbox events to Kafka.
 - `apps/worker` registers initial Celery task entry points.
 - Docker Compose exposes `event` and `worker` profiles for local Kafka/Celery runtime checks.
+
+## Active Event Search Indexing Scope
+
+- Search client supports single-document upsert through the current aliases.
+- `apps/consumer` handles `product.updated`, `deal.created`, and `auction.created` events for Elasticsearch indexing.
+- Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
+- Admin full reindex remains the recovery path.
 
 ## Cautions
 

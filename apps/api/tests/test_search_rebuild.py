@@ -64,6 +64,7 @@ class RecordingSearchClient:
     def __init__(self) -> None:
         self.recreated = False
         self.replaced: list[tuple[SearchIndexKind, list[dict[str, Any]]]] = []
+        self.indexed: list[tuple[SearchIndexKind, dict[str, Any]]] = []
 
     def recreate_indexes(self) -> None:
         self.recreated = True
@@ -74,6 +75,9 @@ class RecordingSearchClient:
         documents: list[dict[str, Any]],
     ) -> None:
         self.replaced.append((kind, documents))
+
+    def index_document(self, kind: SearchIndexKind, document: dict[str, Any]) -> None:
+        self.indexed.append((kind, document))
 
     def search(
         self,
@@ -102,3 +106,22 @@ def test_rebuild_indexes_recreates_indexes_and_replaces_all_documents() -> None:
     assert search_client.replaced[1][1][0]["id"] == "deal-1"
     assert search_client.replaced[2][1][0]["id"] == "auction-1"
     assert summary == {"products": 1, "deals": 1, "auctions": 1}
+
+
+def test_index_single_product_deal_and_auction_documents() -> None:
+    search_client = RecordingSearchClient()
+    source_repository = FakeSearchSourceRepository()
+    use_cases = SearchUseCases(source_repository, search_client)
+
+    use_cases.index_product(source_repository.list_products_for_search()[0])
+    use_cases.index_deal(source_repository.list_deals_for_search()[0])
+    use_cases.index_auction(source_repository.list_auctions_for_search()[0])
+
+    assert [kind for kind, _document in search_client.indexed] == [
+        "products",
+        "deals",
+        "auctions",
+    ]
+    assert search_client.indexed[0][1]["id"] == "product-1"
+    assert search_client.indexed[1][1]["id"] == "deal-1"
+    assert search_client.indexed[2][1]["id"] == "auction-1"

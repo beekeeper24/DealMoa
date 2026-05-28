@@ -104,6 +104,20 @@ class ElasticsearchSearchClient:
         except httpx.HTTPError:
             raise SearchUnavailableException() from None
 
+    def index_document(self, kind: SearchIndexKind, document: SearchDocument) -> None:
+        spec = SEARCH_INDEXES[kind]
+        try:
+            with self._client(timeout=10.0) as client:
+                response = client.put(
+                    f"/{spec.alias_name}/_doc/{document['id']}",
+                    content=json.dumps(document, ensure_ascii=False, separators=(",", ":")),
+                    headers={"Content-Type": "application/json"},
+                    params={"refresh": "true"},
+                )
+                response.raise_for_status()
+        except httpx.HTTPError:
+            raise SearchUnavailableException() from None
+
     def search(
         self,
         kind: SearchIndexKind,

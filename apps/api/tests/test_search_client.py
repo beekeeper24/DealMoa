@@ -46,3 +46,24 @@ def test_bulk_indexing_errors_raise_search_unavailable() -> None:
 
     with pytest.raises(SearchUnavailableException):
         client.replace_documents("products", [{"id": "product-1", "name": "Galaxy"}])
+
+
+def test_index_document_puts_document_to_alias_with_refresh() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"result": "updated"})
+
+    client = ElasticsearchSearchClient(
+        "http://elasticsearch.test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    client.index_document("products", {"id": "product-1", "name": "Galaxy S26"})
+
+    assert len(requests) == 1
+    assert requests[0].method == "PUT"
+    assert requests[0].url.path == "/products_current/_doc/product-1"
+    assert requests[0].url.params["refresh"] == "true"
+    assert requests[0].read() == b'{"id":"product-1","name":"Galaxy S26"}'

@@ -17,6 +17,14 @@ class ConsumerSettings(BaseSettings):
         default="dealmoa.domain-events",
         validation_alias="KAFKA_DOMAIN_EVENTS_TOPIC",
     )
+    kafka_search_index_group_id: str = Field(
+        default="dealmoa-search-indexer",
+        validation_alias="KAFKA_SEARCH_INDEX_GROUP_ID",
+    )
+    elasticsearch_url: str = Field(
+        default="http://localhost:9200",
+        validation_alias="ELASTICSEARCH_URL",
+    )
     consumer_poll_interval_seconds: float = Field(
         default=1.0,
         validation_alias="CONSUMER_POLL_INTERVAL_SECONDS",

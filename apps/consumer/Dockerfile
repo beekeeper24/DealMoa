@@ -21,4 +21,4 @@ USER dealmoa
 
 ENV PYTHONPATH=/workspace/apps/api:/workspace/apps/consumer
 
-CMD ["uv", "run", "python", "-m", "consumer_app.main"]
+CMD ["uv", "run", "python", "-m", "consumer_app.main", "publish-outbox"]
