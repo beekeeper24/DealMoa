@@ -5,7 +5,7 @@ from app.db.base import Base
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, Deal, Product
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -114,3 +114,44 @@ def test_record_auction_created_event() -> None:
     assert stored.payload_json["auctionId"] == "auction-1"
     assert stored.payload_json["productId"] == "product-1"
     assert stored.payload_json["currentPrice"] == 720000
+
+
+def test_record_auction_bid_placed_event() -> None:
+    session = next(make_session())
+    auction = Auction(
+        id="auction-1",
+        product_id="product-1",
+        title="Galaxy S26 sealed auction",
+        source_url="https://example.com/auctions/1",
+        seller="Example",
+        current_price=750000,
+        bid_count=4,
+        currency="KRW",
+        status="active",
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    bid = AuctionBid(
+        id="bid-1",
+        auction_id="auction-1",
+        user_id="user-1",
+        amount=750000,
+        created_at=NOW,
+        updated_at=NOW,
+    )
+
+    make_use_cases(session).record_auction_bid_placed(auction=auction, bid=bid)
+
+    stored = session.scalars(select(DomainEvent)).one()
+    assert stored.event_type == "auction.bid.placed"
+    assert stored.aggregate_type == "auction"
+    assert stored.aggregate_id == "auction-1"
+    assert stored.payload_json == {
+        "auctionId": "auction-1",
+        "bidId": "bid-1",
+        "userId": "user-1",
+        "amount": 750000,
+        "currentPrice": 750000,
+        "bidCount": 4,
+        "currency": "KRW",
+    }

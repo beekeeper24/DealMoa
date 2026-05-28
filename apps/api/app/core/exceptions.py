@@ -19,6 +19,16 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "경매를 찾을 수 없습니다.",
     )
+    AUCTION_ALREADY_ENDED = (
+        "AUCTION_ALREADY_ENDED",
+        HTTPStatus.CONFLICT,
+        "종료된 경매입니다.",
+    )
+    BID_TOO_LOW = (
+        "BID_TOO_LOW",
+        HTTPStatus.CONFLICT,
+        "현재가보다 높은 금액으로 입찰해야 합니다.",
+    )
     UNAUTHORIZED = (
         "UNAUTHORIZED",
         HTTPStatus.UNAUTHORIZED,
@@ -122,6 +132,36 @@ class AuctionNotFoundException(AuctionException):
         super().__init__(
             ErrorCode.AUCTION_NOT_FOUND,
             details={"auctionId": auction_id},
+        )
+
+
+class AuctionAlreadyEndedException(AuctionException):
+    def __init__(
+        self,
+        *,
+        auction_id: str,
+        status: str,
+        ends_at: str | None,
+    ) -> None:
+        super().__init__(
+            ErrorCode.AUCTION_ALREADY_ENDED,
+            details={
+                "auctionId": auction_id,
+                "status": status,
+                "endsAt": ends_at,
+            },
+        )
+
+
+class BidTooLowException(AuctionException):
+    def __init__(self, *, auction_id: str, current_price: int, bid_amount: int) -> None:
+        super().__init__(
+            ErrorCode.BID_TOO_LOW,
+            details={
+                "auctionId": auction_id,
+                "currentPrice": current_price,
+                "bidAmount": bid_amount,
+            },
         )
 
 

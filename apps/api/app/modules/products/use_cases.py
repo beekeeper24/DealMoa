@@ -1,15 +1,19 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from app.core.exceptions import (
+    AuctionAlreadyEndedException,
     AuctionNotFoundException,
+    BidTooLowException,
     DealNotFoundException,
     ProductNotFoundException,
 )
 from app.core.pagination import CursorPage
 from app.modules.events.use_cases import DomainEventsUseCases
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
+    AuctionBidCreateRequest,
     AuctionCreateRequest,
     DealCreateRequest,
     ProductCreateRequest,
@@ -25,12 +29,14 @@ class ProductUseCases:
         self,
         repository: ProductRepository,
         domain_events: DomainEventsUseCases | None = None,
+        now: Callable[[], datetime] | None = None,
     ) -> None:
         self.repository = repository
         self.domain_events = domain_events
+        self.now = now or utc_now
 
     def create_product(self, request: ProductCreateRequest) -> Product:
-        now = utc_now()
+        now = self.now()
         product = Product(
             name=request.name,
             brand=request.brand,
@@ -56,7 +62,7 @@ class ProductUseCases:
 
     def create_deal(self, product_id: str, request: DealCreateRequest) -> Deal:
         self.get_product(product_id)
-        now = utc_now()
+        now = self.now()
         deal = Deal(
             product_id=product_id,
             title=request.title,
@@ -92,7 +98,7 @@ class ProductUseCases:
 
     def create_auction(self, product_id: str, request: AuctionCreateRequest) -> Auction:
         self.get_product(product_id)
-        now = utc_now()
+        now = self.now()
         auction = Auction(
             product_id=product_id,
             title=request.title,
@@ -125,3 +131,57 @@ class ProductUseCases:
     ) -> CursorPage[Auction]:
         self.get_product(product_id)
         return self.repository.list_auctions_for_product(product_id, limit=limit, cursor=cursor)
+
+    def place_auction_bid(
+        self,
+        *,
+        user_id: str,
+        auction_id: str,
+        request: AuctionBidCreateRequest,
+    ) -> AuctionBid:
+        auction = self.repository.get_auction_for_update(auction_id)
+        if auction is None:
+            raise AuctionNotFoundException(auction_id)
+
+        now = self.now()
+        if auction.status != "active" or (
+            auction.ends_at is not None and self._aware_utc(auction.ends_at) <= now
+        ):
+            raise AuctionAlreadyEndedException(
+                auction_id=auction.id,
+                status=auction.status,
+                ends_at=self._serialize_datetime(auction.ends_at),
+            )
+
+        if request.amount <= auction.current_price:
+            raise BidTooLowException(
+                auction_id=auction.id,
+                current_price=auction.current_price,
+                bid_amount=request.amount,
+            )
+
+        bid = self.repository.create_auction_bid(
+            AuctionBid(
+                auction_id=auction.id,
+                user_id=user_id,
+                amount=request.amount,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        auction.current_price = request.amount
+        auction.bid_count += 1
+        auction.updated_at = now
+        if self.domain_events is not None:
+            self.domain_events.record_auction_bid_placed(auction=auction, bid=bid)
+        return bid
+
+    def _aware_utc(self, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
+
+    def _serialize_datetime(self, value: datetime | None) -> str | None:
+        if value is None:
+            return None
+        return self._aware_utc(value).isoformat().replace("+00:00", "Z")

@@ -115,3 +115,23 @@ class AuctionResponse(BaseModel):
 class AuctionListResponse(BaseModel):
     items: list[AuctionResponse]
     next_cursor: str | None = Field(alias="nextCursor")
+
+
+class AuctionBidCreateRequest(BaseModel):
+    amount: int = Field(ge=1)
+
+
+class AuctionBidResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: str
+    auction_id: str = Field(alias="auctionId")
+    user_id: str = Field(alias="userId")
+    amount: int
+    created_at: datetime = Field(alias="createdAt")
+
+    @field_serializer("created_at")
+    def serialize_timestamps(self, value: datetime) -> str:
+        serialized = serialize_utc_datetime(value)
+        assert serialized is not None
+        return serialized

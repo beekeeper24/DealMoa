@@ -22,6 +22,7 @@ Initial event types:
 | `product.updated` | `product` | Product API product create/update paths |
 | `deal.created` | `deal` | Product API deal create path |
 | `auction.created` | `auction` | Product API auction create path |
+| `auction.bid.placed` | `auction` | Product API auction bid path |
 
 The outbox publisher sends messages with this envelope:
 
@@ -89,6 +90,8 @@ The notification generator currently handles:
 
 - `deal.created` -> create `new_deal` notifications for users who favorited the product.
 - `auction.created` -> create `new_auction` notifications for users who favorited the product.
+
+`auction.bid.placed` is currently published for later auction activity ranking/search freshness consumers. Existing search and notification consumers intentionally ignore it until those downstream slices are implemented.
 
 Duplicate delivery is deduplicated by the notification unique target index:
 

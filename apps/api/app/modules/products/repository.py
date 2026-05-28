@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import InvalidSearchCursorException
 from app.core.pagination import CursorPage
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, Deal, Product
 
 T = TypeVar("T", Product, Deal, Auction)
 
@@ -74,6 +74,15 @@ class ProductRepository:
 
     def get_auction(self, auction_id: str) -> Auction | None:
         return self.session.get(Auction, auction_id)
+
+    def get_auction_for_update(self, auction_id: str) -> Auction | None:
+        statement = select(Auction).where(Auction.id == auction_id).with_for_update()
+        return self.session.scalar(statement)
+
+    def create_auction_bid(self, bid: AuctionBid) -> AuctionBid:
+        self.session.add(bid)
+        self.session.flush()
+        return bid
 
     def list_auctions_for_product(
         self,
