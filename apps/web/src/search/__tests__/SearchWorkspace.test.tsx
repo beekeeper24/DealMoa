@@ -26,6 +26,7 @@ describe("SearchWorkspace", () => {
 
     expect(screen.getByRole("searchbox", { name: "검색어" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "검색" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "상품" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("검색어를 입력하면 상품 결과부터 확인합니다.")).toBeInTheDocument();
   });
