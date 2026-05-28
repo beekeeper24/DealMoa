@@ -36,6 +36,14 @@ class FavoritesRepository:
         self.session.flush()
         return favorite
 
+    def list_product_favorite_user_ids(self, product_id: str) -> list[str]:
+        statement = (
+            select(ProductFavorite.user_id)
+            .where(ProductFavorite.product_id == product_id)
+            .order_by(ProductFavorite.user_id)
+        )
+        return list(self.session.scalars(statement))
+
     def delete_product_favorite(self, favorite: ProductFavorite) -> None:
         self.session.delete(favorite)
         self.session.flush()

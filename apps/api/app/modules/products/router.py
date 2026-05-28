@@ -4,6 +4,9 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
+from app.modules.favorites.repository import FavoritesRepository
+from app.modules.notifications.generation import NotificationGenerationUseCases
+from app.modules.notifications.repository import NotificationsRepository
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
     AuctionCreateRequest,
@@ -25,7 +28,13 @@ offer_router = APIRouter(tags=["offers"])
 def get_product_use_cases(
     session: Annotated[Session, Depends(get_session)],
 ) -> ProductUseCases:
-    return ProductUseCases(ProductRepository(session))
+    return ProductUseCases(
+        ProductRepository(session),
+        notification_generation=NotificationGenerationUseCases(
+            favorites_repository=FavoritesRepository(session),
+            notifications_repository=NotificationsRepository(session),
+        ),
+    )
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)

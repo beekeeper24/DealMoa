@@ -53,6 +53,7 @@ def create_notification(
     user_id: str = "user-1",
     notification_type: str = NotificationType.NEW_DEAL,
     title: str = "새 핫딜",
+    target_id: str | None = None,
 ) -> Notification:
     return use_cases.create_notification(
         NotificationCreate(
@@ -61,7 +62,7 @@ def create_notification(
             title=title,
             body="관심 상품에 새 소식이 있습니다.",
             target_type="product",
-            target_id="product-1",
+            target_id=target_id or f"product-{title}",
             metadata={"source": "test"},
         )
     )

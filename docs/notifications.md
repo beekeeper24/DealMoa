@@ -5,6 +5,8 @@ Notifications MVP fixes the authenticated notification inbox API before event fa
 ## Scope
 
 - Store user-scoped notifications in PostgreSQL.
+- Generate `new_deal` notifications when a favorited product receives a new deal.
+- Generate `new_auction` notifications when a favorited product receives a new auction.
 - List notifications with cursor pagination.
 - Filter unread notifications.
 - Return unread notification count.
@@ -14,9 +16,24 @@ Notifications MVP fixes the authenticated notification inbox API before event fa
 Out of scope for this slice:
 
 - Kafka/Celery notification fan-out.
-- Automatic notification creation from favorites.
+- Auction ending-soon scheduled generation.
 - Web notification popup/dropdown.
 - Email or push delivery.
+
+## Generation
+
+Notification generation currently runs synchronously in the Product API deal/auction creation path:
+
+- `POST /api/v1/products/{product_id}/deals` creates `new_deal` notifications for users who favorited the product.
+- `POST /api/v1/products/{product_id}/auctions` creates `new_auction` notifications for users who favorited the product.
+
+The generation boundary lives in the notifications module so a later Kafka consumer can call the same use case after receiving `deal.created` or `auction.created` events. Runtime Kafka/Celery services are not part of this MVP slice.
+
+Duplicate rows are prevented by the unique target index:
+
+```text
+(user_id, type, target_type, target_id)
+```
 
 ## Notification Types
 

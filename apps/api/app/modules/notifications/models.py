@@ -29,6 +29,14 @@ class Notification(TimestampMixin, Base):
     __table_args__ = (
         Index("ix_notifications_user_id_created_at", "user_id", "created_at"),
         Index("ix_notifications_user_id_read_at", "user_id", "read_at"),
+        Index(
+            "uq_notifications_user_type_target",
+            "user_id",
+            "type",
+            "target_type",
+            "target_id",
+            unique=True,
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

@@ -52,6 +52,7 @@ def test_notification_references_user_and_has_inbox_indexes() -> None:
     assert {
         "ix_notifications_user_id_created_at",
         "ix_notifications_user_id_read_at",
+        "uq_notifications_user_type_target",
     } <= indexes
 
 
