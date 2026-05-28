@@ -26,17 +26,23 @@ jobs:
       - name: Install API dependencies
         run: uv sync --all-packages --dev
 
-      - name: Lint API
-        run: uv run ruff check apps/api
+      - name: Lint backend services
+        run: uv run ruff check apps/api apps/consumer apps/worker
 
-      - name: Typecheck API
-        run: uv run mypy apps/api/app apps/api/tests
+      - name: Typecheck backend services
+        run: MYPYPATH=apps/api:apps/consumer:apps/worker uv run mypy apps/api/app apps/api/tests apps/consumer/consumer_app apps/consumer/tests apps/worker/worker_app apps/worker/tests
 
-      - name: Test API
-        run: uv run pytest apps/api/tests
+      - name: Test backend services
+        run: PYTHONPATH=apps/api:apps/consumer:apps/worker uv run pytest apps/api/tests apps/consumer/tests apps/worker/tests
 
       - name: Build API Docker image
         run: docker build -f apps/api/Dockerfile -t dealmoa-api-ci .
+
+      - name: Build consumer Docker image
+        run: docker build -f apps/consumer/Dockerfile -t dealmoa-consumer-ci .
+
+      - name: Build worker Docker image
+        run: docker build -f apps/worker/Dockerfile -t dealmoa-worker-ci .
 
   web:
     name: Web

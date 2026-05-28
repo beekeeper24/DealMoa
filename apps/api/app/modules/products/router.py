@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.favorites.repository import FavoritesRepository
 from app.modules.notifications.generation import NotificationGenerationUseCases
 from app.modules.notifications.repository import NotificationsRepository
@@ -34,6 +36,7 @@ def get_product_use_cases(
             favorites_repository=FavoritesRepository(session),
             notifications_repository=NotificationsRepository(session),
         ),
+        domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
     )
 
 

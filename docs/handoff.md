@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Notification Generation MVP work continues on:
+Current integration branch is `develop`. Active Async Events Foundation work continues on:
 
 ```text
-feature/notification-generation-mvp
+feature/async-events-foundation
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notification Generation MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Async Events Foundation slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -60,6 +60,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `docs/auth.md`: OAuth/JWT/refresh token Auth MVP contract.
 - `docs/favorites.md`: Product/Deal/Auction favorite API contract.
 - `docs/notifications.md`: authenticated notification inbox API contract.
+- `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
@@ -69,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/notification-generation-mvp`.
+1. Continue on `feature/async-events-foundation`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify notification generation tests, migration runtime, API/Web regression checks, and focused notification fan-out/access-control checks before declaring the slice ready.
-4. Open a PR into `develop` only when Notification Generation MVP is integration-ready or when the user explicitly asks.
+3. Verify outbox, Kafka publisher, Celery task, Docker Compose profile, Docker image, and focused Kafka/Celery security checks before declaring the slice ready.
+4. Open a PR into `develop` only when Async Events Foundation is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -140,12 +141,19 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Read-one and read-all APIs scoped to the current user.
 - Notification types for new deal, new auction, and auction ending-soon alerts.
 
-## Active Notification Generation MVP Scope
+## Completed Notification Generation MVP Scope
 
 - Product favorite users receive `new_deal` notifications when a deal is created.
 - Product favorite users receive `new_auction` notifications when an auction is created.
 - Duplicate notifications are prevented per `(user, type, targetType, targetId)`.
 - Generation use case is reusable by a later Kafka consumer; actual Kafka/Celery runtime remains deferred.
+
+## Active Async Events Foundation Scope
+
+- API writes `product.updated`, `deal.created`, and `auction.created` rows to a transactional outbox.
+- `apps/consumer` publishes unpublished outbox events to Kafka.
+- `apps/worker` registers initial Celery task entry points.
+- Docker Compose exposes `event` and `worker` profiles for local Kafka/Celery runtime checks.
 
 ## Cautions
 

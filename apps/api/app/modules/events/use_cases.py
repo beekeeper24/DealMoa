@@ -1,0 +1,92 @@
+from collections.abc import Callable
+from datetime import UTC, datetime
+
+from app.modules.events.models import DomainEvent
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.products.models import Auction, Deal, Product
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+class DomainEventsUseCases:
+    def __init__(
+        self,
+        *,
+        repository: DomainEventsRepository,
+        now: Callable[[], datetime] = utc_now,
+    ) -> None:
+        self.repository = repository
+        self.now = now
+
+    def record_product_updated(self, product: Product) -> DomainEvent:
+        return self._record_event(
+            event_type="product.updated",
+            aggregate_type="product",
+            aggregate_id=product.id,
+            payload={
+                "productId": product.id,
+                "name": product.name,
+                "brand": product.brand,
+                "modelName": product.model_name,
+                "category": product.category,
+                "specs": product.specs,
+            },
+        )
+
+    def record_deal_created(self, deal: Deal) -> DomainEvent:
+        return self._record_event(
+            event_type="deal.created",
+            aggregate_type="deal",
+            aggregate_id=deal.id,
+            payload={
+                "dealId": deal.id,
+                "productId": deal.product_id,
+                "title": deal.title,
+                "sourceUrl": deal.source_url,
+                "seller": deal.seller,
+                "originalPrice": deal.original_price,
+                "salePrice": deal.sale_price,
+                "currency": deal.currency,
+                "status": deal.status,
+            },
+        )
+
+    def record_auction_created(self, auction: Auction) -> DomainEvent:
+        return self._record_event(
+            event_type="auction.created",
+            aggregate_type="auction",
+            aggregate_id=auction.id,
+            payload={
+                "auctionId": auction.id,
+                "productId": auction.product_id,
+                "title": auction.title,
+                "sourceUrl": auction.source_url,
+                "seller": auction.seller,
+                "currentPrice": auction.current_price,
+                "bidCount": auction.bid_count,
+                "currency": auction.currency,
+                "status": auction.status,
+            },
+        )
+
+    def _record_event(
+        self,
+        *,
+        event_type: str,
+        aggregate_type: str,
+        aggregate_id: str,
+        payload: dict[str, object],
+    ) -> DomainEvent:
+        now = self.now()
+        return self.repository.create_event(
+            DomainEvent(
+                event_type=event_type,
+                aggregate_type=aggregate_type,
+                aggregate_id=aggregate_id,
+                payload_json=payload,
+                created_at=now,
+                updated_at=now,
+            )
+        )
