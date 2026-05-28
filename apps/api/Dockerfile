@@ -4,6 +4,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /uvx /bin/
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
 WORKDIR /workspace
 
@@ -19,4 +20,6 @@ COPY --chown=dealmoa:dealmoa apps/api apps/api
 WORKDIR /workspace/apps/api
 USER dealmoa
 
-CMD ["/workspace/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+
+CMD ["sh", "-c", "/workspace/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

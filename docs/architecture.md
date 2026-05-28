@@ -192,6 +192,21 @@ Development supports both full Docker and hybrid local execution:
 - Full Docker: reproducible demo and onboarding path.
 - Hybrid local: DB/Redis/Elasticsearch in Docker, FastAPI/Next.js run locally for faster development.
 
+## Deployment Targets
+
+Production deployment targets are fixed as:
+
+- Vercel for `apps/web`.
+- Railway for `apps/api` and later backend service runtimes such as worker and consumer.
+- Railway managed PostgreSQL and Redis when possible.
+- Railway or an external managed Elasticsearch-compatible service for search.
+
+Vercel should use `apps/web` as the project root and receive only browser-safe variables such as `NEXT_PUBLIC_API_BASE_URL`.
+
+Railway should build the API from the repository root using `apps/api/Dockerfile`. The API listens on `${PORT:-8000}` so Railway can inject its service port while local Docker keeps the same image runnable.
+
+Docker Compose is not the production target. It exists to keep local infrastructure and demo flows reproducible while using the same environment-variable contract as production.
+
 ## Error Handling
 
 Use the project-level exception hierarchy described in `docs/api-error-handling.md`.

@@ -35,6 +35,9 @@ jobs:
       - name: Test API
         run: uv run pytest apps/api/tests
 
+      - name: Build API Docker image
+        run: docker build -f apps/api/Dockerfile -t dealmoa-api-ci .
+
   web:
     name: Web
     runs-on: ubuntu-latest
