@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TypeVar
 
 from sqlalchemy import Select, and_, or_, select
@@ -95,6 +96,26 @@ class ProductRepository:
 
     def list_auctions_for_search(self) -> list[Auction]:
         statement = select(Auction).order_by(Auction.created_at.desc(), Auction.id.desc())
+        return list(self.session.scalars(statement))
+
+    def list_active_auctions_ending_between(
+        self,
+        *,
+        starts_at: datetime,
+        ends_at: datetime,
+        limit: int,
+    ) -> list[Auction]:
+        statement = (
+            select(Auction)
+            .where(
+                Auction.status == "active",
+                Auction.ends_at.is_not(None),
+                Auction.ends_at > starts_at,
+                Auction.ends_at <= ends_at,
+            )
+            .order_by(Auction.ends_at.asc(), Auction.id.asc())
+            .limit(limit)
+        )
         return list(self.session.scalars(statement))
 
     def _page(self, statement: Select[tuple[T]], limit: int) -> CursorPage[T]:

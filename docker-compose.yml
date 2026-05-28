@@ -158,9 +158,35 @@ services:
       dockerfile: apps/worker/Dockerfile
     profiles: ["worker"]
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES: ${AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES:-60}
+      AUCTION_ENDING_SOON_BATCH_SIZE: ${AUCTION_ENDING_SOON_BATCH_SIZE:-100}
+      AUCTION_ENDING_SOON_SCHEDULE_SECONDS: ${AUCTION_ENDING_SOON_SCHEDULE_SECONDS:-300}
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-beat:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    profiles: ["worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES: ${AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES:-60}
+      AUCTION_ENDING_SOON_BATCH_SIZE: ${AUCTION_ENDING_SOON_BATCH_SIZE:-100}
+      AUCTION_ENDING_SOON_SCHEDULE_SECONDS: ${AUCTION_ENDING_SOON_SCHEDULE_SECONDS:-300}
+    command:
+      ["uv", "run", "celery", "-A", "worker_app.celery_app:celery_app", "beat", "--loglevel=INFO"]
+    depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
 

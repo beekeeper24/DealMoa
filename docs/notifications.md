@@ -7,6 +7,7 @@ Notifications MVP fixes the authenticated notification inbox API and product-fav
 - Store user-scoped notifications in PostgreSQL.
 - Generate `new_deal` notifications when a favorited product receives a new deal.
 - Generate `new_auction` notifications when a favorited product receives a new auction.
+- Generate `auction_ending_soon` notifications when a favorited auction is close to ending.
 - List notifications with cursor pagination.
 - Filter unread notifications.
 - Return unread notification count.
@@ -15,7 +16,6 @@ Notifications MVP fixes the authenticated notification inbox API and product-fav
 
 Out of scope for this slice:
 
-- Auction ending-soon scheduled generation.
 - Web notification popup/dropdown.
 - Email or push delivery.
 
@@ -27,6 +27,12 @@ New deal/new auction notification generation runs from the Kafka domain-event co
 - `auction.created` is handled by `apps/consumer` `consume-notifications` and creates `new_auction` notifications for users who favorited the product.
 
 The generation boundary lives in the notifications module, and the consumer reuses the same use case after receiving `deal.created` or `auction.created` events.
+
+Auction ending-soon notification generation runs from Celery beat/worker:
+
+- `worker-beat` schedules `dealmoa.generate_auction_ending_soon_notifications`.
+- The task scans active auctions ending within `AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES`.
+- It creates `auction_ending_soon` notifications for users who favorited the auction.
 
 Duplicate rows are prevented by the unique target index:
 

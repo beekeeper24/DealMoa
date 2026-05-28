@@ -114,6 +114,14 @@ class FavoritesRepository:
         self.session.flush()
         return favorite
 
+    def list_auction_favorite_user_ids(self, auction_id: str) -> list[str]:
+        statement = (
+            select(AuctionFavorite.user_id)
+            .where(AuctionFavorite.auction_id == auction_id)
+            .order_by(AuctionFavorite.user_id)
+        )
+        return list(self.session.scalars(statement))
+
     def delete_auction_favorite(self, favorite: AuctionFavorite) -> None:
         self.session.delete(favorite)
         self.session.flush()

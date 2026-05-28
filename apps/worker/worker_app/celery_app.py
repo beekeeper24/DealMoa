@@ -17,4 +17,10 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    beat_schedule={
+        "generate-auction-ending-soon-notifications": {
+            "task": "dealmoa.generate_auction_ending_soon_notifications",
+            "schedule": settings.auction_ending_soon_schedule_seconds,
+        },
+    },
 )

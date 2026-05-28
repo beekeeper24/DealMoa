@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Event Notification Generation work continues on:
+Current integration branch is `develop`. Active Auction Ending Notifications work continues on:
 
 ```text
-feature/event-notification-generation
+feature/auction-ending-notifications
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Event Notification Generation slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Ending Notifications slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/event-notification-generation`.
+1. Continue on `feature/auction-ending-notifications`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify event notification tests, Kafka subscriber command wiring, Docker Compose profile, Docker images, and focused Kafka/notification side-effect checks before declaring the slice ready.
-4. Open a PR into `develop` only when Event Notification Generation is integration-ready or when the user explicitly asks.
+3. Verify scheduled notification tests, Celery beat config, Docker Compose profile, Docker images, and focused worker/notification side-effect checks before declaring the slice ready.
+4. Open a PR into `develop` only when Auction Ending Notifications is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -162,12 +162,20 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
 - Admin full reindex remains the recovery path.
 
-## Active Event Notification Generation Scope
+## Completed Event Notification Generation Scope
 
 - Product API no longer writes notification rows synchronously for new deal/new auction creation.
 - Product API still writes `deal.created` and `auction.created` outbox events in the offer mutation transaction.
 - `apps/consumer` `consume-notifications` handles `deal.created` and `auction.created`.
 - Existing unique notification target index prevents duplicate Kafka delivery from creating duplicate notifications.
+
+## Active Auction Ending Notifications Scope
+
+- `apps/worker` registers `dealmoa.generate_auction_ending_soon_notifications`.
+- Celery beat schedules the task through `worker-beat`.
+- The task scans active auctions ending within the configured lookahead window.
+- Users who favorited those auctions receive `auction_ending_soon` notifications.
+- Existing unique notification target index prevents duplicate scheduled runs from creating duplicate notifications.
 
 ## Cautions
 

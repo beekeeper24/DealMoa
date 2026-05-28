@@ -98,17 +98,22 @@ Duplicate delivery is deduplicated by the notification unique target index:
 
 ## Celery Worker Runtime
 
-`apps/worker` currently registers mock tasks:
+`apps/worker` currently registers these tasks:
 
 - `dealmoa.crawl_hot_deals_mock`
 - `dealmoa.ai_review_submission_mock`
 - `dealmoa.rebuild_search_index`
+- `dealmoa.generate_auction_ending_soon_notifications`
 
 Environment:
 
 ```text
+DATABASE_URL=postgresql+psycopg://...
 CELERY_BROKER_URL=redis://redis:6379/1
 CELERY_RESULT_BACKEND=redis://redis:6379/2
+AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES=60
+AUCTION_ENDING_SOON_BATCH_SIZE=100
+AUCTION_ENDING_SOON_SCHEDULE_SECONDS=300
 ```
 
 Local runtime:
@@ -117,7 +122,14 @@ Local runtime:
 docker compose --profile core --profile worker up --build
 ```
 
+`worker` runs Celery workers. `worker-beat` runs Celery beat and enqueues the auction-ending notification task every `AUCTION_ENDING_SOON_SCHEDULE_SECONDS` seconds.
+
+The auction-ending task scans active auctions whose `ends_at` is inside the lookahead window and creates `auction_ending_soon` notifications for users who favorited each auction. Duplicate runs are deduplicated by the notification unique target index:
+
+```text
+(user_id, type, target_type, target_id)
+```
+
 ## Next Steps
 
-- Add Celery beat for scheduled auction-ending notification jobs.
 - Add idempotent consumer tables when consumers begin producing side effects.
