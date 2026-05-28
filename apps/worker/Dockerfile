@@ -14,10 +14,11 @@ COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
 
 RUN uv sync --package dealmoa-worker --no-dev
 
+COPY --chown=dealmoa:dealmoa apps/api/app apps/api/app
 COPY --chown=dealmoa:dealmoa apps/worker apps/worker
 
 USER dealmoa
 
-ENV PYTHONPATH=/workspace/apps/worker
+ENV PYTHONPATH=/workspace/apps/api:/workspace/apps/worker
 
 CMD ["uv", "run", "celery", "-A", "worker_app.celery_app:celery_app", "worker", "--loglevel=INFO"]
