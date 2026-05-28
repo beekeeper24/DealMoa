@@ -33,6 +33,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "auction_favorites",
         "notifications",
         "domain_events",
+        "auction_bids",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
@@ -41,7 +42,9 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     refresh_foreign_keys = inspector.get_foreign_keys("refresh_tokens")
     product_favorite_foreign_keys = inspector.get_foreign_keys("product_favorites")
     notification_foreign_keys = inspector.get_foreign_keys("notifications")
+    auction_bid_foreign_keys = inspector.get_foreign_keys("auction_bids")
     domain_event_indexes = {index["name"] for index in inspector.get_indexes("domain_events")}
+    auction_bid_indexes = {index["name"] for index in inspector.get_indexes("auction_bids")}
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
     assert auction_foreign_keys[0]["referred_table"] == "products"
@@ -52,11 +55,16 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "products",
     }
     assert notification_foreign_keys[0]["referred_table"] == "users"
+    assert {foreign_key["referred_table"] for foreign_key in auction_bid_foreign_keys} == {
+        "auctions",
+        "users",
+    }
     assert {
         "ix_domain_events_published_at_created_at",
         "ix_domain_events_event_type",
         "ix_domain_events_aggregate",
     } <= domain_event_indexes
+    assert {"ix_auction_bids_auction_id", "ix_auction_bids_user_id"} <= auction_bid_indexes
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

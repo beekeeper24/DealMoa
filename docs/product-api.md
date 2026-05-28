@@ -4,7 +4,7 @@
 
 Product API MVP는 상품 중심 데이터의 최소 REST 계약이다. `Product`가 안정적인 상품 identity이고, `Deal`과 `Auction`은 각각 특정 상품에 연결된 offer/listing이다.
 
-이번 범위는 PostgreSQL 원천 데이터와 API 계약을 고정하는 데 집중한다. 검색 색인과 검색 API는 `docs/search-ranking.md`의 Search API MVP에서 별도 slice로 다룬다. 인증, 랭킹 계산, 즐겨찾기, 알림, 관리자 워크플로는 별도 slice로 다룬다.
+이번 범위는 PostgreSQL 원천 데이터와 API 계약을 고정하는 데 집중한다. 검색 색인과 검색 API는 `docs/search-ranking.md`의 Search API MVP에서 별도 slice로 다룬다. 즐겨찾기, 알림, 관리자 워크플로는 별도 slice로 다룬다.
 
 ## Routes
 
@@ -22,6 +22,7 @@ GET /api/v1/deals/{deal_id}
 POST /api/v1/products/{product_id}/auctions
 GET /api/v1/products/{product_id}/auctions
 GET /api/v1/auctions/{auction_id}
+POST /api/v1/auctions/{auction_id}/bids
 ```
 
 Routers stay thin: request validation happens through Pydantic schemas, business behavior goes through use cases, persistence goes through repositories, and business errors are raised as DealMoa domain exceptions.
@@ -61,6 +62,40 @@ Invalid cursor behavior:
 }
 ```
 
+## Auction Bids
+
+`POST /api/v1/auctions/{auction_id}/bids` requires `Authorization: Bearer <accessToken>`.
+
+Request:
+
+```json
+{
+  "amount": 750000
+}
+```
+
+Rules:
+
+- `amount` must be greater than the auction's current price.
+- Auction `status` must be `active`.
+- If `endsAt` is set, it must be later than the server's current time.
+- A successful bid writes an `auction_bids` row and updates `auctions.current_price` and `auctions.bid_count` in the same transaction.
+- A successful bid also writes an `auction.bid.placed` transactional outbox event for later ranking/search consumers.
+
+Response:
+
+```json
+{
+  "id": "bid-id",
+  "auctionId": "auction-id",
+  "userId": "user-id",
+  "amount": 750000,
+  "createdAt": "2026-05-29T09:00:00Z"
+}
+```
+
+Not included in this slice: payment capture, auto-winning, bid cancellation, proxy bidding, anti-sniping extension, and public bidder display policy.
+
 ## Error Codes
 
 Implemented Product API errors:
@@ -70,6 +105,9 @@ Implemented Product API errors:
 | `PRODUCT_NOT_FOUND` | 404 | Product id does not exist. |
 | `DEAL_NOT_FOUND` | 404 | Deal id does not exist. |
 | `AUCTION_NOT_FOUND` | 404 | Auction id does not exist. |
+| `AUCTION_ALREADY_ENDED` | 409 | Auction is inactive or its `endsAt` is in the past. |
+| `BID_TOO_LOW` | 409 | Bid amount is not greater than the current auction price. |
+| `UNAUTHORIZED` | 401 | Bid request is missing a valid bearer token. |
 | `INVALID_SEARCH_CURSOR` | 400 | Cursor id is invalid for the requested list. |
 | `VALIDATION_ERROR` | 422 | Pydantic/FastAPI request validation failed. |
 

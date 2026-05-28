@@ -143,7 +143,11 @@ Application code should raise domain exceptions:
 
 ```python
 raise ProductNotFoundException(product_id)
-raise BidTooLowException(current_price=current_price, bid_price=bid_price)
+raise BidTooLowException(
+    auction_id=auction_id,
+    current_price=current_price,
+    bid_amount=bid_amount,
+)
 ```
 
 Routers and use cases should not raise FastAPI `HTTPException` for business errors.

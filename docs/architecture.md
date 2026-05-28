@@ -77,6 +77,7 @@ Core entities:
 - `Product`
 - `Deal`
 - `Auction`
+- `AuctionBid`
 - `Favorite`
 - `Notification`
 - `Review`
@@ -152,6 +153,7 @@ Initial Kafka events:
 - `deal.created`
 - `auction.created`
 - `product.updated`
+- `auction.bid.placed`
 
 Initial consumers:
 
@@ -161,7 +163,6 @@ Initial consumers:
 
 Later Kafka events:
 
-- `auction.bid.placed`
 - `favorite.product.created`
 - `review.verified`
 - `submission.approved`

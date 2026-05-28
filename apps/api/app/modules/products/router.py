@@ -1,13 +1,19 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import UnauthorizedException
 from app.db.session import get_session
+from app.modules.auth.router import bearer_scheme, get_auth_use_cases
+from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
+    AuctionBidCreateRequest,
+    AuctionBidResponse,
     AuctionCreateRequest,
     AuctionListResponse,
     AuctionResponse,
@@ -31,6 +37,15 @@ def get_product_use_cases(
         ProductRepository(session),
         domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
     )
+
+
+def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    auth_use_cases: Annotated[AuthUseCases, Depends(get_auth_use_cases)],
+) -> AuthenticatedUser:
+    if credentials is None:
+        raise UnauthorizedException()
+    return auth_use_cases.get_current_user(credentials.credentials)
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -130,3 +145,23 @@ def get_auction(
     use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
 ) -> AuctionResponse:
     return AuctionResponse.model_validate(use_cases.get_auction(auction_id))
+
+
+@offer_router.post(
+    "/auctions/{auction_id}/bids",
+    response_model=AuctionBidResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def place_auction_bid(
+    auction_id: str,
+    request: AuctionBidCreateRequest,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
+) -> AuctionBidResponse:
+    return AuctionBidResponse.model_validate(
+        use_cases.place_auction_bid(
+            user_id=current_user.id,
+            auction_id=auction_id,
+            request=request,
+        )
+    )

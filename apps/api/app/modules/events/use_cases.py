@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, Deal, Product
 
 
 def utc_now() -> datetime:
@@ -68,6 +68,22 @@ class DomainEventsUseCases:
                 "bidCount": auction.bid_count,
                 "currency": auction.currency,
                 "status": auction.status,
+            },
+        )
+
+    def record_auction_bid_placed(self, *, auction: Auction, bid: AuctionBid) -> DomainEvent:
+        return self._record_event(
+            event_type="auction.bid.placed",
+            aggregate_type="auction",
+            aggregate_id=auction.id,
+            payload={
+                "auctionId": auction.id,
+                "bidId": bid.id,
+                "userId": bid.user_id,
+                "amount": bid.amount,
+                "currentPrice": auction.current_price,
+                "bidCount": auction.bid_count,
+                "currency": auction.currency,
             },
         )
 

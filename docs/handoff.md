@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. The Auth Hydration Polish slice is implemented on:
+Current integration branch is `develop`. The Auction Bidding Baseline slice is implemented on:
 
 ```text
-feature/auth-hydration-polish
+feature/auction-bidding-baseline
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auth Hydration Polish slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Bidding Baseline slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -43,7 +43,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
-- Initial Kafka events: `deal.created`, `auction.created`, `product.updated`.
+- Initial Kafka events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`.
 - Initial Celery tasks: `crawl_hot_deals_mock`, `ai_review_submission_mock`, `rebuild_search_index`.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
@@ -70,9 +70,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Merge `feature/auth-hydration-polish` into `develop` after local checks and CI pass.
+1. Merge `feature/auction-bidding-baseline` into `develop` after local checks and CI pass.
 2. Start the next coherent feature branch from `develop`.
-3. Candidate next slices: auction bid/activity baseline, or refresh-token based web session hardening.
+3. Candidate next slices: auction activity ranking/search freshness, or refresh-token based web session hardening.
 4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -189,6 +189,14 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Auth-dependent web UI starts from a neutral session-checking state during server render and first client render.
 - Browser `sessionStorage` is read only after mount through the shared auth session hook.
 - Search workspace shares one auth session snapshot with auth status, notifications, and favorite buttons.
+
+## Completed Auction Bidding Baseline Scope
+
+- Add `auction_bids` as the immutable record of accepted user bids.
+- `POST /api/v1/auctions/{auction_id}/bids` requires bearer auth.
+- Successful bids update `auctions.current_price` and `auctions.bid_count` in the same transaction.
+- Low bids and ended/inactive auctions use DealMoa domain exceptions and common error responses.
+- Successful bids write `auction.bid.placed` outbox events. Downstream consumers intentionally remain deferred.
 
 ## Cautions
 
