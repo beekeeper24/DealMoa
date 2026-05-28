@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.db.base import Base
+from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.search.indexes import SearchIndexKind
@@ -174,6 +175,40 @@ def test_handle_deal_and_auction_created_indexes_offer_documents() -> None:
     assert [kind for kind, _document in search_client.indexed] == ["deals", "auctions"]
     assert search_client.indexed[0][1]["salePrice"] == 1090000
     assert search_client.indexed[1][1]["currentPrice"] == 720000
+
+
+def test_handle_auction_bid_placed_refreshes_auction_document() -> None:
+    session = next(make_session())
+    seed_product(session)
+    seed_auction(session)
+    auction = session.get(Auction, "auction-1")
+    assert auction is not None
+    auction.current_price = 750000
+    auction.bid_count = 4
+    search_client = RecordingSearchClient()
+
+    handled = make_indexer(session, search_client).handle(
+        {
+            "eventId": "event-4",
+            "eventType": "auction.bid.placed",
+            "aggregateType": "auction",
+            "aggregateId": "auction-1",
+            "payload": {
+                "auctionId": "auction-1",
+                "bidId": "bid-1",
+                "amount": 750000,
+                "currentPrice": 750000,
+                "bidCount": 4,
+            },
+            "occurredAt": "2026-05-28T16:00:00Z",
+        }
+    )
+
+    assert handled is True
+    assert search_client.indexed[0][0] == "auctions"
+    assert search_client.indexed[0][1]["id"] == "auction-1"
+    assert search_client.indexed[0][1]["currentPrice"] == 750000
+    assert search_client.indexed[0][1]["bidCount"] == 4
 
 
 def test_handle_unknown_event_or_missing_aggregate_is_noop() -> None:
