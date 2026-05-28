@@ -1,6 +1,6 @@
 # Notifications MVP
 
-Notifications MVP fixes the authenticated notification inbox API and product-favorite fan-out boundary before web notification UI.
+Notifications MVP fixes the authenticated notification inbox API, product-favorite fan-out boundary, and first web dropdown.
 
 ## Scope
 
@@ -13,11 +13,12 @@ Notifications MVP fixes the authenticated notification inbox API and product-fav
 - Return unread notification count.
 - Mark one notification as read.
 - Mark all current-user notifications as read.
+- Show a web header notification dropdown for the current logged-in session.
 
 Out of scope for this slice:
 
-- Web notification popup/dropdown.
 - Email or push delivery.
+- Realtime websocket/SSE notification updates.
 
 ## Generation
 
@@ -103,6 +104,16 @@ Read-all response:
   "updatedCount": 2
 }
 ```
+
+## Web UI
+
+`apps/web` renders a compact notification dropdown in the search workspace header when an access token is present in the MVP web session.
+
+- The trigger fetches and displays unread notification count.
+- Opening the dropdown fetches recent notifications.
+- Each unread notification can be marked read.
+- The dropdown can mark all current notifications as read.
+- Logged-out users do not see the notification trigger.
 
 ## Error Behavior
 

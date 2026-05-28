@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Auction Ending Notifications work continues on:
+Current integration branch is `develop`. Active Notification Web UI work continues on:
 
 ```text
-feature/auction-ending-notifications
+feature/notification-web-ui
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Ending Notifications slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notification Web UI slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/auction-ending-notifications`.
+1. Continue on `feature/notification-web-ui`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify scheduled notification tests, Celery beat config, Docker Compose profile, Docker images, and focused worker/notification side-effect checks before declaring the slice ready.
-4. Open a PR into `develop` only when Auction Ending Notifications is integration-ready or when the user explicitly asks.
+3. Verify notification web API/client tests, dropdown component tests, browser screenshot, and focused auth/notification checks before declaring the slice ready.
+4. Open a PR into `develop` only when Notification Web UI is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -169,13 +169,20 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `apps/consumer` `consume-notifications` handles `deal.created` and `auction.created`.
 - Existing unique notification target index prevents duplicate Kafka delivery from creating duplicate notifications.
 
-## Active Auction Ending Notifications Scope
+## Completed Auction Ending Notifications Scope
 
 - `apps/worker` registers `dealmoa.generate_auction_ending_soon_notifications`.
 - Celery beat schedules the task through `worker-beat`.
 - The task scans active auctions ending within the configured lookahead window.
 - Users who favorited those auctions receive `auction_ending_soon` notifications.
 - Existing unique notification target index prevents duplicate scheduled runs from creating duplicate notifications.
+
+## Active Notification Web UI Scope
+
+- `apps/web` adds a typed notifications API client.
+- Search workspace header renders a notification dropdown only for logged-in sessions.
+- The dropdown fetches unread count, lists recent notifications, marks one notification read, and marks all notifications read.
+- Realtime push/SSE and a dedicated full notification page remain deferred.
 
 ## Cautions
 
