@@ -9,11 +9,7 @@ This slice adds the first real Kafka/Celery code boundary while keeping product 
 - `apps/worker` exposes initial Celery task entry points.
 - Docker Compose has separate `event` and `worker` profiles.
 
-Out of scope:
-
-- Elasticsearch indexing through Kafka consumers.
-- Notification generation through Kafka consumers.
-- Real crawler, AI review, embedding, or scheduled jobs.
+The initial foundation added the outbox, publisher, and worker boundary. Follow-up slices now use the same Kafka stream for Elasticsearch indexing and product-favorite notification generation.
 
 ## Transactional Outbox
 
@@ -44,10 +40,11 @@ The outbox publisher sends messages with this envelope:
 
 ## Kafka Consumer Runtime
 
-`apps/consumer` has two explicit commands:
+`apps/consumer` has three explicit commands:
 
 - `publish-outbox`: polls unpublished PostgreSQL outbox rows and publishes them to Kafka.
 - `consume-search-index`: consumes Kafka domain events and updates the matching Elasticsearch document.
+- `consume-notifications`: consumes Kafka domain events and creates product-favorite notifications.
 
 Environment:
 
@@ -57,6 +54,7 @@ ELASTICSEARCH_URL=http://elasticsearch:9200
 KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 KAFKA_DOMAIN_EVENTS_TOPIC=dealmoa.domain-events
 KAFKA_SEARCH_INDEX_GROUP_ID=dealmoa-search-indexer
+KAFKA_NOTIFICATION_GROUP_ID=dealmoa-notification-generator
 CONSUMER_POLL_INTERVAL_SECONDS=1
 CONSUMER_BATCH_SIZE=100
 ```
@@ -79,6 +77,24 @@ The search indexer currently handles:
 - `product.updated` -> upsert one `products_current` document.
 - `deal.created` -> upsert one `deals_current` document.
 - `auction.created` -> upsert one `auctions_current` document.
+
+To run the notification subscriber locally:
+
+```bash
+docker compose --profile core --profile event run --rm consumer \
+  uv run python -m consumer_app.main consume-notifications
+```
+
+The notification generator currently handles:
+
+- `deal.created` -> create `new_deal` notifications for users who favorited the product.
+- `auction.created` -> create `new_auction` notifications for users who favorited the product.
+
+Duplicate delivery is deduplicated by the notification unique target index:
+
+```text
+(user_id, type, target_type, target_id)
+```
 
 ## Celery Worker Runtime
 
@@ -103,6 +119,5 @@ docker compose --profile core --profile worker up --build
 
 ## Next Steps
 
-- Move product favorite notification generation behind `deal.created` and `auction.created`.
 - Add Celery beat for scheduled auction-ending notification jobs.
 - Add idempotent consumer tables when consumers begin producing side effects.

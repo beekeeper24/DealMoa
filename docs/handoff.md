@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Event Search Indexing work continues on:
+Current integration branch is `develop`. Active Event Notification Generation work continues on:
 
 ```text
-feature/event-search-indexing
+feature/event-notification-generation
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Event Search Indexing slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Event Notification Generation slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/event-search-indexing`.
+1. Continue on `feature/event-notification-generation`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify event search indexing tests, Kafka subscriber tests, Docker Compose profile, Docker image, and focused Kafka/search side-effect checks before declaring the slice ready.
-4. Open a PR into `develop` only when Event Search Indexing is integration-ready or when the user explicitly asks.
+3. Verify event notification tests, Kafka subscriber command wiring, Docker Compose profile, Docker images, and focused Kafka/notification side-effect checks before declaring the slice ready.
+4. Open a PR into `develop` only when Event Notification Generation is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -155,12 +155,19 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `apps/worker` registers initial Celery task entry points.
 - Docker Compose exposes `event` and `worker` profiles for local Kafka/Celery runtime checks.
 
-## Active Event Search Indexing Scope
+## Completed Event Search Indexing Scope
 
 - Search client supports single-document upsert through the current aliases.
 - `apps/consumer` handles `product.updated`, `deal.created`, and `auction.created` events for Elasticsearch indexing.
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
 - Admin full reindex remains the recovery path.
+
+## Active Event Notification Generation Scope
+
+- Product API no longer writes notification rows synchronously for new deal/new auction creation.
+- Product API still writes `deal.created` and `auction.created` outbox events in the offer mutation transaction.
+- `apps/consumer` `consume-notifications` handles `deal.created` and `auction.created`.
+- Existing unique notification target index prevents duplicate Kafka delivery from creating duplicate notifications.
 
 ## Cautions
 

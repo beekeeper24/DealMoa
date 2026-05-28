@@ -1,6 +1,6 @@
 # Notifications MVP
 
-Notifications MVP fixes the authenticated notification inbox API before event fan-out and web notification UI.
+Notifications MVP fixes the authenticated notification inbox API and product-favorite fan-out boundary before web notification UI.
 
 ## Scope
 
@@ -15,19 +15,18 @@ Notifications MVP fixes the authenticated notification inbox API before event fa
 
 Out of scope for this slice:
 
-- Kafka/Celery notification fan-out.
 - Auction ending-soon scheduled generation.
 - Web notification popup/dropdown.
 - Email or push delivery.
 
 ## Generation
 
-Notification generation currently runs synchronously in the Product API deal/auction creation path:
+New deal/new auction notification generation runs from the Kafka domain-event consumer. Product API deal/auction creation writes outbox events only:
 
-- `POST /api/v1/products/{product_id}/deals` creates `new_deal` notifications for users who favorited the product.
-- `POST /api/v1/products/{product_id}/auctions` creates `new_auction` notifications for users who favorited the product.
+- `deal.created` is handled by `apps/consumer` `consume-notifications` and creates `new_deal` notifications for users who favorited the product.
+- `auction.created` is handled by `apps/consumer` `consume-notifications` and creates `new_auction` notifications for users who favorited the product.
 
-The generation boundary lives in the notifications module so a later Kafka consumer can call the same use case after receiving `deal.created` or `auction.created` events. Runtime Kafka/Celery services are not part of this MVP slice.
+The generation boundary lives in the notifications module, and the consumer reuses the same use case after receiving `deal.created` or `auction.created` events.
 
 Duplicate rows are prevented by the unique target index:
 
