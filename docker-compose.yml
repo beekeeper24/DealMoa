@@ -57,6 +57,7 @@ services:
       API_ENV: ${API_ENV:-local}
       API_PROJECT_NAME: ${API_PROJECT_NAME:-DealMoa API}
       API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
+      PORT: ${PORT:-8000}
       API_CORS_ORIGINS: ${API_CORS_ORIGINS:-http://localhost:3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -89,7 +90,7 @@ services:
       dockerfile: apps/web/Dockerfile
     profiles: ["core"]
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${WEB_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-${WEB_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:

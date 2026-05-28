@@ -33,6 +33,7 @@
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui.
 - Backend: FastAPI, Python, Pydantic, SQLAlchemy, Alembic.
+- Deployment: Vercel for `apps/web`, Railway for API and backend services.
 - Database: PostgreSQL.
 - Search: Elasticsearch with Nori analyzer.
 - Events: Kafka.
@@ -57,6 +58,7 @@
 - Commit `.env.example` to document required variables without secrets.
 - Do not create app-level `.env` files in the first scaffold unless a tool requires it.
 - Use clear prefixes such as `API_`, `WEB_`, `OAUTH_`, `ELASTICSEARCH_`, `KAFKA_`, and `REDIS_`.
+- Production variable names should match Vercel/Railway runtime names. Local-only aliases are allowed only as compatibility shims.
 
 ## Quality And CI
 
