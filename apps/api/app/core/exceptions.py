@@ -27,7 +27,7 @@ class ErrorCode(Enum):
     BID_TOO_LOW = (
         "BID_TOO_LOW",
         HTTPStatus.CONFLICT,
-        "현재가보다 높은 금액으로 입찰해야 합니다.",
+        "현재가보다 최소 입찰 단위 이상 높은 금액으로 입찰해야 합니다.",
     )
     UNAUTHORIZED = (
         "UNAUTHORIZED",
@@ -154,13 +154,22 @@ class AuctionAlreadyEndedException(AuctionException):
 
 
 class BidTooLowException(AuctionException):
-    def __init__(self, *, auction_id: str, current_price: int, bid_amount: int) -> None:
+    def __init__(
+        self,
+        *,
+        auction_id: str,
+        current_price: int,
+        bid_amount: int,
+        bid_increment: int,
+    ) -> None:
         super().__init__(
             ErrorCode.BID_TOO_LOW,
             details={
                 "auctionId": auction_id,
                 "currentPrice": current_price,
                 "bidAmount": bid_amount,
+                "minimumBidAmount": current_price + bid_increment,
+                "bidIncrement": bid_increment,
             },
         )
 

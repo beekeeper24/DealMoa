@@ -154,6 +154,30 @@ def test_place_auction_bid_rejects_low_amount() -> None:
         "auctionId": "auction-1",
         "currentPrice": 720000,
         "bidAmount": 720000,
+        "minimumBidAmount": 721000,
+        "bidIncrement": 1000,
+    }
+    assert session.scalars(select(AuctionBid)).all() == []
+
+
+def test_place_auction_bid_requires_fixed_minimum_increment() -> None:
+    session = next(make_session())
+    seed_user_product_and_auction(session)
+
+    with pytest.raises(BidTooLowException) as exc_info:
+        make_use_cases(session).place_auction_bid(
+            user_id="user-1",
+            auction_id="auction-1",
+            request=AuctionBidCreateRequest(amount=720999),
+        )
+
+    assert exc_info.value.error_code.code == "BID_TOO_LOW"
+    assert exc_info.value.details == {
+        "auctionId": "auction-1",
+        "currentPrice": 720000,
+        "bidAmount": 720999,
+        "minimumBidAmount": 721000,
+        "bidIncrement": 1000,
     }
     assert session.scalars(select(AuctionBid)).all() == []
 

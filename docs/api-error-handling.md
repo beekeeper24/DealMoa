@@ -147,6 +147,7 @@ raise BidTooLowException(
     auction_id=auction_id,
     current_price=current_price,
     bid_amount=bid_amount,
+    bid_increment=1000,
 )
 ```
 
