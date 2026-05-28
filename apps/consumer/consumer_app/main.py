@@ -14,6 +14,7 @@ from consumer_app.kafka import (
     KafkaEventProducer,
     create_domain_event_consumer,
 )
+from consumer_app.notification_events import DomainEventNotificationGenerator
 from consumer_app.outbox_publisher import OutboxPublisher
 
 
@@ -66,6 +67,29 @@ async def consume_search_index_forever(settings: ConsumerSettings) -> None:
     await DomainEventSubscriber(consumer=consumer, handler=handle_event).consume_forever()
 
 
+async def consume_notifications_forever(settings: ConsumerSettings) -> None:
+    session_factory = create_session_factory(settings.database_url)
+    consumer = create_domain_event_consumer(
+        bootstrap_servers=settings.kafka_bootstrap_servers,
+        topic=settings.kafka_domain_events_topic,
+        group_id=settings.kafka_notification_group_id,
+    )
+
+    def handle_event(envelope: dict[str, object]) -> None:
+        session: Session = session_factory()
+        try:
+            generator = DomainEventNotificationGenerator.from_session(session=session)
+            generator.handle(envelope)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    await DomainEventSubscriber(consumer=consumer, handler=handle_event).consume_forever()
+
+
 def main() -> None:
     settings = ConsumerSettings()
     command = sys.argv[1] if len(sys.argv) > 1 else "publish-outbox"
@@ -74,6 +98,9 @@ def main() -> None:
         return
     if command == "consume-search-index":
         asyncio.run(consume_search_index_forever(settings))
+        return
+    if command == "consume-notifications":
+        asyncio.run(consume_notifications_forever(settings))
         return
     raise SystemExit(f"Unknown consumer command: {command}")
 

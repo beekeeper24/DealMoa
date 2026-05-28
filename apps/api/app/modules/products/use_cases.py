@@ -7,7 +7,6 @@ from app.core.exceptions import (
 )
 from app.core.pagination import CursorPage
 from app.modules.events.use_cases import DomainEventsUseCases
-from app.modules.notifications.generation import NotificationGenerationUseCases
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
@@ -25,11 +24,9 @@ class ProductUseCases:
     def __init__(
         self,
         repository: ProductRepository,
-        notification_generation: NotificationGenerationUseCases | None = None,
         domain_events: DomainEventsUseCases | None = None,
     ) -> None:
         self.repository = repository
-        self.notification_generation = notification_generation
         self.domain_events = domain_events
 
     def create_product(self, request: ProductCreateRequest) -> Product:
@@ -75,8 +72,6 @@ class ProductUseCases:
         created = self.repository.create_deal(deal)
         if self.domain_events is not None:
             self.domain_events.record_deal_created(created)
-        if self.notification_generation is not None:
-            self.notification_generation.notify_new_deal(created)
         return created
 
     def get_deal(self, deal_id: str) -> Deal:
@@ -113,8 +108,6 @@ class ProductUseCases:
         created = self.repository.create_auction(auction)
         if self.domain_events is not None:
             self.domain_events.record_auction_created(created)
-        if self.notification_generation is not None:
-            self.notification_generation.notify_new_auction(created)
         return created
 
     def get_auction(self, auction_id: str) -> Auction:

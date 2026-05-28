@@ -21,6 +21,10 @@ class ConsumerSettings(BaseSettings):
         default="dealmoa-search-indexer",
         validation_alias="KAFKA_SEARCH_INDEX_GROUP_ID",
     )
+    kafka_notification_group_id: str = Field(
+        default="dealmoa-notification-generator",
+        validation_alias="KAFKA_NOTIFICATION_GROUP_ID",
+    )
     elasticsearch_url: str = Field(
         default="http://localhost:9200",
         validation_alias="ELASTICSEARCH_URL",

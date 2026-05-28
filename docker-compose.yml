@@ -142,6 +142,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       KAFKA_DOMAIN_EVENTS_TOPIC: ${KAFKA_DOMAIN_EVENTS_TOPIC:-dealmoa.domain-events}
       KAFKA_SEARCH_INDEX_GROUP_ID: ${KAFKA_SEARCH_INDEX_GROUP_ID:-dealmoa-search-indexer}
+      KAFKA_NOTIFICATION_GROUP_ID: ${KAFKA_NOTIFICATION_GROUP_ID:-dealmoa-notification-generator}
       CONSUMER_POLL_INTERVAL_SECONDS: ${CONSUMER_POLL_INTERVAL_SECONDS:-1}
       CONSUMER_BATCH_SIZE: ${CONSUMER_BATCH_SIZE:-100}
     command: ["uv", "run", "python", "-m", "consumer_app.main", "publish-outbox"]

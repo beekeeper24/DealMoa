@@ -5,8 +5,9 @@ from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
 from app.modules.auth.models import User
+from app.modules.events.models import DomainEvent
 from app.modules.favorites.models import ProductFavorite
-from app.modules.notifications.models import Notification, NotificationType
+from app.modules.notifications.models import Notification
 from app.modules.products.models import Product
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -87,7 +88,15 @@ def list_notifications(session_factory: sessionmaker[Session]) -> list[Notificat
         session.close()
 
 
-def test_creating_deal_generates_notification_for_product_favorite_user() -> None:
+def list_events(session_factory: sessionmaker[Session]) -> list[DomainEvent]:
+    session = session_factory()
+    try:
+        return list(session.scalars(select(DomainEvent).order_by(DomainEvent.created_at)))
+    finally:
+        session.close()
+
+
+def test_creating_deal_leaves_notification_generation_to_consumer() -> None:
     client, session_factory = make_test_client()
     seed_product_favorite(session_factory)
 
@@ -101,15 +110,14 @@ def test_creating_deal_generates_notification_for_product_favorite_user() -> Non
     )
 
     notifications = list_notifications(session_factory)
+    events = list_events(session_factory)
     assert response.status_code == 201
-    assert len(notifications) == 1
-    assert notifications[0].user_id == "user-1"
-    assert notifications[0].type == NotificationType.NEW_DEAL
-    assert notifications[0].target_type == "deal"
-    assert notifications[0].target_id == response.json()["id"]
+    assert notifications == []
+    assert [event.event_type for event in events] == ["deal.created"]
+    assert events[0].aggregate_id == response.json()["id"]
 
 
-def test_creating_auction_generates_notification_for_product_favorite_user() -> None:
+def test_creating_auction_leaves_notification_generation_to_consumer() -> None:
     client, session_factory = make_test_client()
     seed_product_favorite(session_factory)
 
@@ -123,9 +131,8 @@ def test_creating_auction_generates_notification_for_product_favorite_user() -> 
     )
 
     notifications = list_notifications(session_factory)
+    events = list_events(session_factory)
     assert response.status_code == 201
-    assert len(notifications) == 1
-    assert notifications[0].user_id == "user-1"
-    assert notifications[0].type == NotificationType.NEW_AUCTION
-    assert notifications[0].target_type == "auction"
-    assert notifications[0].target_id == response.json()["id"]
+    assert notifications == []
+    assert [event.event_type for event in events] == ["auction.created"]
+    assert events[0].aggregate_id == response.json()["id"]
