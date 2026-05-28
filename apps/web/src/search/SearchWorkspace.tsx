@@ -19,6 +19,7 @@ import type {
 import { AuthStatus } from "../auth/AuthStatus";
 import { getStoredAuthSession } from "../auth/session";
 import { FavoriteButton } from "../favorites/FavoriteButton";
+import { NotificationCenter } from "../notifications/NotificationCenter";
 
 type SearchState = {
   items: SearchItemByTab[SearchTab][];
@@ -144,6 +145,7 @@ export function SearchWorkspace() {
           >
             AI 검색
           </button>
+          <NotificationCenter accessToken={accessToken} />
           <AuthStatus />
         </div>
       </header>
