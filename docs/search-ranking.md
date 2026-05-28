@@ -40,6 +40,14 @@ auctions_current -> auctions_v1
 
 The MVP reindex endpoint rebuilds all three `*_v1` indexes from PostgreSQL and bulk-indexes Product, Deal, and Auction documents. It is intentionally under `/admin/search` so the route shape stays compatible with later admin authentication.
 
+Domain-event indexing also updates single documents:
+
+- `product.updated` upserts the matching `products_current` document.
+- `deal.created` upserts the matching `deals_current` document.
+- `auction.created` upserts the matching `auctions_current` document.
+
+The admin full reindex endpoint remains the recovery path when mappings change or an index needs rebuilding from PostgreSQL.
+
 Search list responses use the same response envelope shape as Product API lists:
 
 ```json

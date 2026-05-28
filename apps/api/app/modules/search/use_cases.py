@@ -34,6 +34,9 @@ class SearchClient(Protocol):
     ) -> None:
         pass
 
+    def index_document(self, kind: SearchIndexKind, document: SearchDocument) -> None:
+        pass
+
     def search(
         self,
         kind: SearchIndexKind,
@@ -77,6 +80,15 @@ class SearchUseCases:
             "deals": len(deal_documents),
             "auctions": len(auction_documents),
         }
+
+    def index_product(self, product: Product) -> None:
+        self.search_client.index_document("products", build_product_document(product))
+
+    def index_deal(self, deal: Deal) -> None:
+        self.search_client.index_document("deals", build_deal_document(deal))
+
+    def index_auction(self, auction: Auction) -> None:
+        self.search_client.index_document("auctions", build_auction_document(auction))
 
     def search_products(
         self,
