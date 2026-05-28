@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, Deal, Product
 from app.modules.search.documents import (
     build_auction_document,
     build_deal_document,
@@ -81,3 +81,50 @@ def test_auction_search_document_keeps_activity_fields() -> None:
     assert document["currentPrice"] == 720000
     assert document["bidCount"] == 3
     assert document["endsAt"] == "2026-05-26T00:00:00Z"
+
+
+def test_auction_search_document_counts_unique_bidders() -> None:
+    auction = Auction(
+        id="auction-1",
+        product_id="product-1",
+        title="Galaxy S26 sealed auction",
+        source_url="https://example.com/auctions/galaxy-s26",
+        seller="Auction House",
+        current_price=780000,
+        bid_count=3,
+        currency="KRW",
+        status="active",
+        ends_at=datetime(2026, 5, 26, tzinfo=UTC),
+        created_at=datetime(2026, 5, 25, tzinfo=UTC),
+        updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+    )
+    auction.bids = [
+        AuctionBid(
+            id="bid-1",
+            auction_id="auction-1",
+            user_id="user-1",
+            amount=740000,
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+        ),
+        AuctionBid(
+            id="bid-2",
+            auction_id="auction-1",
+            user_id="user-1",
+            amount=760000,
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+        ),
+        AuctionBid(
+            id="bid-3",
+            auction_id="auction-1",
+            user_id="user-2",
+            amount=780000,
+            created_at=datetime(2026, 5, 25, tzinfo=UTC),
+            updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+        ),
+    ]
+
+    document = build_auction_document(auction)
+
+    assert document["uniqueBidderCount"] == 2

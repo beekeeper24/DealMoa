@@ -103,6 +103,7 @@ AUCTION_INDEX_BODY: dict[str, Any] = {
             "sourceUrl": {"type": "keyword", "index": False},
             "currentPrice": {"type": "integer"},
             "bidCount": {"type": "integer"},
+            "uniqueBidderCount": {"type": "integer"},
             "currency": {"type": "keyword"},
             "status": {"type": "keyword"},
             "endsAt": {"type": "date"},

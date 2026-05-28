@@ -339,6 +339,7 @@ function AuctionResult({ accessToken, item }: { accessToken?: string; item: Auct
       </div>
       <p className="mt-3 text-sm font-semibold text-deal">
         {formatCurrency(item.currentPrice, item.currency)} · 입찰 {item.bidCount}회
+        {typeof item.uniqueBidderCount === "number" ? ` · 참여 ${item.uniqueBidderCount}명` : ""}
       </p>
     </article>
   );

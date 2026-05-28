@@ -37,6 +37,7 @@ export type AuctionSearchItem = {
   seller: string | null;
   currentPrice: number;
   bidCount: number;
+  uniqueBidderCount?: number;
   currency: string;
   status: string;
   endsAt: string | null;

@@ -42,3 +42,4 @@ def test_offer_index_mappings_keep_status_price_and_product_fields_typed() -> No
     assert auction_mapping["status"]["type"] == "keyword"
     assert auction_mapping["currentPrice"]["type"] == "integer"
     assert auction_mapping["bidCount"]["type"] == "integer"
+    assert auction_mapping["uniqueBidderCount"]["type"] == "integer"

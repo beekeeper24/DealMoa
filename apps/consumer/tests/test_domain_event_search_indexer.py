@@ -42,6 +42,14 @@ class RecordingSearchClient:
     ) -> Any:
         raise AssertionError("event indexer should not search")
 
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> Any:
+        raise AssertionError("event indexer should not rank auctions")
+
 
 def make_session() -> Iterator[Session]:
     engine = create_engine(

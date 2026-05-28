@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TypeVar
 
 from sqlalchemy import Select, and_, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import InvalidSearchCursorException
 from app.core.pagination import CursorPage
@@ -104,7 +104,11 @@ class ProductRepository:
         return self._page(statement, limit)
 
     def list_auctions_for_search(self) -> list[Auction]:
-        statement = select(Auction).order_by(Auction.created_at.desc(), Auction.id.desc())
+        statement = (
+            select(Auction)
+            .options(selectinload(Auction.bids))
+            .order_by(Auction.created_at.desc(), Auction.id.desc())
+        )
         return list(self.session.scalars(statement))
 
     def list_active_auctions_ending_between(

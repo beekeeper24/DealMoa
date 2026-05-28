@@ -1,3 +1,6 @@
+from datetime import UTC, datetime
+from typing import Any
+
 import httpx
 import pytest
 from app.core.exceptions import InvalidSearchCursorException, SearchUnavailableException
@@ -67,3 +70,73 @@ def test_index_document_puts_document_to_alias_with_refresh() -> None:
     assert requests[0].url.path == "/products_current/_doc/product-1"
     assert requests[0].url.params["refresh"] == "true"
     assert requests[0].read() == b'{"id":"product-1","name":"Galaxy S26"}'
+
+
+def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "hits": {
+                    "hits": [
+                        {
+                            "_score": 52.0,
+                            "_source": {
+                                "id": "auction-1",
+                                "productId": "product-1",
+                                "title": "Galaxy S26 sealed auction",
+                                "sourceUrl": "https://example.com/auctions/galaxy-s26",
+                                "seller": "Auction House",
+                                "currentPrice": 780000,
+                                "bidCount": 5,
+                                "uniqueBidderCount": 3,
+                                "currency": "KRW",
+                                "status": "active",
+                                "endsAt": "2026-05-29T12:00:00Z",
+                                "createdAt": "2026-05-29T00:00:00Z",
+                                "updatedAt": "2026-05-29T09:00:00Z",
+                            },
+                            "sort": [52.0, "2026-05-29T09:00:00Z", "auction-1"],
+                        }
+                    ]
+                }
+            },
+        )
+
+    client = ElasticsearchSearchClient(
+        "http://elasticsearch.test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    page = client.rank_auctions(
+        limit=1,
+        cursor=None,
+        now=datetime(2026, 5, 29, 9, 0, tzinfo=UTC),
+    )
+
+    body = json_from_request(requests[0])
+    script = body["query"]["script_score"]["script"]
+    assert requests[0].method == "POST"
+    assert requests[0].url.path == "/auctions_current/_search"
+    assert body["size"] == 2
+    assert body["query"]["script_score"]["query"] == {"term": {"status": "active"}}
+    assert "bidCount" in script["source"]
+    assert "uniqueBidderCount" in script["source"]
+    assert "endsAt" in script["source"]
+    assert script["params"]["bidActivityWeight"] == 45.0
+    assert script["params"]["uniqueBidderWeight"] == 20.0
+    assert script["params"]["endingSoonWeight"] == 5.0
+    assert body["sort"] == [{"_score": "desc"}, {"updatedAt": "desc"}, {"id": "desc"}]
+    assert page.items[0]["score"] == 52.0
+
+
+def json_from_request(request: httpx.Request) -> dict[str, Any]:
+    import json
+
+    body = request.read()
+    parsed = json.loads(body)
+    assert isinstance(parsed, dict)
+    return parsed
