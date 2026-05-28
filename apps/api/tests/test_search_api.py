@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 class FakeSearchUseCases:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, str, int, str | None]] = []
+        self.calls: list[tuple[str, str, int, str | None] | tuple[str, int, str | None]] = []
 
     def search_products(
         self,
@@ -83,6 +83,7 @@ class FakeSearchUseCases:
                     "seller": "Auction House",
                     "currentPrice": 720000,
                     "bidCount": 3,
+                    "uniqueBidderCount": 2,
                     "currency": "KRW",
                     "status": "active",
                     "endsAt": None,
@@ -92,6 +93,35 @@ class FakeSearchUseCases:
                 }
             ],
             next_cursor=None,
+        )
+
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        self.calls.append(("auction_activity", limit, cursor))
+        return CursorPage(
+            items=[
+                {
+                    "id": "auction-1",
+                    "productId": "product-1",
+                    "title": "Galaxy S26 sealed auction",
+                    "sourceUrl": "https://example.com/auctions/galaxy-s26",
+                    "seller": "Auction House",
+                    "currentPrice": 720000,
+                    "bidCount": 3,
+                    "uniqueBidderCount": 2,
+                    "currency": "KRW",
+                    "status": "active",
+                    "endsAt": None,
+                    "createdAt": "2026-05-25T00:00:00Z",
+                    "updatedAt": "2026-05-25T00:00:00Z",
+                    "score": 41.0,
+                }
+            ],
+            next_cursor="activity-cursor-2",
         )
 
     def rebuild_indexes(self) -> dict[str, int]:
@@ -137,7 +167,21 @@ def test_search_auctions_returns_activity_fields() -> None:
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == "auction-1"
     assert response.json()["items"][0]["bidCount"] == 3
+    assert response.json()["items"][0]["uniqueBidderCount"] == 2
     assert use_cases.calls == [("auctions", "galaxy", 20, None)]
+
+
+def test_rank_auctions_by_activity_calls_ranking_use_case() -> None:
+    use_cases = FakeSearchUseCases()
+    client = make_search_test_client(use_cases)
+
+    response = client.get("/api/v1/search/auctions/activity?limit=1")
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["id"] == "auction-1"
+    assert response.json()["items"][0]["score"] == 41.0
+    assert response.json()["nextCursor"] == "activity-cursor-2"
+    assert use_cases.calls == [("auction_activity", 1, None)]
 
 
 def test_rebuild_search_indexes_returns_counts() -> None:

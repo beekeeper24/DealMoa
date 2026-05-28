@@ -60,6 +60,19 @@ def search_deals(
     )
 
 
+@router.get("/auctions/activity", response_model=AuctionSearchResponse)
+def rank_auctions_by_activity(
+    use_cases: Annotated[SearchUseCases, Depends(get_search_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
+) -> AuctionSearchResponse:
+    page = use_cases.rank_auctions(limit=limit, cursor=cursor)
+    return AuctionSearchResponse(
+        items=[AuctionSearchItem.model_validate(item) for item in page.items],
+        nextCursor=page.next_cursor,
+    )
+
+
 @router.get("/auctions", response_model=AuctionSearchResponse)
 def search_auctions(
     use_cases: Annotated[SearchUseCases, Depends(get_search_use_cases)],

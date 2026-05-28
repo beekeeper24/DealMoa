@@ -61,6 +61,7 @@ def build_deal_document(deal: Deal) -> SearchDocument:
 
 
 def build_auction_document(auction: Auction) -> SearchDocument:
+    unique_bidder_count = len({bid.user_id for bid in auction.bids})
     return {
         "id": auction.id,
         "productId": auction.product_id,
@@ -69,6 +70,7 @@ def build_auction_document(auction: Auction) -> SearchDocument:
         "seller": auction.seller,
         "currentPrice": auction.current_price,
         "bidCount": auction.bid_count,
+        "uniqueBidderCount": unique_bidder_count,
         "currency": auction.currency,
         "status": auction.status,
         "endsAt": serialize_datetime(auction.ends_at),

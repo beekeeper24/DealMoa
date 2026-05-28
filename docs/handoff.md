@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. The Auction Bid Search Indexing slice is being implemented on:
+Current integration branch is `develop`. The Auction Activity Ranking slice is being implemented on:
 
 ```text
-feature/auction-bid-search-indexing
+feature/auction-activity-ranking
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Bid Search Indexing slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Activity Ranking slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,9 +70,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Merge `feature/auction-bid-search-indexing` into `develop` after local checks and CI pass.
+1. Merge `feature/auction-activity-ranking` into `develop` after local checks and CI pass.
 2. Start the next coherent feature branch from `develop`.
-3. Candidate next slices: auction activity ranking, outbid notifications, or refresh-token based web session hardening.
+3. Candidate next slices: outbid notifications, favorite-count ranking signals, or refresh-token based web session hardening.
 4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -162,6 +162,14 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `apps/consumer` handles `auction.bid.placed` by rebuilding the `auctions_current` document from persisted auction state.
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
 - Admin full reindex remains the recovery path.
+
+## Completed Auction Activity Ranking Scope
+
+- Auction search documents include `uniqueBidderCount` from accepted bid rows.
+- Full auction reindex eagerly loads bids to compute unique bidder counts without N+1 queries.
+- `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
+- The first score uses available signals: capped bid count, capped unique bidder count, and ending-soon pressure.
+- View momentum, favorite-count interest, and trust signals remain later ranking slices.
 
 ## Completed Event Notification Generation Scope
 

@@ -47,6 +47,14 @@ class SearchClient(Protocol):
     ) -> CursorPage[dict[str, Any]]:
         pass
 
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        pass
+
 
 class SearchUseCases:
     def __init__(
@@ -116,3 +124,11 @@ class SearchUseCases:
         cursor: str | None,
     ) -> CursorPage[dict[str, Any]]:
         return self.search_client.search("auctions", query=query, limit=limit, cursor=cursor)
+
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        return self.search_client.rank_auctions(limit=limit, cursor=cursor)

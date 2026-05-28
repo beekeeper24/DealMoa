@@ -1,5 +1,6 @@
 import base64
 import json
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -33,6 +34,31 @@ SEARCH_FIELDS: dict[SearchIndexKind, list[str]] = {
         "seller.autocomplete",
     ],
 }
+
+AUCTION_ACTIVITY_SCRIPT = """
+double bidCount = doc['bidCount'].size() == 0 ? 0.0 : doc['bidCount'].value;
+double bidActivity = Math.min(bidCount, params.bidActivityCap)
+  / params.bidActivityCap
+  * params.bidActivityWeight;
+
+double uniqueBidderCount = doc['uniqueBidderCount'].size() == 0
+  ? 0.0
+  : doc['uniqueBidderCount'].value;
+double uniqueBidder = Math.min(uniqueBidderCount, params.uniqueBidderCap)
+  / params.uniqueBidderCap
+  * params.uniqueBidderWeight;
+
+double endingSoon = 0.0;
+if (doc['endsAt'].size() != 0) {
+  long diffMillis = doc['endsAt'].value.toInstant().toEpochMilli() - params.nowMillis;
+  if (diffMillis > 0 && diffMillis <= params.endingSoonWindowMillis) {
+    endingSoon = (1.0 - (diffMillis / params.endingSoonWindowMillis))
+      * params.endingSoonWeight;
+  }
+}
+
+return bidActivity + uniqueBidder + endingSoon;
+"""
 
 
 def encode_search_cursor(sort_values: list[Any]) -> str:
@@ -140,6 +166,58 @@ class ElasticsearchSearchClient:
             "sort": [
                 {"_score": "desc"},
                 {"createdAt": "desc"},
+                {"id": "desc"},
+            ],
+        }
+        if cursor is not None:
+            body["search_after"] = decode_search_cursor(cursor)
+
+        try:
+            with self._client(timeout=10.0) as client:
+                response = client.post(f"/{spec.alias_name}/_search", json=body)
+                response.raise_for_status()
+                hits = response.json()["hits"]["hits"]
+        except httpx.HTTPError:
+            raise SearchUnavailableException() from None
+
+        page_hits = hits[:limit]
+        items = [self._search_item(hit) for hit in page_hits]
+        next_cursor = None
+        if len(hits) > limit and page_hits:
+            next_cursor = encode_search_cursor(page_hits[-1]["sort"])
+        return CursorPage(items=items, next_cursor=next_cursor)
+
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+        now: datetime | None = None,
+    ) -> CursorPage[dict[str, Any]]:
+        spec = SEARCH_INDEXES["auctions"]
+        now = now or datetime.now(UTC)
+        body: dict[str, Any] = {
+            "size": limit + 1,
+            "query": {
+                "script_score": {
+                    "query": {"term": {"status": "active"}},
+                    "script": {
+                        "source": AUCTION_ACTIVITY_SCRIPT,
+                        "params": {
+                            "bidActivityCap": 20.0,
+                            "bidActivityWeight": 45.0,
+                            "uniqueBidderCap": 10.0,
+                            "uniqueBidderWeight": 20.0,
+                            "endingSoonWindowMillis": 24.0 * 60.0 * 60.0 * 1000.0,
+                            "endingSoonWeight": 5.0,
+                            "nowMillis": int(now.timestamp() * 1000),
+                        },
+                    },
+                }
+            },
+            "sort": [
+                {"_score": "desc"},
+                {"updatedAt": "desc"},
                 {"id": "desc"},
             ],
         }

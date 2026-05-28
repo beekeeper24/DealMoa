@@ -27,6 +27,7 @@ Routes use the `/api/v1` prefix:
 GET /api/v1/search/products?q=galaxy&limit=20&cursor=...
 GET /api/v1/search/deals?q=galaxy&limit=20&cursor=...
 GET /api/v1/search/auctions?q=galaxy&limit=20&cursor=...
+GET /api/v1/search/auctions/activity?limit=20&cursor=...
 POST /api/v1/admin/search/reindex
 ```
 
@@ -45,6 +46,7 @@ Domain-event indexing also updates single documents:
 - `product.updated` upserts the matching `products_current` document.
 - `deal.created` upserts the matching `deals_current` document.
 - `auction.created` upserts the matching `auctions_current` document.
+- `auction.bid.placed` upserts the matching `auctions_current` document so bid-driven ranking signals stay fresh.
 
 The admin full reindex endpoint remains the recovery path when mappings change or an index needs rebuilding from PostgreSQL.
 
@@ -84,3 +86,14 @@ BidActivity 45
 ```
 
 The home auction rail should show auctions that are actively moving, not hidden opportunities.
+
+The first implemented activity ranking endpoint is `GET /api/v1/search/auctions/activity`.
+It filters to `status = active` and scores the Elasticsearch auction read model with the
+signals available in the current schema:
+
+- `BidActivity`: capped `bidCount` contribution, max 45 points.
+- `UniqueBidder`: capped `uniqueBidderCount` contribution, max 20 points.
+- `EndingSoon`: auctions ending inside the 24-hour window receive up to 5 points.
+
+`ViewMomentum`, `Interest`, and `Trust` stay documented target signals until views,
+favorite-count denormalization, and admin trust/status workflows are implemented.

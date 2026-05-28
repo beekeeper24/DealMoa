@@ -89,6 +89,14 @@ class RecordingSearchClient:
     ) -> CursorPage[dict[str, Any]]:
         raise AssertionError("rebuild test should not call search")
 
+    def rank_auctions(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        raise AssertionError("rebuild test should not call auction ranking")
+
 
 def test_rebuild_indexes_recreates_indexes_and_replaces_all_documents() -> None:
     search_client = RecordingSearchClient()

@@ -44,6 +44,7 @@ class AuctionSearchItem(BaseModel):
     seller: str | None = None
     current_price: int = Field(alias="currentPrice")
     bid_count: int = Field(alias="bidCount")
+    unique_bidder_count: int = Field(default=0, alias="uniqueBidderCount")
     currency: str
     status: str
     ends_at: str | None = Field(default=None, alias="endsAt")
@@ -71,4 +72,3 @@ class SearchReindexResponse(BaseModel):
     products: int
     deals: int
     auctions: int
-
