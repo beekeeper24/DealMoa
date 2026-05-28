@@ -3,7 +3,12 @@ from typing import Any, Literal, TypedDict
 from app.modules.products.repository import ProductRepository
 from app.modules.search.use_cases import SearchClient, SearchUseCases
 
-DomainEventType = Literal["product.updated", "deal.created", "auction.created"]
+DomainEventType = Literal[
+    "product.updated",
+    "deal.created",
+    "auction.created",
+    "auction.bid.placed",
+]
 
 
 class DomainEventEnvelope(TypedDict):
@@ -45,7 +50,7 @@ class DomainEventSearchIndexer:
             self.search_use_cases.index_deal(deal)
             return True
 
-        if event_type == "auction.created":
+        if event_type in {"auction.created", "auction.bid.placed"}:
             auction = self.product_repository.get_auction(aggregate_id)
             if auction is None:
                 return False

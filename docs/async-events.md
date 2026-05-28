@@ -78,6 +78,7 @@ The search indexer currently handles:
 - `product.updated` -> upsert one `products_current` document.
 - `deal.created` -> upsert one `deals_current` document.
 - `auction.created` -> upsert one `auctions_current` document.
+- `auction.bid.placed` -> upsert one `auctions_current` document from the latest persisted auction state.
 
 To run the notification subscriber locally:
 
@@ -91,7 +92,7 @@ The notification generator currently handles:
 - `deal.created` -> create `new_deal` notifications for users who favorited the product.
 - `auction.created` -> create `new_auction` notifications for users who favorited the product.
 
-`auction.bid.placed` is currently published for later auction activity ranking/search freshness consumers. Existing search and notification consumers intentionally ignore it until those downstream slices are implemented.
+`auction.bid.placed` is intentionally ignored by the notification consumer until outbid or auction-activity notification slices are implemented.
 
 Duplicate delivery is deduplicated by the notification unique target index:
 

@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. The Auction Bidding Baseline slice is implemented on:
+Current integration branch is `develop`. The Auction Bid Search Indexing slice is being implemented on:
 
 ```text
-feature/auction-bidding-baseline
+feature/auction-bid-search-indexing
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Bidding Baseline slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Bid Search Indexing slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,9 +70,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Merge `feature/auction-bidding-baseline` into `develop` after local checks and CI pass.
+1. Merge `feature/auction-bid-search-indexing` into `develop` after local checks and CI pass.
 2. Start the next coherent feature branch from `develop`.
-3. Candidate next slices: auction activity ranking/search freshness, or refresh-token based web session hardening.
+3. Candidate next slices: auction activity ranking, outbid notifications, or refresh-token based web session hardening.
 4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -159,6 +159,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 - Search client supports single-document upsert through the current aliases.
 - `apps/consumer` handles `product.updated`, `deal.created`, and `auction.created` events for Elasticsearch indexing.
+- `apps/consumer` handles `auction.bid.placed` by rebuilding the `auctions_current` document from persisted auction state.
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
 - Admin full reindex remains the recovery path.
 
@@ -197,7 +198,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Accepted bids must be at least 1,000 KRW above the current auction price.
 - Successful bids update `auctions.current_price` and `auctions.bid_count` in the same transaction.
 - Low bids and ended/inactive auctions use DealMoa domain exceptions and common error responses.
-- Successful bids write `auction.bid.placed` outbox events. Downstream consumers intentionally remain deferred.
+- Successful bids write `auction.bid.placed` outbox events; the search consumer now uses them for auction document freshness.
 
 ## Cautions
 
