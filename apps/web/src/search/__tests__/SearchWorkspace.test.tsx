@@ -10,6 +10,7 @@ import { SearchWorkspace } from "../SearchWorkspace";
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -182,5 +183,59 @@ describe("SearchWorkspace", () => {
       "/api/v1/search/products?q=galaxy&limit=20&cursor=cursor-2",
       expect.any(Object)
     );
+  });
+
+  it("sends favorite requests from logged-in search results", async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(
+      "dealmoa.authSession",
+      JSON.stringify({
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+          nickname: "Deal User",
+          role: "USER"
+        },
+        accessToken: "access-1",
+        tokenType: "Bearer"
+      })
+    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        mockSearchResponse({
+          items: [
+            {
+              id: "product-1",
+              name: "Galaxy S26",
+              brand: "Samsung",
+              modelName: "SM-S260",
+              category: "smartphone",
+              specsText: null,
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 2
+            }
+          ],
+          nextCursor: null
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "favorite-1", productId: "product-1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SearchWorkspace />);
+
+    await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
+    await user.click(screen.getByRole("button", { name: "검색" }));
+    await user.click(await screen.findByRole("button", { name: "찜하기" }));
+
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/me/favorites/products/product-1", {
+      headers: { Accept: "application/json", Authorization: "Bearer access-1" },
+      method: "PUT"
+    });
   });
 });

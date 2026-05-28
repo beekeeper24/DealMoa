@@ -1,6 +1,21 @@
 import { expect, test } from "@playwright/test";
 
 test("searches products from the browser", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem(
+      "dealmoa.authSession",
+      JSON.stringify({
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+          nickname: "Deal User",
+          role: "USER"
+        },
+        accessToken: "access-1",
+        tokenType: "Bearer"
+      })
+    );
+  });
   await page.route("**/api/v1/search/products?**", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -22,6 +37,17 @@ test("searches products from the browser", async ({ page }) => {
       })
     });
   });
+  await page.route("**/api/v1/me/favorites/products/product-1", async (route) => {
+    expect(route.request().headers().authorization).toBe("Bearer access-1");
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "favorite-1",
+        productId: "product-1",
+        createdAt: "2026-05-28T00:00:00Z"
+      })
+    });
+  });
 
   await page.goto("/");
   await page.getByRole("searchbox", { name: "검색어" }).fill("galaxy");
@@ -30,4 +56,6 @@ test("searches products from the browser", async ({ page }) => {
   await expect(page.getByText("Galaxy S26 Ultra")).toBeVisible();
   await expect(page.getByText("Samsung · SM-S260")).toBeVisible();
   await expect(page.getByText("score 2.40")).toBeVisible();
+  await page.getByRole("button", { name: "찜하기" }).click();
+  await expect(page.getByRole("button", { name: "찜 해제" })).toBeVisible();
 });

@@ -4,6 +4,7 @@ from os import environ
 from alembic import context
 from app.db.base import Base
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.favorites import models as favorite_models  # noqa: F401
 from app.modules.products import models as product_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 
