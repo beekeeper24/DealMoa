@@ -16,6 +16,7 @@ import type {
   SearchResponse,
   SearchTab
 } from "./types";
+import { AuthStatus } from "../auth/AuthStatus";
 
 type SearchState = {
   items: SearchItemByTab[SearchTab][];
@@ -135,6 +136,7 @@ export function SearchWorkspace() {
           >
             AI 검색
           </button>
+          <AuthStatus />
         </div>
       </header>
 
@@ -144,7 +146,7 @@ export function SearchWorkspace() {
             <div>
               <h1 className="text-3xl font-bold">검색 결과</h1>
               <p className="mt-2 text-sm leading-6 text-black/65">
-                상품을 기준으로 핫딜과 경매 결과를 나눠서 확인합니다.
+                상품 기준으로 핫딜과 경매를 나눠 확인합니다.
               </p>
             </div>
             <p className="text-sm font-semibold text-signal">{resultCountLabel}</p>

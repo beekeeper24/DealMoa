@@ -8,6 +8,7 @@ Included:
 
 - OAuth authorization URL generation for Google, Kakao, and Naver.
 - OAuth authorization-code callback exchange boundary.
+- Web login entry and callback route for Google, Kakao, and Naver.
 - User and OAuth account persistence.
 - DealMoa-owned JWT access token issuance.
 - Opaque refresh token issuance, hashing, storage, rotation, and logout revocation.
@@ -15,11 +16,11 @@ Included:
 
 Not included:
 
-- Login UI.
 - Provider account disconnect.
 - Admin role management.
 - Favorites and notifications.
 - OAuth state persistence. In this MVP, the client supplies and verifies `state`; later server-side state storage can move into Redis or a short-lived signed state table.
+- HttpOnly cookie session transport. The web MVP uses `sessionStorage` because the current API returns JSON tokens; production auth should move refresh-token transport to server-managed HttpOnly cookies.
 
 ## Routes
 
@@ -31,6 +32,14 @@ POST /api/v1/auth/oauth/{provider}/callback
 POST /api/v1/auth/token/refresh
 POST /api/v1/auth/logout
 GET /api/v1/auth/me
+```
+
+Web callback routes:
+
+```http
+GET /auth/callback/google
+GET /auth/callback/kakao
+GET /auth/callback/naver
 ```
 
 Supported `provider` values:
@@ -47,6 +56,8 @@ Supported `provider` values:
 - Only refresh token hashes are stored in PostgreSQL.
 - Refresh token use rotates the token: the previous token is revoked and a new one is issued.
 - Logout revokes the supplied refresh token.
+- The web MVP stores the returned access and refresh token in `sessionStorage`.
+- OAuth `state` is provider-scoped and stored in `sessionStorage` until the callback consumes it once.
 
 ## Environment Variables
 
@@ -62,6 +73,14 @@ OAUTH_NAVER_CLIENT_SECRET=...
 ```
 
 The API also accepts the `OAUTH2_...` prefix aliases for local convenience, for example `OAUTH2_GOOGLE_CLIENT_ID`.
+
+Provider console redirect URI examples for local web development:
+
+```text
+http://localhost:3000/auth/callback/google
+http://localhost:3000/auth/callback/kakao
+http://localhost:3000/auth/callback/naver
+```
 
 ## Response Shape
 

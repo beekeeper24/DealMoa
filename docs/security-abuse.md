@@ -35,6 +35,7 @@ Reports never automatically hide or down-rank content. They create admin review 
 - Logout revokes the supplied refresh token.
 - Bearer-token failures use stable auth error codes, not framework-default response shapes.
 - OAuth `state` is supplied by the client in the MVP; later full-stack auth should move state persistence to Redis or another server-side short-lived store.
+- The web MVP stores access and refresh tokens in `sessionStorage` only. Before production release, move refresh-token transport to server-managed HttpOnly cookies and keep browser-readable access tokens short-lived.
 
 ## External URLs
 

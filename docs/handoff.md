@@ -113,6 +113,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - DealMoa JWT access token issuance and verification.
 - Opaque refresh token hashing, storage, rotation, and logout revocation.
 - `GET /api/v1/auth/me` bearer-token current-user lookup.
+- Web login buttons, provider callback routes, OAuth state validation, and MVP session storage.
 
 ## Cautions
 
