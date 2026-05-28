@@ -17,6 +17,8 @@ import type {
   SearchTab
 } from "./types";
 import { AuthStatus } from "../auth/AuthStatus";
+import { getStoredAuthSession } from "../auth/session";
+import { FavoriteButton } from "../favorites/FavoriteButton";
 
 type SearchState = {
   items: SearchItemByTab[SearchTab][];
@@ -46,6 +48,12 @@ export function SearchWorkspace() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const accessToken = useMemo(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    return getStoredAuthSession()?.accessToken;
+  }, []);
 
   const activeState = results[activeTab];
   const trimmedQuery = query.trim();
@@ -174,7 +182,7 @@ export function SearchWorkspace() {
               </p>
             ) : null}
 
-            <SearchResults state={activeState} tab={activeTab} />
+            <SearchResults accessToken={accessToken} state={activeState} tab={activeTab} />
 
             {activeState.nextCursor ? (
               <button
@@ -224,7 +232,15 @@ async function fetchSearchPage(
   return searchAuctions(request);
 }
 
-function SearchResults({ state, tab }: { state: SearchState; tab: SearchTab }) {
+function SearchResults({
+  accessToken,
+  state,
+  tab
+}: {
+  accessToken?: string;
+  state: SearchState;
+  tab: SearchTab;
+}) {
   if (!state.hasSearched) {
     return (
       <p className="rounded-md border border-black/10 bg-white px-4 py-6 text-sm text-black/65">
@@ -249,11 +265,11 @@ function SearchResults({ state, tab }: { state: SearchState; tab: SearchTab }) {
           key={`${tab}-${item.id}`}
         >
           {tab === "products" ? (
-            <ProductResult item={item as ProductSearchItem} />
+            <ProductResult accessToken={accessToken} item={item as ProductSearchItem} />
           ) : tab === "deals" ? (
-            <DealResult item={item as DealSearchItem} />
+            <DealResult accessToken={accessToken} item={item as DealSearchItem} />
           ) : (
-            <AuctionResult item={item as AuctionSearchItem} />
+            <AuctionResult accessToken={accessToken} item={item as AuctionSearchItem} />
           )}
         </li>
       ))}
@@ -261,7 +277,7 @@ function SearchResults({ state, tab }: { state: SearchState; tab: SearchTab }) {
   );
 }
 
-function ProductResult({ item }: { item: ProductSearchItem }) {
+function ProductResult({ accessToken, item }: { accessToken?: string; item: ProductSearchItem }) {
   return (
     <article>
       <div className="flex items-start justify-between gap-4">
@@ -271,14 +287,21 @@ function ProductResult({ item }: { item: ProductSearchItem }) {
             {[item.brand, item.modelName].filter(Boolean).join(" · ")}
           </p>
         </div>
-        <Score value={item.score} />
+        <div className="flex items-start gap-2">
+          <Score value={item.score} />
+          <FavoriteButton
+            accessToken={accessToken}
+            targetId={item.id}
+            targetType="products"
+          />
+        </div>
       </div>
       {item.specsText ? <p className="mt-3 text-sm text-black/60">{item.specsText}</p> : null}
     </article>
   );
 }
 
-function DealResult({ item }: { item: DealSearchItem }) {
+function DealResult({ accessToken, item }: { accessToken?: string; item: DealSearchItem }) {
   return (
     <article>
       <div className="flex items-start justify-between gap-4">
@@ -286,7 +309,10 @@ function DealResult({ item }: { item: DealSearchItem }) {
           <h3 className="font-bold">{item.title}</h3>
           <p className="mt-1 text-sm text-black/65">{item.seller ?? "판매처 미상"}</p>
         </div>
-        <Score value={item.score} />
+        <div className="flex items-start gap-2">
+          <Score value={item.score} />
+          <FavoriteButton accessToken={accessToken} targetId={item.id} targetType="deals" />
+        </div>
       </div>
       <p className="mt-3 text-sm font-semibold text-deal">
         {formatCurrency(item.salePrice, item.currency)}
@@ -295,7 +321,7 @@ function DealResult({ item }: { item: DealSearchItem }) {
   );
 }
 
-function AuctionResult({ item }: { item: AuctionSearchItem }) {
+function AuctionResult({ accessToken, item }: { accessToken?: string; item: AuctionSearchItem }) {
   return (
     <article>
       <div className="flex items-start justify-between gap-4">
@@ -303,7 +329,14 @@ function AuctionResult({ item }: { item: AuctionSearchItem }) {
           <h3 className="font-bold">{item.title}</h3>
           <p className="mt-1 text-sm text-black/65">{item.seller ?? "판매처 미상"}</p>
         </div>
-        <Score value={item.score} />
+        <div className="flex items-start gap-2">
+          <Score value={item.score} />
+          <FavoriteButton
+            accessToken={accessToken}
+            targetId={item.id}
+            targetType="auctions"
+          />
+        </div>
       </div>
       <p className="mt-3 text-sm font-semibold text-deal">
         {formatCurrency(item.currentPrice, item.currency)} · 입찰 {item.bidCount}회

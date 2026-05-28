@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Auth MVP work continues on:
+Current integration branch is `develop`. Active Favorites MVP work continues on:
 
 ```text
-feature/auth-mvp
+feature/favorites-mvp
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auth MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Favorites MVP slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -57,6 +57,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - `docs/api-error-handling.md`: error response, exception hierarchy, error-code policy.
 - `docs/product-api.md`: Product/Deal/Auction REST baseline, cursor pagination, Product API error codes.
 - `docs/auth.md`: OAuth/JWT/refresh token Auth MVP contract.
+- `docs/favorites.md`: Product/Deal/Auction favorite API contract.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
 - `docs/performance.md`: JMeter and Playwright verification direction.
@@ -65,10 +66,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/auth-mvp`.
+1. Continue on `feature/favorites-mvp`.
 2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify Auth API tests, migration runtime, API/Web regression checks, and focused auth security checks before declaring the slice ready.
-4. Open a PR into `develop` only when Auth MVP is integration-ready or when the user explicitly asks.
+3. Verify Favorites API tests, migration runtime, API/Web regression checks, and focused auth/favorite access-control checks before declaring the slice ready.
+4. Open a PR into `develop` only when Favorites MVP is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -106,7 +107,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Vitest + Testing Library coverage for API client and UI behavior.
 - Playwright browser smoke test for the product search path with mocked API response.
 
-## Active Auth MVP Scope
+## Completed Auth MVP Scope
 
 - User, OAuthAccount, and RefreshToken SQLAlchemy models and Alembic migration.
 - OAuth authorization URL and callback API for Google/Kakao/Naver provider boundaries.
@@ -114,6 +115,13 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Opaque refresh token HttpOnly cookie transport, hashing, storage, rotation, and logout revocation.
 - `GET /api/v1/auth/me` bearer-token current-user lookup.
 - Web login buttons, provider callback routes, OAuth state validation, and MVP access-token session storage.
+
+## Active Favorites MVP Scope
+
+- Product, Deal, and Auction favorite SQLAlchemy models and Alembic migration.
+- Authenticated `/api/v1/me/favorites/...` create/delete/list APIs.
+- User-scoped uniqueness and cursor pagination.
+- Web search-result favorite buttons using the current access-token session.
 
 ## Cautions
 

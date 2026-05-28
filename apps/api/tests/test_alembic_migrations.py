@@ -28,17 +28,25 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "users",
         "oauth_accounts",
         "refresh_tokens",
+        "product_favorites",
+        "deal_favorites",
+        "auction_favorites",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
     auction_foreign_keys = inspector.get_foreign_keys("auctions")
     oauth_foreign_keys = inspector.get_foreign_keys("oauth_accounts")
     refresh_foreign_keys = inspector.get_foreign_keys("refresh_tokens")
+    product_favorite_foreign_keys = inspector.get_foreign_keys("product_favorites")
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
     assert auction_foreign_keys[0]["referred_table"] == "products"
     assert oauth_foreign_keys[0]["referred_table"] == "users"
     assert refresh_foreign_keys[0]["referred_table"] == "users"
+    assert {foreign_key["referred_table"] for foreign_key in product_favorite_foreign_keys} == {
+        "users",
+        "products",
+    }
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")
