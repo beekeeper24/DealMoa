@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Active Notification Web UI work continues on:
+Current integration branch is `develop`. The Auth Hydration Polish slice is implemented on:
 
 ```text
-feature/notification-web-ui
+feature/auth-hydration-polish
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Notification Web UI slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auth Hydration Polish slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,10 +70,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Continue on `feature/notification-web-ui`.
-2. Keep checkpoint commits on the feature branch and push for backup/shared visibility.
-3. Verify notification web API/client tests, dropdown component tests, browser screenshot, and focused auth/notification checks before declaring the slice ready.
-4. Open a PR into `develop` only when Notification Web UI is integration-ready or when the user explicitly asks.
+1. Merge `feature/auth-hydration-polish` into `develop` after local checks and CI pass.
+2. Start the next coherent feature branch from `develop`.
+3. Candidate next slices: auction bid/activity baseline, or refresh-token based web session hardening.
+4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -177,12 +177,18 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Users who favorited those auctions receive `auction_ending_soon` notifications.
 - Existing unique notification target index prevents duplicate scheduled runs from creating duplicate notifications.
 
-## Active Notification Web UI Scope
+## Completed Notification Web UI Scope
 
 - `apps/web` adds a typed notifications API client.
 - Search workspace header renders a notification dropdown only for logged-in sessions.
 - The dropdown fetches unread count, lists recent notifications, marks one notification read, and marks all notifications read.
 - Realtime push/SSE and a dedicated full notification page remain deferred.
+
+## Completed Auth Hydration Polish Scope
+
+- Auth-dependent web UI starts from a neutral session-checking state during server render and first client render.
+- Browser `sessionStorage` is read only after mount through the shared auth session hook.
+- Search workspace shares one auth session snapshot with auth status, notifications, and favorite buttons.
 
 ## Cautions
 

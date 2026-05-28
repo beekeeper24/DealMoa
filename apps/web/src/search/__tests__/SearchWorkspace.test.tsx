@@ -4,6 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SearchWorkspace } from "../SearchWorkspace";
@@ -22,6 +23,14 @@ function mockSearchResponse(body: unknown): Response {
 }
 
 describe("SearchWorkspace", () => {
+  it("server-renders auth-dependent header controls in a neutral state", () => {
+    const markup = renderToString(<SearchWorkspace />);
+
+    expect(markup).toContain("인증 상태 확인 중");
+    expect(markup).not.toContain("Google 로그인");
+    expect(markup).not.toContain("알림");
+  });
+
   it("renders the search shell and empty state before searching", () => {
     render(<SearchWorkspace />);
 

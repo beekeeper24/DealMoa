@@ -17,7 +17,7 @@ import type {
   SearchTab
 } from "./types";
 import { AuthStatus } from "../auth/AuthStatus";
-import { getStoredAuthSession } from "../auth/session";
+import { useAuthSession } from "../auth/useAuthSession";
 import { FavoriteButton } from "../favorites/FavoriteButton";
 import { NotificationCenter } from "../notifications/NotificationCenter";
 
@@ -49,12 +49,9 @@ export function SearchWorkspace() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const accessToken = useMemo(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-    return getStoredAuthSession()?.accessToken;
-  }, []);
+  const authSession = useAuthSession();
+  const accessToken =
+    authSession.status === "authenticated" ? authSession.accessToken : undefined;
 
   const activeState = results[activeTab];
   const trimmedQuery = query.trim();
@@ -146,7 +143,7 @@ export function SearchWorkspace() {
             AI 검색
           </button>
           <NotificationCenter accessToken={accessToken} />
-          <AuthStatus />
+          <AuthStatus authSession={authSession} />
         </div>
       </header>
 
