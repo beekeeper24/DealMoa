@@ -194,6 +194,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 - Add `auction_bids` as the immutable record of accepted user bids.
 - `POST /api/v1/auctions/{auction_id}/bids` requires bearer auth.
+- Accepted bids must be at least 1,000 KRW above the current auction price.
 - Successful bids update `auctions.current_price` and `auctions.bid_count` in the same transaction.
 - Low bids and ended/inactive auctions use DealMoa domain exceptions and common error responses.
 - Successful bids write `auction.bid.placed` outbox events. Downstream consumers intentionally remain deferred.

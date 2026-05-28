@@ -24,6 +24,9 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+AUCTION_BID_INCREMENT = 1000
+
+
 class ProductUseCases:
     def __init__(
         self,
@@ -153,11 +156,12 @@ class ProductUseCases:
                 ends_at=self._serialize_datetime(auction.ends_at),
             )
 
-        if request.amount <= auction.current_price:
+        if request.amount < auction.current_price + AUCTION_BID_INCREMENT:
             raise BidTooLowException(
                 auction_id=auction.id,
                 current_price=auction.current_price,
                 bid_amount=request.amount,
+                bid_increment=AUCTION_BID_INCREMENT,
             )
 
         bid = self.repository.create_auction_bid(

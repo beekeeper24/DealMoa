@@ -76,7 +76,7 @@ Request:
 
 Rules:
 
-- `amount` must be greater than the auction's current price.
+- `amount` must be at least `1,000` KRW greater than the auction's current price.
 - Auction `status` must be `active`.
 - If `endsAt` is set, it must be later than the server's current time.
 - A successful bid writes an `auction_bids` row and updates `auctions.current_price` and `auctions.bid_count` in the same transaction.
@@ -106,7 +106,7 @@ Implemented Product API errors:
 | `DEAL_NOT_FOUND` | 404 | Deal id does not exist. |
 | `AUCTION_NOT_FOUND` | 404 | Auction id does not exist. |
 | `AUCTION_ALREADY_ENDED` | 409 | Auction is inactive or its `endsAt` is in the past. |
-| `BID_TOO_LOW` | 409 | Bid amount is not greater than the current auction price. |
+| `BID_TOO_LOW` | 409 | Bid amount is below the fixed 1,000 KRW minimum increment. |
 | `UNAUTHORIZED` | 401 | Bid request is missing a valid bearer token. |
 | `INVALID_SEARCH_CURSOR` | 400 | Cursor id is invalid for the requested list. |
 | `VALIDATION_ERROR` | 422 | Pydantic/FastAPI request validation failed. |
