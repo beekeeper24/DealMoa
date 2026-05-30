@@ -9,6 +9,7 @@ from app.main import create_app
 from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
+from app.modules.events.models import DomainEvent
 from app.modules.products.models import Auction, Deal, Product
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -212,3 +213,69 @@ def test_admin_can_list_and_review_reports() -> None:
     assert review_response.json()["status"] == "resolved"
     assert review_response.json()["reviewedByUserId"] == "admin-1"
     assert review_response.json()["resolutionNote"] == "status changed"
+
+
+def test_admin_can_review_report_and_change_target_status() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_data(session_factory)
+    report_response = user_client.post(
+        "/api/v1/reports/deals/deal-1",
+        json={"reasonCode": "fraud", "description": "Suspicious"},
+        headers={"Authorization": "Bearer access-1"},
+    )
+    report_id = report_response.json()["id"]
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+
+    review_response = admin_client.patch(
+        f"/api/v1/admin/reports/{report_id}",
+        json={
+            "status": "resolved",
+            "resolutionNote": "confirmed fraudulent listing",
+            "targetStatus": "rejected",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    session = session_factory()
+    try:
+        deal = session.get(Deal, "deal-1")
+        event = session.query(DomainEvent).one()
+    finally:
+        session.close()
+    assert deal is not None
+    assert review_response.status_code == 200
+    assert review_response.json()["status"] == "resolved"
+    assert deal.status == "rejected"
+    assert event.event_type == "deal.status.changed"
+    assert event.payload_json["newStatus"] == "rejected"
+
+
+def test_admin_report_review_rejects_unknown_target_status() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_data(session_factory)
+    report_response = user_client.post(
+        "/api/v1/reports/deals/deal-1",
+        json={"reasonCode": "fraud", "description": "Suspicious"},
+        headers={"Authorization": "Bearer access-1"},
+    )
+    report_id = report_response.json()["id"]
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+
+    response = admin_client.patch(
+        f"/api/v1/admin/reports/{report_id}",
+        json={
+            "status": "resolved",
+            "resolutionNote": "bad value",
+            "targetStatus": "shadow_hidden",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"

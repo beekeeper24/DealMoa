@@ -8,6 +8,9 @@ from app.db.base import Base
 from app.modules.admin.models import AdminAuditLog
 from app.modules.auth.models import User
 from app.modules.auth.use_cases import AuthenticatedUser
+from app.modules.events.models import DomainEvent
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.reports.models import OfferReport
 from app.modules.reports.repository import ReportsRepository
@@ -96,7 +99,14 @@ def seed_data(session: Session) -> None:
 
 
 def make_use_cases(session: Session) -> ReportsUseCases:
-    return ReportsUseCases(repository=ReportsRepository(session), now=lambda: NOW)
+    return ReportsUseCases(
+        repository=ReportsRepository(session),
+        domain_events=DomainEventsUseCases(
+            repository=DomainEventsRepository(session),
+            now=lambda: NOW,
+        ),
+        now=lambda: NOW,
+    )
 
 
 def user(role: str = "USER") -> AuthenticatedUser:
@@ -251,3 +261,104 @@ def test_admin_resolves_report_and_records_audit_log() -> None:
     assert audit_log.target_id == report.id
     assert audit_log.previous_status == "open"
     assert audit_log.new_status == "resolved"
+
+
+def test_admin_resolves_deal_report_with_target_status_and_records_status_event() -> None:
+    session = next(make_session())
+    seed_data(session)
+    use_cases = make_use_cases(session)
+    report = use_cases.report_deal(
+        actor=user(),
+        deal_id="deal-1",
+        request=ReportCreateRequest(reasonCode="fraud", description=None),
+    )
+
+    reviewed = use_cases.review_report(
+        actor=user(role="ADMIN"),
+        report_id=report.id,
+        request=ReportReviewRequest(
+            status="resolved",
+            resolutionNote="confirmed fraudulent listing",
+            targetStatus="rejected",
+        ),
+    )
+
+    deal = session.get(Deal, "deal-1")
+    audit_logs = list(session.scalars(select(AdminAuditLog).order_by(AdminAuditLog.action)))
+    event = session.scalar(select(DomainEvent))
+    assert deal is not None
+    assert event is not None
+    assert reviewed.status == "resolved"
+    assert deal.status == "rejected"
+    assert deal.updated_at.replace(tzinfo=UTC) == NOW
+    assert [audit_log.action for audit_log in audit_logs] == [
+        "deal.status.changed",
+        "report.resolved",
+    ]
+    assert audit_logs[0].target_type == "deal"
+    assert audit_logs[0].target_id == "deal-1"
+    assert audit_logs[0].previous_status == "active"
+    assert audit_logs[0].new_status == "rejected"
+    assert audit_logs[0].reason == "confirmed fraudulent listing"
+    assert event.event_type == "deal.status.changed"
+    assert event.aggregate_type == "deal"
+    assert event.aggregate_id == "deal-1"
+    assert event.payload_json["previousStatus"] == "active"
+    assert event.payload_json["newStatus"] == "rejected"
+    assert event.payload_json["actorUserId"] == "admin-1"
+
+
+def test_admin_resolves_auction_report_with_target_status_and_records_status_event() -> None:
+    session = next(make_session())
+    seed_data(session)
+    use_cases = make_use_cases(session)
+    report = use_cases.report_auction(
+        actor=user(),
+        auction_id="auction-1",
+        request=ReportCreateRequest(reasonCode="fraud", description=None),
+    )
+
+    use_cases.review_report(
+        actor=user(role="ADMIN"),
+        report_id=report.id,
+        request=ReportReviewRequest(
+            status="resolved",
+            resolutionNote="seller confirmed duplicate auction",
+            targetStatus="blocked",
+        ),
+    )
+
+    auction = session.get(Auction, "auction-1")
+    event = session.scalar(select(DomainEvent))
+    assert auction is not None
+    assert event is not None
+    assert auction.status == "blocked"
+    assert event.event_type == "auction.status.changed"
+    assert event.aggregate_type == "auction"
+    assert event.aggregate_id == "auction-1"
+    assert event.payload_json["previousStatus"] == "active"
+    assert event.payload_json["newStatus"] == "blocked"
+
+
+def test_admin_dismisses_report_without_target_status_does_not_change_offer_status() -> None:
+    session = next(make_session())
+    seed_data(session)
+    use_cases = make_use_cases(session)
+    report = use_cases.report_auction(
+        actor=user(),
+        auction_id="auction-1",
+        request=ReportCreateRequest(reasonCode="broken_link", description=None),
+    )
+
+    reviewed = use_cases.review_report(
+        actor=user(role="ADMIN"),
+        report_id=report.id,
+        request=ReportReviewRequest(status="dismissed", resolutionNote="not reproducible"),
+    )
+
+    auction = session.get(Auction, "auction-1")
+    events = list(session.scalars(select(DomainEvent)))
+    assert auction is not None
+    assert reviewed.status == "dismissed"
+    assert auction.status == "active"
+    assert events == []
