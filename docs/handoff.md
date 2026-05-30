@@ -203,7 +203,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Auth-dependent web UI starts from a neutral session-checking state during server render and first client render.
 - Browser auth sessions are recovered after mount by calling `POST /api/v1/auth/token/refresh` with the HttpOnly refresh cookie.
 - Access tokens are kept in React memory only; legacy `dealmoa.authSession` storage is cleared instead of read.
-- Search workspace shares one auth session snapshot with auth status, notifications, and favorite buttons.
+- `AuthSessionProvider` is mounted at the app root so auth status, notifications, and favorite buttons share one in-memory session snapshot and one refresh-cookie hydration result.
 
 ## Completed Auction Bidding Baseline Scope
 

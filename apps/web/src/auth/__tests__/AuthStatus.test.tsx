@@ -8,6 +8,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "../AuthStatus";
+import { AuthSessionProvider } from "../useAuthSession";
 
 const authSessionResponse = {
   user: {
@@ -41,6 +42,10 @@ function authErrorResponse(code = "INVALID_REFRESH_TOKEN"): Response {
   );
 }
 
+function renderWithAuthProvider(ui: React.ReactElement) {
+  return render(<AuthSessionProvider>{ui}</AuthSessionProvider>);
+}
+
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
@@ -50,7 +55,11 @@ afterEach(() => {
 
 describe("AuthStatus", () => {
   it("server-renders a neutral session-checking state", () => {
-    const markup = renderToString(<AuthStatus />);
+    const markup = renderToString(
+      <AuthSessionProvider>
+        <AuthStatus />
+      </AuthSessionProvider>
+    );
 
     expect(markup).toContain("인증 상태 확인 중");
     expect(markup).not.toContain("Google 로그인");
@@ -59,7 +68,7 @@ describe("AuthStatus", () => {
   it("renders oauth provider login buttons when refresh cookie is missing", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(authErrorResponse()));
 
-    render(<AuthStatus />);
+    renderWithAuthProvider(<AuthStatus />);
 
     expect(await screen.findByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kakao 로그인" })).toBeInTheDocument();
@@ -79,7 +88,7 @@ describe("AuthStatus", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AuthStatus navigate={navigate} origin="http://localhost:3000" />);
+    renderWithAuthProvider(<AuthStatus navigate={navigate} origin="http://localhost:3000" />);
 
     await user.click(await screen.findByRole("button", { name: "Google 로그인" }));
 
@@ -102,7 +111,7 @@ describe("AuthStatus", () => {
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AuthStatus />);
+    renderWithAuthProvider(<AuthStatus />);
 
     expect(await screen.findByText("user@example.com")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/v1/auth/token/refresh", {

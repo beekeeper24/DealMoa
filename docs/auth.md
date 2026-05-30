@@ -58,6 +58,7 @@ Supported `provider` values:
 - Logout revokes the refresh token from the HttpOnly cookie and deletes that cookie.
 - The web app stores access tokens only in React memory. It does not persist bearer tokens in `sessionStorage` or `localStorage`.
 - On browser mount, the web UI calls `POST /api/v1/auth/token/refresh` with `credentials: include` to recover the short-lived access token from the API-owned HttpOnly refresh cookie.
+- `AuthSessionProvider` is mounted at the web app root and owns this in-memory session so auth controls, notifications, and favorite buttons share one refresh result.
 - Server render and the first client render use a neutral auth-checking state so login, notification, and favorite controls do not create hydration mismatches.
 - The web app removes legacy `dealmoa.authSession` entries if they exist from earlier MVP builds.
 - OAuth `state` is provider-scoped and stored in `sessionStorage` until the callback consumes it once.

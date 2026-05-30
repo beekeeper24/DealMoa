@@ -7,6 +7,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { AuthSessionProvider } from "../../auth/useAuthSession";
 import { SearchWorkspace } from "../SearchWorkspace";
 
 afterEach(() => {
@@ -62,9 +63,17 @@ function failUnexpectedFetch(url: string): never {
   throw new Error(`Unexpected fetch: ${url}`);
 }
 
+function renderWithAuthProvider(ui: React.ReactElement) {
+  return render(<AuthSessionProvider>{ui}</AuthSessionProvider>);
+}
+
 describe("SearchWorkspace", () => {
   it("server-renders auth-dependent header controls in a neutral state", () => {
-    const markup = renderToString(<SearchWorkspace />);
+    const markup = renderToString(
+      <AuthSessionProvider>
+        <SearchWorkspace />
+      </AuthSessionProvider>
+    );
 
     expect(markup).toContain("인증 상태 확인 중");
     expect(markup).not.toContain("Google 로그인");
@@ -79,7 +88,7 @@ describe("SearchWorkspace", () => {
       return failUnexpectedFetch(url);
     });
 
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     expect(screen.getByRole("searchbox", { name: "검색어" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "검색" })).toBeInTheDocument();
@@ -115,7 +124,7 @@ describe("SearchWorkspace", () => {
       }
       return failUnexpectedFetch(url);
     });
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
@@ -157,7 +166,7 @@ describe("SearchWorkspace", () => {
       }
       return failUnexpectedFetch(url);
     });
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
@@ -191,7 +200,7 @@ describe("SearchWorkspace", () => {
       }
       return failUnexpectedFetch(url);
     });
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
@@ -244,7 +253,7 @@ describe("SearchWorkspace", () => {
       }
       return failUnexpectedFetch(url);
     });
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
@@ -295,7 +304,7 @@ describe("SearchWorkspace", () => {
       }
       return failUnexpectedFetch(url);
     });
-    render(<SearchWorkspace />);
+    renderWithAuthProvider(<SearchWorkspace />);
 
     await screen.findByText("user@example.com");
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
