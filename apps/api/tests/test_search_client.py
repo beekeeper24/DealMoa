@@ -93,6 +93,7 @@ def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
                                 "currentPrice": 780000,
                                 "bidCount": 5,
                                 "uniqueBidderCount": 3,
+                                "favoriteCount": 7,
                                 "currency": "KRW",
                                 "status": "active",
                                 "endsAt": "2026-05-29T12:00:00Z",
@@ -125,9 +126,11 @@ def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
     assert body["query"]["script_score"]["query"] == {"term": {"status": "active"}}
     assert "bidCount" in script["source"]
     assert "uniqueBidderCount" in script["source"]
+    assert "favoriteCount" in script["source"]
     assert "endsAt" in script["source"]
     assert script["params"]["bidActivityWeight"] == 45.0
     assert script["params"]["uniqueBidderWeight"] == 20.0
+    assert script["params"]["favoriteCountWeight"] == 10.0
     assert script["params"]["endingSoonWeight"] == 5.0
     assert body["sort"] == [{"_score": "desc"}, {"updatedAt": "desc"}, {"id": "desc"}]
     assert page.items[0]["score"] == 52.0

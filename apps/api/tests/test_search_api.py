@@ -84,6 +84,7 @@ class FakeSearchUseCases:
                     "currentPrice": 720000,
                     "bidCount": 3,
                     "uniqueBidderCount": 2,
+                    "favoriteCount": 7,
                     "currency": "KRW",
                     "status": "active",
                     "endsAt": None,
@@ -113,6 +114,7 @@ class FakeSearchUseCases:
                     "currentPrice": 720000,
                     "bidCount": 3,
                     "uniqueBidderCount": 2,
+                    "favoriteCount": 7,
                     "currency": "KRW",
                     "status": "active",
                     "endsAt": None,
@@ -168,6 +170,7 @@ def test_search_auctions_returns_activity_fields() -> None:
     assert response.json()["items"][0]["id"] == "auction-1"
     assert response.json()["items"][0]["bidCount"] == 3
     assert response.json()["items"][0]["uniqueBidderCount"] == 2
+    assert response.json()["items"][0]["favoriteCount"] == 7
     assert use_cases.calls == [("auctions", "galaxy", 20, None)]
 
 
@@ -179,6 +182,7 @@ def test_rank_auctions_by_activity_calls_ranking_use_case() -> None:
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == "auction-1"
+    assert response.json()["items"][0]["favoriteCount"] == 7
     assert response.json()["items"][0]["score"] == 41.0
     assert response.json()["nextCursor"] == "activity-cursor-2"
     assert use_cases.calls == [("auction_activity", 1, None)]

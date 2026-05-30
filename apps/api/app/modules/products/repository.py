@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import TypeVar
 
-from sqlalchemy import Select, and_, or_, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import InvalidSearchCursorException
 from app.core.pagination import CursorPage
+from app.modules.favorites.models import AuctionFavorite
 from app.modules.products.models import Auction, AuctionBid, Deal, Product
 
 T = TypeVar("T", Product, Deal, Auction)
@@ -107,6 +108,20 @@ class ProductRepository:
             .limit(1)
         )
         return self.session.scalar(statement) is not None
+
+    def count_auction_favorites(self, auction_id: str) -> int:
+        statement = select(func.count(AuctionFavorite.id)).where(
+            AuctionFavorite.auction_id == auction_id
+        )
+        return self.session.scalar(statement) or 0
+
+    def list_auction_favorite_counts(self) -> dict[str, int]:
+        statement = (
+            select(AuctionFavorite.auction_id, func.count(AuctionFavorite.id))
+            .group_by(AuctionFavorite.auction_id)
+            .order_by(AuctionFavorite.auction_id)
+        )
+        return {auction_id: count for auction_id, count in self.session.execute(statement)}
 
     def list_auctions_for_product(
         self,

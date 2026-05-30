@@ -22,6 +22,12 @@ class SearchSourceRepository(Protocol):
     def list_auctions_for_search(self) -> Sequence[Auction]:
         pass
 
+    def list_auction_favorite_counts(self) -> dict[str, int]:
+        pass
+
+    def count_auction_favorites(self, auction_id: str) -> int:
+        pass
+
 
 class SearchClient(Protocol):
     def recreate_indexes(self) -> None:
@@ -73,8 +79,12 @@ class SearchUseCases:
         deal_documents = [
             build_deal_document(deal) for deal in self.source_repository.list_deals_for_search()
         ]
+        auction_favorite_counts = self.source_repository.list_auction_favorite_counts()
         auction_documents = [
-            build_auction_document(auction)
+            build_auction_document(
+                auction,
+                favorite_count=auction_favorite_counts.get(auction.id, 0),
+            )
             for auction in self.source_repository.list_auctions_for_search()
         ]
 
@@ -96,7 +106,13 @@ class SearchUseCases:
         self.search_client.index_document("deals", build_deal_document(deal))
 
     def index_auction(self, auction: Auction) -> None:
-        self.search_client.index_document("auctions", build_auction_document(auction))
+        self.search_client.index_document(
+            "auctions",
+            build_auction_document(
+                auction,
+                favorite_count=self.source_repository.count_auction_favorites(auction.id),
+            ),
+        )
 
     def search_products(
         self,
