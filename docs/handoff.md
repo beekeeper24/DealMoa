@@ -65,7 +65,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Candidate next slices: notification web polish, refresh-token based web session hardening, auction view-momentum ranking, or admin trust/status ranking signals.
+2. Candidate next slices: refresh-token based web session hardening, auction view-momentum ranking, or admin trust/status ranking signals.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -195,6 +195,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `apps/web` adds a typed notifications API client.
 - Search workspace header renders a notification dropdown only for logged-in sessions.
 - The dropdown fetches unread count, lists recent notifications, marks one notification read, and marks all notifications read.
+- The dropdown can switch between all and unread-only notifications, load additional cursor pages, and close on Escape or outside pointer interaction.
 - Realtime push/SSE and a dedicated full notification page remain deferred.
 
 ## Completed Auth Hydration Polish Scope
