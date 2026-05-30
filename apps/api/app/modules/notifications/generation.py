@@ -88,6 +88,28 @@ class NotificationGenerationUseCases:
             },
         )
 
+    def notify_auction_outbid(
+        self,
+        *,
+        auction: Auction,
+        user_id: str,
+        amount: int,
+    ) -> int:
+        return self._create_target_notifications(
+            user_ids=[user_id],
+            notification_type=NotificationType.AUCTION_OUTBID,
+            title="참여한 경매에 더 높은 입찰이 들어왔습니다.",
+            body=auction.title,
+            target_type="auction",
+            target_id=auction.id,
+            metadata={
+                "productId": auction.product_id,
+                "amount": amount,
+                "currentPrice": auction.current_price,
+                "currency": auction.currency,
+            },
+        )
+
     def _create_target_notifications(
         self,
         *,

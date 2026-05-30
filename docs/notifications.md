@@ -8,6 +8,7 @@ Notifications MVP fixes the authenticated notification inbox API, product-favori
 - Generate `new_deal` notifications when a favorited product receives a new deal.
 - Generate `new_auction` notifications when a favorited product receives a new auction.
 - Generate `auction_ending_soon` notifications when a favorited auction is close to ending.
+- Generate `auction_outbid` notifications when another user overbids a user's current top auction bid.
 - List notifications with cursor pagination.
 - Filter unread notifications.
 - Return unread notification count.
@@ -26,8 +27,9 @@ New deal/new auction notification generation runs from the Kafka domain-event co
 
 - `deal.created` is handled by `apps/consumer` `consume-notifications` and creates `new_deal` notifications for users who favorited the product.
 - `auction.created` is handled by `apps/consumer` `consume-notifications` and creates `new_auction` notifications for users who favorited the product.
+- `auction.bid.placed` is handled by `apps/consumer` `consume-notifications` and creates `auction_outbid` notifications for the previous highest bidder when another user places the new accepted bid.
 
-The generation boundary lives in the notifications module, and the consumer reuses the same use case after receiving `deal.created` or `auction.created` events.
+The generation boundary lives in the notifications module, and the consumer reuses the same use case after receiving `deal.created`, `auction.created`, or `auction.bid.placed` events.
 
 Auction ending-soon notification generation runs from Celery beat/worker:
 
@@ -50,6 +52,7 @@ Initial stable values:
 | `new_deal` | A favorited product has a new deal. |
 | `new_auction` | A favorited product has a new auction. |
 | `auction_ending_soon` | A favorited auction is close to ending. |
+| `auction_outbid` | Another user placed a higher accepted bid on an auction the user was leading. |
 
 ## Routes
 

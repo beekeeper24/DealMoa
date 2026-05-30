@@ -71,7 +71,13 @@ class DomainEventsUseCases:
             },
         )
 
-    def record_auction_bid_placed(self, *, auction: Auction, bid: AuctionBid) -> DomainEvent:
+    def record_auction_bid_placed(
+        self,
+        *,
+        auction: Auction,
+        bid: AuctionBid,
+        previous_highest_bidder_user_id: str | None = None,
+    ) -> DomainEvent:
         return self._record_event(
             event_type="auction.bid.placed",
             aggregate_type="auction",
@@ -84,6 +90,7 @@ class DomainEventsUseCases:
                 "currentPrice": auction.current_price,
                 "bidCount": auction.bid_count,
                 "currency": auction.currency,
+                "previousHighestBidderUserId": previous_highest_bidder_user_id,
             },
         )
 

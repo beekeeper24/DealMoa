@@ -84,6 +84,30 @@ class ProductRepository:
         self.session.flush()
         return bid
 
+    def get_highest_auction_bid(self, auction_id: str) -> AuctionBid | None:
+        statement = (
+            select(AuctionBid)
+            .where(AuctionBid.auction_id == auction_id)
+            .order_by(
+                AuctionBid.amount.desc(),
+                AuctionBid.created_at.desc(),
+                AuctionBid.id.desc(),
+            )
+            .limit(1)
+        )
+        return self.session.scalar(statement)
+
+    def has_auction_bid_from_user(self, *, auction_id: str, user_id: str) -> bool:
+        statement = (
+            select(AuctionBid.id)
+            .where(
+                AuctionBid.auction_id == auction_id,
+                AuctionBid.user_id == user_id,
+            )
+            .limit(1)
+        )
+        return self.session.scalar(statement) is not None
+
     def list_auctions_for_product(
         self,
         product_id: str,

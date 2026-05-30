@@ -61,4 +61,33 @@ class DomainEventNotificationGenerator:
             self.notification_generation.notify_new_auction(auction)
             return True
 
+        if event_type == "auction.bid.placed":
+            auction = self.product_repository.get_auction(aggregate_id)
+            if auction is None:
+                return False
+            payload = envelope.get("payload")
+            if not isinstance(payload, dict):
+                return True
+            new_bidder_user_id = payload.get("userId")
+            previous_highest_bidder_user_id = payload.get("previousHighestBidderUserId")
+            amount = payload.get("amount")
+            if (
+                not isinstance(new_bidder_user_id, str)
+                or not isinstance(previous_highest_bidder_user_id, str)
+                or previous_highest_bidder_user_id == new_bidder_user_id
+                or not isinstance(amount, int)
+            ):
+                return True
+            if not self.product_repository.has_auction_bid_from_user(
+                auction_id=auction.id,
+                user_id=previous_highest_bidder_user_id,
+            ):
+                return True
+            self.notification_generation.notify_auction_outbid(
+                auction=auction,
+                user_id=previous_highest_bidder_user_id,
+                amount=amount,
+            )
+            return True
+
         return False

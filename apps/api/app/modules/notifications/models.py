@@ -17,6 +17,7 @@ class NotificationType:
     NEW_DEAL: Literal["new_deal"] = "new_deal"
     NEW_AUCTION: Literal["new_auction"] = "new_auction"
     AUCTION_ENDING_SOON: Literal["auction_ending_soon"] = "auction_ending_soon"
+    AUCTION_OUTBID: Literal["auction_outbid"] = "auction_outbid"
 
 
 class TimestampMixin:

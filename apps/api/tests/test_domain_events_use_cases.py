@@ -140,7 +140,11 @@ def test_record_auction_bid_placed_event() -> None:
         updated_at=NOW,
     )
 
-    make_use_cases(session).record_auction_bid_placed(auction=auction, bid=bid)
+    make_use_cases(session).record_auction_bid_placed(
+        auction=auction,
+        bid=bid,
+        previous_highest_bidder_user_id="user-0",
+    )
 
     stored = session.scalars(select(DomainEvent)).one()
     assert stored.event_type == "auction.bid.placed"
@@ -154,4 +158,5 @@ def test_record_auction_bid_placed_event() -> None:
         "currentPrice": 750000,
         "bidCount": 4,
         "currency": "KRW",
+        "previousHighestBidderUserId": "user-0",
     }

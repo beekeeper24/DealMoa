@@ -14,13 +14,13 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. The Auction Activity Ranking slice is being implemented on:
+Current integration branch is `develop`. The Auction Outbid Notifications slice is being implemented on:
 
 ```text
-feature/auction-activity-ranking
+feature/auction-outbid-notifications
 ```
 
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Activity Ranking slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Outbid Notifications slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
 
 ## Fixed Decisions
 
@@ -70,9 +70,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Merge `feature/auction-activity-ranking` into `develop` after local checks and CI pass.
+1. Merge `feature/auction-outbid-notifications` into `develop` after local checks and CI pass.
 2. Start the next coherent feature branch from `develop`.
-3. Candidate next slices: outbid notifications, favorite-count ranking signals, or refresh-token based web session hardening.
+3. Candidate next slices: favorite-count ranking signals, notification web polish, or refresh-token based web session hardening.
 4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -174,8 +174,10 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 ## Completed Event Notification Generation Scope
 
 - Product API no longer writes notification rows synchronously for new deal/new auction creation.
-- Product API still writes `deal.created` and `auction.created` outbox events in the offer mutation transaction.
-- `apps/consumer` `consume-notifications` handles `deal.created` and `auction.created`.
+- Product API still writes `deal.created`, `auction.created`, and `auction.bid.placed` outbox events in the offer/bid mutation transaction.
+- `auction.bid.placed` payload includes `previousHighestBidderUserId` so outbid notifications can be generated asynchronously.
+- `apps/consumer` `consume-notifications` handles `deal.created`, `auction.created`, and `auction.bid.placed`.
+- Outbid notifications are skipped for first bids, self-outbids, missing auctions, and previous-bidder payloads that do not match persisted auction bid history.
 - Existing unique notification target index prevents duplicate Kafka delivery from creating duplicate notifications.
 
 ## Completed Auction Ending Notifications Scope

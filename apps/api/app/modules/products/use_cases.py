@@ -164,6 +164,7 @@ class ProductUseCases:
                 bid_increment=AUCTION_BID_INCREMENT,
             )
 
+        previous_highest_bid = self.repository.get_highest_auction_bid(auction.id)
         bid = self.repository.create_auction_bid(
             AuctionBid(
                 auction_id=auction.id,
@@ -177,7 +178,13 @@ class ProductUseCases:
         auction.bid_count += 1
         auction.updated_at = now
         if self.domain_events is not None:
-            self.domain_events.record_auction_bid_placed(auction=auction, bid=bid)
+            self.domain_events.record_auction_bid_placed(
+                auction=auction,
+                bid=bid,
+                previous_highest_bidder_user_id=(
+                    previous_highest_bid.user_id if previous_highest_bid is not None else None
+                ),
+            )
         return bid
 
     def _aware_utc(self, value: datetime) -> datetime:
