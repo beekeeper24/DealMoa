@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { refreshAuthSession } from "./api";
 import { clearAuthSession } from "./session";
@@ -26,7 +26,9 @@ const loadingSnapshot: AuthSessionSnapshot = {
   status: "loading"
 };
 
-export function useAuthSession(): UseAuthSessionResult {
+const AuthSessionContext = createContext<UseAuthSessionResult | null>(null);
+
+export function AuthSessionProvider({ children }: { children: React.ReactNode }) {
   const [snapshot, setSnapshot] = useState<AuthSessionSnapshot>(loadingSnapshot);
 
   const refresh = useCallback(() => {
@@ -64,16 +66,30 @@ export function useAuthSession(): UseAuthSessionResult {
     };
   }, [refresh]);
 
-  return {
-    ...snapshot,
-    clear,
-    refresh,
-    save
-  };
+  return React.createElement(
+    AuthSessionContext.Provider,
+    {
+      value: {
+        ...snapshot,
+        clear,
+        refresh,
+        save
+      }
+    },
+    children
+  );
+}
+
+export function useAuthSession(): UseAuthSessionResult {
+  const authSession = useContext(AuthSessionContext);
+  if (!authSession) {
+    throw new Error("useAuthSession must be used within AuthSessionProvider");
+  }
+  return authSession;
 }
 
 async function hydrateFromRefreshCookie(
-  setSnapshot: (snapshot: AuthSessionSnapshot) => void,
+  setSnapshot: (snapshot: AuthSessionSnapshot) => void
 ): Promise<void> {
   try {
     const session = await refreshAuthSession();

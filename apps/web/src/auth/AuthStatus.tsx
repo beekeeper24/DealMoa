@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { buildOAuthAuthorizationUrl, logout } from "./api";
 import { createOAuthState } from "./session";
 import type { OAuthProvider } from "./types";
-import { useAuthSession, type UseAuthSessionResult } from "./useAuthSession";
+import { useAuthSession } from "./useAuthSession";
 
 type ProviderOption = {
   provider: OAuthProvider;
@@ -19,18 +19,15 @@ const providers: ProviderOption[] = [
 ];
 
 type AuthStatusProps = {
-  authSession?: UseAuthSessionResult;
   navigate?: (url: string) => void;
   origin?: string;
 };
 
 export function AuthStatus({
-  authSession: controlledAuthSession,
   navigate = defaultNavigate,
   origin
 }: AuthStatusProps) {
-  const internalAuthSession = useAuthSession();
-  const authSession = controlledAuthSession ?? internalAuthSession;
+  const authSession = useAuthSession();
   const { session, status } = authSession;
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);

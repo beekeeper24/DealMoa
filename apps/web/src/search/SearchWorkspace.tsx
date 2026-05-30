@@ -143,7 +143,7 @@ export function SearchWorkspace() {
             AI 검색
           </button>
           <NotificationCenter accessToken={accessToken} />
-          <AuthStatus authSession={authSession} />
+          <AuthStatus />
         </div>
       </header>
 
