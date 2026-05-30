@@ -10,10 +10,12 @@ Favorites MVP adds authenticated save/unsave behavior for products, deals, and a
 - Favorite list endpoints are cursor-paginated.
 - Web search results expose a simple favorite toggle when an access-token session exists.
 
-Notifications, my-page favorite aggregation, and alert delivery are out of scope for this slice.
-Auction favorites now feed `favoriteCount` as an activity ranking interest signal during
-search reindex and auction document upserts; favorite create/delete event freshness remains
-a later slice.
+My-page favorite aggregation and realtime alert delivery are out of scope for this slice.
+Auction favorites feed `favoriteCount` as an activity ranking interest signal during
+search reindex and auction document upserts. Auction favorite create/delete mutations write
+`auction.favorite.created` and `auction.favorite.deleted` outbox events only for real row
+changes, so duplicate favorite creates or repeated deletes do not emit extra search refresh
+events.
 
 ## Routes
 

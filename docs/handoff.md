@@ -14,13 +14,7 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. The Auction Favorite Ranking Signal slice is being implemented on:
-
-```text
-feature/auction-favorite-ranking-signal
-```
-
-Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on this feature branch until the Auction Favorite Ranking Signal slice is coherent enough to integrate into `develop`, or until the user explicitly asks for a PR.
+Current integration branch is `develop`. Create each coherent feature/MVP slice from `develop` on a `feature/...` branch, keep checkpoint commits on that branch, and open a PR only when the slice is integration-ready or when the user explicitly asks for one.
 
 ## Fixed Decisions
 
@@ -43,7 +37,7 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
-- Initial Kafka events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`.
+- Current Kafka domain events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`.
 - Initial Celery tasks: `crawl_hot_deals_mock`, `ai_review_submission_mock`, `rebuild_search_index`.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
@@ -70,10 +64,9 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 
 ## Next Activation Steps
 
-1. Merge `feature/auction-favorite-ranking-signal` into `develop` after local checks and CI pass.
-2. Start the next coherent feature branch from `develop`.
-3. Candidate next slices: favorite create/delete event freshness, notification web polish, or refresh-token based web session hardening.
-4. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
+1. Start the next coherent feature branch from `develop`.
+2. Candidate next slices: notification web polish, refresh-token based web session hardening, auction view-momentum ranking, or admin trust/status ranking signals.
+3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
 
@@ -171,7 +164,14 @@ Do not open a PR for each checkpoint commit. Keep verified checkpoint commits on
 - Full auction reindex bulk-loads favorite counts, and single auction upserts query the current favorite count.
 - `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
 - The current score uses available signals: capped bid count, capped unique bidder count, favorite-count interest, and ending-soon pressure.
-- View momentum, favorite create/delete event freshness, and trust signals remain later ranking slices.
+- View momentum and trust signals remain later ranking slices.
+
+## Completed Auction Favorite Event Freshness Scope
+
+- Auction favorite create/delete mutations write `auction.favorite.created` and `auction.favorite.deleted` outbox events.
+- Idempotent duplicate favorite creates and repeated deletes do not emit extra events.
+- The search consumer handles auction favorite events by reloading the auction from PostgreSQL and upserting the current `auctions_current` document.
+- Auction search `favoriteCount` now stays fresh after favorite mutations without waiting for a full reindex.
 
 ## Completed Event Notification Generation Scope
 

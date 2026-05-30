@@ -8,6 +8,8 @@ from app.core.exceptions import UnauthorizedException
 from app.db.session import get_session
 from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.favorites.repository import FavoritesRepository
 from app.modules.favorites.schemas import (
     AuctionFavoriteListResponse,
@@ -25,7 +27,10 @@ router = APIRouter(prefix="/me/favorites", tags=["favorites"])
 def get_favorites_use_cases(
     session: Annotated[Session, Depends(get_session)],
 ) -> FavoritesUseCases:
-    return FavoritesUseCases(repository=FavoritesRepository(session))
+    return FavoritesUseCases(
+        repository=FavoritesRepository(session),
+        domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
+    )
 
 
 def get_current_user(

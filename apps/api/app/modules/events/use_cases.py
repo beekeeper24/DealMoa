@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
+from app.modules.favorites.models import AuctionFavorite
 from app.modules.products.models import Auction, AuctionBid, Deal, Product
 
 
@@ -94,6 +95,18 @@ class DomainEventsUseCases:
             },
         )
 
+    def record_auction_favorite_created(self, favorite: AuctionFavorite) -> DomainEvent:
+        return self._record_auction_favorite_event(
+            event_type="auction.favorite.created",
+            favorite=favorite,
+        )
+
+    def record_auction_favorite_deleted(self, favorite: AuctionFavorite) -> DomainEvent:
+        return self._record_auction_favorite_event(
+            event_type="auction.favorite.deleted",
+            favorite=favorite,
+        )
+
     def _record_event(
         self,
         *,
@@ -112,4 +125,21 @@ class DomainEventsUseCases:
                 created_at=now,
                 updated_at=now,
             )
+        )
+
+    def _record_auction_favorite_event(
+        self,
+        *,
+        event_type: str,
+        favorite: AuctionFavorite,
+    ) -> DomainEvent:
+        return self._record_event(
+            event_type=event_type,
+            aggregate_type="auction",
+            aggregate_id=favorite.auction_id,
+            payload={
+                "auctionId": favorite.auction_id,
+                "favoriteId": favorite.id,
+                "userId": favorite.user_id,
+            },
         )

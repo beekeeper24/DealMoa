@@ -8,7 +8,16 @@ DomainEventType = Literal[
     "deal.created",
     "auction.created",
     "auction.bid.placed",
+    "auction.favorite.created",
+    "auction.favorite.deleted",
 ]
+
+AUCTION_REFRESH_EVENT_TYPES = {
+    "auction.created",
+    "auction.bid.placed",
+    "auction.favorite.created",
+    "auction.favorite.deleted",
+}
 
 
 class DomainEventEnvelope(TypedDict):
@@ -50,7 +59,7 @@ class DomainEventSearchIndexer:
             self.search_use_cases.index_deal(deal)
             return True
 
-        if event_type in {"auction.created", "auction.bid.placed"}:
+        if event_type in AUCTION_REFRESH_EVENT_TYPES:
             auction = self.product_repository.get_auction(aggregate_id)
             if auction is None:
                 return False

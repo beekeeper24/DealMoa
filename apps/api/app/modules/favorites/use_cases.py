@@ -7,6 +7,7 @@ from app.core.exceptions import (
     ProductNotFoundException,
 )
 from app.core.pagination import CursorPage
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.favorites.models import AuctionFavorite, DealFavorite, ProductFavorite
 from app.modules.favorites.repository import FavoritesRepository
 
@@ -19,9 +20,11 @@ class FavoritesUseCases:
     def __init__(
         self,
         repository: FavoritesRepository,
+        domain_events: DomainEventsUseCases | None = None,
         now: Callable[[], datetime] = utc_now,
     ) -> None:
         self.repository = repository
+        self.domain_events = domain_events
         self.now = now
 
     def add_product_favorite(self, *, user_id: str, product_id: str) -> ProductFavorite:
@@ -85,15 +88,20 @@ class FavoritesUseCases:
         if existing is not None:
             return existing
         now = self.now()
-        return self.repository.create_auction_favorite(
+        favorite = self.repository.create_auction_favorite(
             AuctionFavorite(user_id=user_id, auction_id=auction_id, created_at=now, updated_at=now)
         )
+        if self.domain_events is not None:
+            self.domain_events.record_auction_favorite_created(favorite)
+        return favorite
 
     def remove_auction_favorite(self, *, user_id: str, auction_id: str) -> None:
         if self.repository.get_auction(auction_id) is None:
             raise AuctionNotFoundException(auction_id)
         existing = self.repository.get_auction_favorite(user_id=user_id, auction_id=auction_id)
         if existing is not None:
+            if self.domain_events is not None:
+                self.domain_events.record_auction_favorite_deleted(existing)
             self.repository.delete_auction_favorite(existing)
 
     def list_auction_favorites(
