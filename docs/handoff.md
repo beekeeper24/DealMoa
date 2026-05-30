@@ -111,7 +111,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - DealMoa JWT access token issuance and verification.
 - Opaque refresh token HttpOnly cookie transport, hashing, storage, rotation, and logout revocation.
 - `GET /api/v1/auth/me` bearer-token current-user lookup.
-- Web login buttons, provider callback routes, OAuth state validation, and MVP access-token session storage.
+- Web login buttons, provider callback routes, OAuth state validation, and refresh-cookie session recovery.
 
 ## Completed Favorites MVP Scope
 
@@ -201,7 +201,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Completed Auth Hydration Polish Scope
 
 - Auth-dependent web UI starts from a neutral session-checking state during server render and first client render.
-- Browser `sessionStorage` is read only after mount through the shared auth session hook.
+- Browser auth sessions are recovered after mount by calling `POST /api/v1/auth/token/refresh` with the HttpOnly refresh cookie.
+- Access tokens are kept in React memory only; legacy `dealmoa.authSession` storage is cleared instead of read.
 - Search workspace shares one auth session snapshot with auth status, notifications, and favorite buttons.
 
 ## Completed Auction Bidding Baseline Scope

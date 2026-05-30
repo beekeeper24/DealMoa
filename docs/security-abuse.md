@@ -35,7 +35,8 @@ Reports never automatically hide or down-rank content. They create admin review 
 - Logout revokes the refresh token from the HttpOnly cookie and deletes the cookie.
 - Bearer-token failures use stable auth error codes, not framework-default response shapes.
 - OAuth `state` is supplied by the client in the MVP; later full-stack auth should move state persistence to Redis or another server-side short-lived store.
-- The web MVP stores only the short-lived access token and user in `sessionStorage`; refresh tokens must not be exposed to browser-readable storage.
+- The web app keeps access tokens in React memory only and restores sessions through `POST /auth/token/refresh` with the HttpOnly refresh cookie.
+- Browser-readable storage may hold OAuth `state` only; refresh tokens and bearer access tokens must not be exposed there.
 
 ## External URLs
 

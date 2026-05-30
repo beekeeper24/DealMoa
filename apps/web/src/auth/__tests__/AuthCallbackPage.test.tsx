@@ -6,7 +6,7 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthCallbackPage } from "../AuthCallbackPage";
-import { createOAuthState, getStoredAuthSession } from "../session";
+import { createOAuthState } from "../session";
 
 afterEach(() => {
   cleanup();
@@ -79,7 +79,6 @@ describe("AuthCallbackPage", () => {
     );
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
-    expect(getStoredAuthSession()?.user.email).toBe("user@example.com");
-    expect(sessionStorage.getItem("dealmoa.authSession")).not.toContain("refreshToken");
+    expect(sessionStorage.getItem("dealmoa.authSession")).toBeNull();
   });
 });

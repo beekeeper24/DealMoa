@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  clearAuthSession,
-  getStoredAuthSession,
-  saveAuthSession
-} from "./session";
+import { refreshAuthSession } from "./api";
+import { clearAuthSession } from "./session";
 import type { AuthSession } from "./types";
 
 export type AuthSessionStatus = "loading" | "authenticated" | "anonymous";
@@ -33,11 +30,11 @@ export function useAuthSession(): UseAuthSessionResult {
   const [snapshot, setSnapshot] = useState<AuthSessionSnapshot>(loadingSnapshot);
 
   const refresh = useCallback(() => {
-    setSnapshot(readStoredSessionSnapshot());
+    setSnapshot((current) => (current.status === "loading" ? current : loadingSnapshot));
+    void hydrateFromRefreshCookie(setSnapshot);
   }, []);
 
   const save = useCallback((session: AuthSession) => {
-    saveAuthSession(session);
     setSnapshot({
       accessToken: session.accessToken,
       session,
@@ -55,16 +52,16 @@ export function useAuthSession(): UseAuthSessionResult {
   }, []);
 
   useEffect(() => {
-    refresh();
-
-    function handleStorage(event: StorageEvent) {
-      if (event.key === null || event.key === "dealmoa.authSession") {
-        refresh();
+    let cancelled = false;
+    setSnapshot(loadingSnapshot);
+    void hydrateFromRefreshCookie((nextSnapshot) => {
+      if (!cancelled) {
+        setSnapshot(nextSnapshot);
       }
-    }
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   return {
@@ -75,19 +72,23 @@ export function useAuthSession(): UseAuthSessionResult {
   };
 }
 
-function readStoredSessionSnapshot(): AuthSessionSnapshot {
-  const session = getStoredAuthSession();
-  if (!session) {
-    return {
+async function hydrateFromRefreshCookie(
+  setSnapshot: (snapshot: AuthSessionSnapshot) => void,
+): Promise<void> {
+  try {
+    const session = await refreshAuthSession();
+    clearAuthSession();
+    setSnapshot({
+      accessToken: session.accessToken,
+      session,
+      status: "authenticated"
+    });
+  } catch {
+    clearAuthSession();
+    setSnapshot({
       accessToken: undefined,
       session: null,
       status: "anonymous"
-    };
+    });
   }
-
-  return {
-    accessToken: session.accessToken,
-    session,
-    status: "authenticated"
-  };
 }

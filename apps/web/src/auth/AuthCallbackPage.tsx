@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 import { loginWithOAuthCallback } from "./api";
-import { saveAuthSession, verifyAndConsumeOAuthState } from "./session";
+import { verifyAndConsumeOAuthState } from "./session";
 import type { OAuthProvider } from "./types";
 
 type AuthCallbackPageProps = {
@@ -41,11 +41,10 @@ export function AuthCallbackPage({
 
       try {
         const redirectUri = `${origin ?? window.location.origin}/auth/callback/${provider}`;
-        const session = await loginWithOAuthCallback({ provider, code, redirectUri });
+        await loginWithOAuthCallback({ provider, code, redirectUri });
         if (cancelled) {
           return;
         }
-        saveAuthSession(session);
         setStatus("로그인이 완료되었습니다.");
         navigate("/");
       } catch {

@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test("searches products from the browser", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "dealmoa.authSession",
-      JSON.stringify({
+  await page.route("**/api/v1/auth/token/refresh", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
         user: {
           id: "user-1",
           email: "user@example.com",
@@ -14,7 +14,13 @@ test("searches products from the browser", async ({ page }) => {
         accessToken: "access-1",
         tokenType: "Bearer"
       })
-    );
+    });
+  });
+  await page.route("**/api/v1/notifications/unread-count", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ count: 0 })
+    });
   });
   await page.route("**/api/v1/search/products?**", async (route) => {
     await route.fulfill({
