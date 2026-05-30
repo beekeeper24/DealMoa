@@ -136,6 +136,42 @@ def test_place_auction_bid_writes_outbox_event() -> None:
     assert event.payload_json["amount"] == 750000
     assert event.payload_json["currentPrice"] == 750000
     assert event.payload_json["bidCount"] == 4
+    assert event.payload_json["previousHighestBidderUserId"] is None
+
+
+def test_place_auction_bid_records_previous_highest_bidder_in_outbox_event() -> None:
+    session = next(make_session())
+    seed_user_product_and_auction(session)
+    session.add(
+        User(
+            id="user-2",
+            email="user-2@example.com",
+            nickname="Deal User 2",
+            role="USER",
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    session.add(
+        AuctionBid(
+            id="bid-previous",
+            auction_id="auction-1",
+            user_id="user-1",
+            amount=720000,
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+
+    make_use_cases(session).place_auction_bid(
+        user_id="user-2",
+        auction_id="auction-1",
+        request=AuctionBidCreateRequest(amount=750000),
+    )
+
+    event = session.scalars(select(DomainEvent)).one()
+    assert event.payload_json["userId"] == "user-2"
+    assert event.payload_json["previousHighestBidderUserId"] == "user-1"
 
 
 def test_place_auction_bid_rejects_low_amount() -> None:

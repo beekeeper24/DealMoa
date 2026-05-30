@@ -80,7 +80,8 @@ Rules:
 - Auction `status` must be `active`.
 - If `endsAt` is set, it must be later than the server's current time.
 - A successful bid writes an `auction_bids` row and updates `auctions.current_price` and `auctions.bid_count` in the same transaction.
-- A successful bid also writes an `auction.bid.placed` transactional outbox event for later ranking/search consumers.
+- A successful bid also writes an `auction.bid.placed` transactional outbox event for search freshness, activity ranking, and outbid notifications.
+- The bid event payload includes `previousHighestBidderUserId`. It is `null` for the first accepted bid and equals the previous top bidder when another user is outbid.
 
 Response:
 

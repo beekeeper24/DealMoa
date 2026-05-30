@@ -9,7 +9,7 @@ This slice adds the first real Kafka/Celery code boundary while keeping product 
 - `apps/worker` exposes initial Celery task entry points.
 - Docker Compose has separate `event` and `worker` profiles.
 
-The initial foundation added the outbox, publisher, and worker boundary. Follow-up slices now use the same Kafka stream for Elasticsearch indexing and product-favorite notification generation.
+The initial foundation added the outbox, publisher, and worker boundary. Follow-up slices now use the same Kafka stream for Elasticsearch indexing, product-favorite notification generation, and outbid notifications.
 
 ## Transactional Outbox
 
@@ -91,8 +91,9 @@ The notification generator currently handles:
 
 - `deal.created` -> create `new_deal` notifications for users who favorited the product.
 - `auction.created` -> create `new_auction` notifications for users who favorited the product.
+- `auction.bid.placed` -> create `auction_outbid` notification for `previousHighestBidderUserId` when another user places the winning bid.
 
-`auction.bid.placed` is intentionally ignored by the notification consumer until outbid or auction-activity notification slices are implemented.
+For `auction.bid.placed`, first bids, self-outbids, missing auctions, and payloads whose previous bidder has no persisted bid on the auction are handled as no-notification cases.
 
 Duplicate delivery is deduplicated by the notification unique target index:
 
