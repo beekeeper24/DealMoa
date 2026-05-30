@@ -55,6 +55,7 @@ class FakeSearchUseCases:
                     "salePrice": 1090000,
                     "currency": "KRW",
                     "status": "active",
+                    "trustScore": 10,
                     "startedAt": None,
                     "endedAt": None,
                     "createdAt": "2026-05-25T00:00:00Z",
@@ -88,6 +89,7 @@ class FakeSearchUseCases:
                     "viewMomentum": 11,
                     "currency": "KRW",
                     "status": "active",
+                    "trustScore": 5,
                     "endsAt": None,
                     "createdAt": "2026-05-25T00:00:00Z",
                     "updatedAt": "2026-05-25T00:00:00Z",
@@ -116,8 +118,10 @@ class FakeSearchUseCases:
                     "bidCount": 3,
                     "uniqueBidderCount": 2,
                     "favoriteCount": 7,
+                    "viewMomentum": 11,
                     "currency": "KRW",
                     "status": "active",
+                    "trustScore": 5,
                     "endsAt": None,
                     "createdAt": "2026-05-25T00:00:00Z",
                     "updatedAt": "2026-05-25T00:00:00Z",
@@ -158,6 +162,7 @@ def test_search_deals_passes_cursor_to_use_case() -> None:
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == "deal-1"
+    assert response.json()["items"][0]["trustScore"] == 10
     assert use_cases.calls == [("deals", "galaxy", 20, "cursor-1")]
 
 
@@ -173,6 +178,7 @@ def test_search_auctions_returns_activity_fields() -> None:
     assert response.json()["items"][0]["uniqueBidderCount"] == 2
     assert response.json()["items"][0]["favoriteCount"] == 7
     assert response.json()["items"][0]["viewMomentum"] == 11
+    assert response.json()["items"][0]["trustScore"] == 5
     assert use_cases.calls == [("auctions", "galaxy", 20, None)]
 
 
@@ -185,6 +191,7 @@ def test_rank_auctions_by_activity_calls_ranking_use_case() -> None:
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == "auction-1"
     assert response.json()["items"][0]["favoriteCount"] == 7
+    assert response.json()["items"][0]["trustScore"] == 5
     assert response.json()["items"][0]["score"] == 41.0
     assert response.json()["nextCursor"] == "activity-cursor-2"
     assert use_cases.calls == [("auction_activity", 1, None)]

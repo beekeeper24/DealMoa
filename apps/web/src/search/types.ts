@@ -22,6 +22,7 @@ export type DealSearchItem = {
   salePrice: number;
   currency: string;
   status: string;
+  trustScore?: number;
   startedAt: string | null;
   endedAt: string | null;
   createdAt: string;
@@ -42,6 +43,7 @@ export type AuctionSearchItem = {
   viewMomentum?: number;
   currency: string;
   status: string;
+  trustScore?: number;
   endsAt: string | null;
   createdAt: string;
   updatedAt: string;

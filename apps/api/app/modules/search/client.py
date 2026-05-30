@@ -58,6 +58,11 @@ double viewMomentumScore = Math.min(viewMomentum, params.viewMomentumCap)
   / params.viewMomentumCap
   * params.viewMomentumWeight;
 
+double trustScore = doc['trustScore'].size() == 0 ? 0.0 : doc['trustScore'].value;
+double trust = Math.min(trustScore, params.trustScoreCap)
+  / params.trustScoreCap
+  * params.trustScoreWeight;
+
 double endingSoon = 0.0;
 if (doc['endsAt'].size() != 0) {
   long diffMillis = doc['endsAt'].value.toInstant().toEpochMilli() - params.nowMillis;
@@ -67,7 +72,7 @@ if (doc['endsAt'].size() != 0) {
   }
 }
 
-return bidActivity + uniqueBidder + interest + viewMomentumScore + endingSoon;
+return bidActivity + uniqueBidder + interest + viewMomentumScore + endingSoon + trust;
 """
 
 
@@ -163,16 +168,28 @@ class ElasticsearchSearchClient:
         cursor: str | None,
     ) -> CursorPage[dict[str, Any]]:
         spec = SEARCH_INDEXES[kind]
+        multi_match_query = {
+            "multi_match": {
+                "query": query,
+                "fields": SEARCH_FIELDS[kind],
+                "type": "best_fields",
+                "operator": "and",
+            }
+        }
+        search_query: dict[str, Any]
+        if kind in {"deals", "auctions"}:
+            search_query = {
+                "bool": {
+                    "must": multi_match_query,
+                    "filter": [{"term": {"status": "active"}}],
+                }
+            }
+        else:
+            search_query = multi_match_query
+
         body: dict[str, Any] = {
             "size": limit + 1,
-            "query": {
-                "multi_match": {
-                    "query": query,
-                    "fields": SEARCH_FIELDS[kind],
-                    "type": "best_fields",
-                    "operator": "and",
-                }
-            },
+            "query": search_query,
             "sort": [
                 {"_score": "desc"},
                 {"createdAt": "desc"},
@@ -222,6 +239,8 @@ class ElasticsearchSearchClient:
                             "favoriteCountWeight": 10.0,
                             "viewMomentumCap": 100.0,
                             "viewMomentumWeight": 15.0,
+                            "trustScoreCap": 5.0,
+                            "trustScoreWeight": 5.0,
                             "endingSoonWindowMillis": 24.0 * 60.0 * 60.0 * 1000.0,
                             "endingSoonWeight": 5.0,
                             "nowMillis": int(now.timestamp() * 1000),
