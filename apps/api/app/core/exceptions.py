@@ -34,6 +34,11 @@ class ErrorCode(Enum):
         HTTPStatus.UNAUTHORIZED,
         "로그인이 필요합니다.",
     )
+    FORBIDDEN = (
+        "FORBIDDEN",
+        HTTPStatus.FORBIDDEN,
+        "권한이 없습니다.",
+    )
     TOKEN_EXPIRED = (
         "TOKEN_EXPIRED",
         HTTPStatus.UNAUTHORIZED,
@@ -181,6 +186,11 @@ class AuthException(DealMoaException):
 class UnauthorizedException(AuthException):
     def __init__(self) -> None:
         super().__init__(ErrorCode.UNAUTHORIZED)
+
+
+class ForbiddenException(AuthException):
+    def __init__(self) -> None:
+        super().__init__(ErrorCode.FORBIDDEN)
 
 
 class TokenExpiredException(AuthException):

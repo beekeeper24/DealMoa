@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.routes import health
+from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.favorites.router import router as favorites_router
 from app.modules.notifications.router import router as notifications_router
@@ -14,6 +15,7 @@ api_router.include_router(health.router, tags=["health"])
 api_router.include_router(auth_router)
 api_router.include_router(favorites_router)
 api_router.include_router(notifications_router)
+api_router.include_router(admin_router)
 api_router.include_router(products_router)
 api_router.include_router(offer_router)
 api_router.include_router(search_router)

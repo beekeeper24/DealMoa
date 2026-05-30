@@ -213,6 +213,68 @@ def test_handle_deal_and_auction_created_indexes_offer_documents() -> None:
     assert search_client.indexed[1][1]["currentPrice"] == 720000
 
 
+def test_handle_deal_status_changed_refreshes_deal_document() -> None:
+    session = next(make_session())
+    seed_product(session)
+    seed_deal(session)
+    deal = session.get(Deal, "deal-1")
+    assert deal is not None
+    deal.status = "rejected"
+    search_client = RecordingSearchClient()
+
+    handled = make_indexer(session, search_client).handle(
+        {
+            "eventId": "event-status-1",
+            "eventType": "deal.status.changed",
+            "aggregateType": "deal",
+            "aggregateId": "deal-1",
+            "payload": {
+                "dealId": "deal-1",
+                "previousStatus": "active",
+                "newStatus": "rejected",
+            },
+            "occurredAt": "2026-05-28T16:00:00Z",
+        }
+    )
+
+    assert handled is True
+    assert search_client.indexed[0][0] == "deals"
+    assert search_client.indexed[0][1]["id"] == "deal-1"
+    assert search_client.indexed[0][1]["status"] == "rejected"
+    assert search_client.indexed[0][1]["trustScore"] == 0
+
+
+def test_handle_auction_status_changed_refreshes_auction_document() -> None:
+    session = next(make_session())
+    seed_product(session)
+    seed_auction(session)
+    auction = session.get(Auction, "auction-1")
+    assert auction is not None
+    auction.status = "verified"
+    search_client = RecordingSearchClient()
+
+    handled = make_indexer(session, search_client).handle(
+        {
+            "eventId": "event-status-2",
+            "eventType": "auction.status.changed",
+            "aggregateType": "auction",
+            "aggregateId": "auction-1",
+            "payload": {
+                "auctionId": "auction-1",
+                "previousStatus": "active",
+                "newStatus": "verified",
+            },
+            "occurredAt": "2026-05-28T16:00:00Z",
+        }
+    )
+
+    assert handled is True
+    assert search_client.indexed[0][0] == "auctions"
+    assert search_client.indexed[0][1]["id"] == "auction-1"
+    assert search_client.indexed[0][1]["status"] == "verified"
+    assert search_client.indexed[0][1]["trustScore"] == 5
+
+
 def test_handle_auction_bid_placed_refreshes_auction_document() -> None:
     session = next(make_session())
     seed_product(session)
