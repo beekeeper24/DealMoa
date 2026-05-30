@@ -25,6 +25,7 @@ Initial event types:
 | `auction.bid.placed` | `auction` | Product API auction bid path |
 | `auction.favorite.created` | `auction` | Favorites API auction favorite create path |
 | `auction.favorite.deleted` | `auction` | Favorites API auction favorite delete path |
+| `auction.view.recorded` | `auction` | Product API auction detail view path |
 
 The outbox publisher sends messages with this envelope:
 
@@ -82,6 +83,7 @@ The search indexer currently handles:
 - `auction.created` -> upsert one `auctions_current` document.
 - `auction.bid.placed` -> upsert one `auctions_current` document from the latest persisted auction state.
 - `auction.favorite.created` / `auction.favorite.deleted` -> upsert one `auctions_current` document from the latest persisted auction state, including current `favoriteCount`.
+- `auction.view.recorded` -> upsert one `auctions_current` document from the latest persisted auction state, including current 24-hour `viewMomentum`.
 
 To run the notification subscriber locally:
 
@@ -137,6 +139,10 @@ The auction-ending task scans active auctions whose `ends_at` is inside the look
 ```text
 (user_id, type, target_type, target_id)
 ```
+
+## Auction View Momentum
+
+The auction detail API records an immutable `auction_views` row and writes `auction.view.recorded` to the transactional outbox. The search consumer handles that event by reloading the auction aggregate and upserting the `auctions_current` document with the current 24-hour `viewMomentum` count.
 
 ## Next Steps
 

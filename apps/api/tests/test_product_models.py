@@ -1,16 +1,23 @@
 from typing import cast
 
 from app.db.base import Base
-from app.modules.products.models import Auction, AuctionBid, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 from sqlalchemy import ForeignKeyConstraint, Index, Table, inspect
 
 
 def test_product_deal_auction_tables_are_registered() -> None:
-    assert Base.metadata.tables.keys() >= {"products", "deals", "auctions", "auction_bids"}
+    assert Base.metadata.tables.keys() >= {
+        "products",
+        "deals",
+        "auctions",
+        "auction_bids",
+        "auction_views",
+    }
     assert Product.__tablename__ == "products"
     assert Deal.__tablename__ == "deals"
     assert Auction.__tablename__ == "auctions"
     assert AuctionBid.__tablename__ == "auction_bids"
+    assert AuctionView.__tablename__ == "auction_views"
 
 
 def test_product_columns_capture_search_identity() -> None:
@@ -106,6 +113,25 @@ def test_auction_bid_table_records_user_amount_and_target() -> None:
     assert foreign_tables == {"auctions", "users"}
 
 
+def test_auction_view_table_records_immutable_view_events() -> None:
+    view = cast(Table, AuctionView.__table__)
+
+    assert set(view.columns.keys()) == {
+        "id",
+        "auction_id",
+        "created_at",
+        "updated_at",
+    }
+    assert view.c.auction_id.nullable is False
+
+    foreign_tables = {
+        constraint.referred_table.name
+        for constraint in view.constraints
+        if isinstance(constraint, ForeignKeyConstraint)
+    }
+    assert foreign_tables == {"auctions"}
+
+
 def test_product_module_indexes_support_lookup_and_join_paths() -> None:
     expected_indexes = {
         "ix_products_name",
@@ -117,6 +143,7 @@ def test_product_module_indexes_support_lookup_and_join_paths() -> None:
         "ix_auctions_status",
         "ix_auction_bids_auction_id",
         "ix_auction_bids_user_id",
+        "ix_auction_views_auction_id_created_at",
     }
     indexes = {
         index.name
@@ -125,6 +152,7 @@ def test_product_module_indexes_support_lookup_and_join_paths() -> None:
             cast(Table, Deal.__table__),
             cast(Table, Auction.__table__),
             cast(Table, AuctionBid.__table__),
+            cast(Table, AuctionView.__table__),
         )
         for index in table.indexes
         if isinstance(index, Index)
@@ -138,10 +166,13 @@ def test_product_relationships_are_bidirectional() -> None:
     deal_relationships = inspect(Deal).relationships
     auction_relationships = inspect(Auction).relationships
     auction_bid_relationships = inspect(AuctionBid).relationships
+    auction_view_relationships = inspect(AuctionView).relationships
 
     assert product_relationships.deals.mapper.class_ is Deal
     assert product_relationships.auctions.mapper.class_ is Auction
     assert deal_relationships.product.mapper.class_ is Product
     assert auction_relationships.product.mapper.class_ is Product
     assert auction_relationships.bids.mapper.class_ is AuctionBid
+    assert auction_relationships.views.mapper.class_ is AuctionView
     assert auction_bid_relationships.auction.mapper.class_ is Auction
+    assert auction_view_relationships.auction.mapper.class_ is Auction

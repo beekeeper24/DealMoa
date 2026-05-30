@@ -39,6 +39,7 @@ export type AuctionSearchItem = {
   bidCount: number;
   uniqueBidderCount?: number;
   favoriteCount?: number;
+  viewMomentum?: number;
   currency: string;
   status: string;
   endsAt: string | null;

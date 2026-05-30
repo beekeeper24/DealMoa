@@ -10,6 +10,7 @@ DomainEventType = Literal[
     "auction.bid.placed",
     "auction.favorite.created",
     "auction.favorite.deleted",
+    "auction.view.recorded",
 ]
 
 AUCTION_REFRESH_EVENT_TYPES = {
@@ -17,6 +18,7 @@ AUCTION_REFRESH_EVENT_TYPES = {
     "auction.bid.placed",
     "auction.favorite.created",
     "auction.favorite.deleted",
+    "auction.view.recorded",
 }
 
 

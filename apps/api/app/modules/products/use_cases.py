@@ -10,7 +10,7 @@ from app.core.exceptions import (
 )
 from app.core.pagination import CursorPage
 from app.modules.events.use_cases import DomainEventsUseCases
-from app.modules.products.models import Auction, AuctionBid, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
     AuctionBidCreateRequest,
@@ -123,6 +123,20 @@ class ProductUseCases:
         auction = self.repository.get_auction(auction_id)
         if auction is None:
             raise AuctionNotFoundException(auction_id)
+        return auction
+
+    def view_auction(self, auction_id: str) -> Auction:
+        auction = self.get_auction(auction_id)
+        now = self.now()
+        view = self.repository.create_auction_view(
+            AuctionView(
+                auction_id=auction.id,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        if self.domain_events is not None:
+            self.domain_events.record_auction_view_recorded(view)
         return auction
 
     def list_auctions_for_product(

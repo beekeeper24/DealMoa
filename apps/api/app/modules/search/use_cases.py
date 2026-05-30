@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 from app.core.pagination import CursorPage
@@ -25,7 +26,13 @@ class SearchSourceRepository(Protocol):
     def list_auction_favorite_counts(self) -> dict[str, int]:
         pass
 
+    def list_auction_view_counts_since(self, since: datetime) -> dict[str, int]:
+        pass
+
     def count_auction_favorites(self, auction_id: str) -> int:
+        pass
+
+    def count_auction_views_since(self, auction_id: str, since: datetime) -> int:
         pass
 
 
@@ -67,9 +74,13 @@ class SearchUseCases:
         self,
         source_repository: SearchSourceRepository,
         search_client: SearchClient,
+        now: Callable[[], datetime] | None = None,
+        view_momentum_window: timedelta = timedelta(hours=24),
     ) -> None:
         self.source_repository = source_repository
         self.search_client = search_client
+        self.now = now or utc_now
+        self.view_momentum_window = view_momentum_window
 
     def rebuild_indexes(self) -> dict[SearchIndexKind, int]:
         product_documents = [
@@ -80,10 +91,14 @@ class SearchUseCases:
             build_deal_document(deal) for deal in self.source_repository.list_deals_for_search()
         ]
         auction_favorite_counts = self.source_repository.list_auction_favorite_counts()
+        auction_view_counts = self.source_repository.list_auction_view_counts_since(
+            self._view_momentum_since()
+        )
         auction_documents = [
             build_auction_document(
                 auction,
                 favorite_count=auction_favorite_counts.get(auction.id, 0),
+                view_momentum=auction_view_counts.get(auction.id, 0),
             )
             for auction in self.source_repository.list_auctions_for_search()
         ]
@@ -111,6 +126,10 @@ class SearchUseCases:
             build_auction_document(
                 auction,
                 favorite_count=self.source_repository.count_auction_favorites(auction.id),
+                view_momentum=self.source_repository.count_auction_views_since(
+                    auction.id,
+                    self._view_momentum_since(),
+                ),
             ),
         )
 
@@ -148,3 +167,10 @@ class SearchUseCases:
         cursor: str | None,
     ) -> CursorPage[dict[str, Any]]:
         return self.search_client.rank_auctions(limit=limit, cursor=cursor)
+
+    def _view_momentum_since(self) -> datetime:
+        return self.now() - self.view_momentum_window
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)

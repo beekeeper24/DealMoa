@@ -6,7 +6,7 @@ from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.favorites.models import AuctionFavorite
-from app.modules.products.models import Auction, AuctionBid, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -193,4 +193,25 @@ def test_record_auction_favorite_created_and_deleted_events() -> None:
         "auctionId": "auction-1",
         "favoriteId": "favorite-1",
         "userId": "user-1",
+    }
+
+
+def test_record_auction_view_recorded_event() -> None:
+    session = next(make_session())
+    view = AuctionView(
+        id="view-1",
+        auction_id="auction-1",
+        created_at=NOW,
+        updated_at=NOW,
+    )
+
+    make_use_cases(session).record_auction_view_recorded(view)
+
+    stored = session.scalars(select(DomainEvent)).one()
+    assert stored.event_type == "auction.view.recorded"
+    assert stored.aggregate_type == "auction"
+    assert stored.aggregate_id == "auction-1"
+    assert stored.payload_json == {
+        "auctionId": "auction-1",
+        "viewId": "view-1",
     }

@@ -105,6 +105,7 @@ AUCTION_INDEX_BODY: dict[str, Any] = {
             "bidCount": {"type": "integer"},
             "uniqueBidderCount": {"type": "integer"},
             "favoriteCount": {"type": "integer"},
+            "viewMomentum": {"type": "integer"},
             "currency": {"type": "keyword"},
             "status": {"type": "keyword"},
             "endsAt": {"type": "date"},

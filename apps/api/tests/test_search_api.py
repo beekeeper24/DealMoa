@@ -85,6 +85,7 @@ class FakeSearchUseCases:
                     "bidCount": 3,
                     "uniqueBidderCount": 2,
                     "favoriteCount": 7,
+                    "viewMomentum": 11,
                     "currency": "KRW",
                     "status": "active",
                     "endsAt": None,
@@ -171,6 +172,7 @@ def test_search_auctions_returns_activity_fields() -> None:
     assert response.json()["items"][0]["bidCount"] == 3
     assert response.json()["items"][0]["uniqueBidderCount"] == 2
     assert response.json()["items"][0]["favoriteCount"] == 7
+    assert response.json()["items"][0]["viewMomentum"] == 11
     assert use_cases.calls == [("auctions", "galaxy", 20, None)]
 
 

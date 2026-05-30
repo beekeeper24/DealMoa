@@ -144,7 +144,7 @@ def get_auction(
     auction_id: str,
     use_cases: Annotated[ProductUseCases, Depends(get_product_use_cases)],
 ) -> AuctionResponse:
-    return AuctionResponse.model_validate(use_cases.get_auction(auction_id))
+    return AuctionResponse.model_validate(use_cases.view_auction(auction_id))
 
 
 @offer_router.post(

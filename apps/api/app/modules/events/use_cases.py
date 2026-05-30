@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.favorites.models import AuctionFavorite
-from app.modules.products.models import Auction, AuctionBid, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 
 
 def utc_now() -> datetime:
@@ -105,6 +105,17 @@ class DomainEventsUseCases:
         return self._record_auction_favorite_event(
             event_type="auction.favorite.deleted",
             favorite=favorite,
+        )
+
+    def record_auction_view_recorded(self, view: AuctionView) -> DomainEvent:
+        return self._record_event(
+            event_type="auction.view.recorded",
+            aggregate_type="auction",
+            aggregate_id=view.auction_id,
+            payload={
+                "auctionId": view.auction_id,
+                "viewId": view.id,
+            },
         )
 
     def _record_event(

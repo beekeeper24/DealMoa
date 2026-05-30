@@ -154,6 +154,7 @@ Initial Kafka events:
 - `auction.created`
 - `product.updated`
 - `auction.bid.placed`
+- `auction.view.recorded`
 
 Initial consumers:
 

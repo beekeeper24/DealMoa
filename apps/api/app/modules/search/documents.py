@@ -60,7 +60,12 @@ def build_deal_document(deal: Deal) -> SearchDocument:
     }
 
 
-def build_auction_document(auction: Auction, *, favorite_count: int = 0) -> SearchDocument:
+def build_auction_document(
+    auction: Auction,
+    *,
+    favorite_count: int = 0,
+    view_momentum: int = 0,
+) -> SearchDocument:
     unique_bidder_count = len({bid.user_id for bid in auction.bids})
     return {
         "id": auction.id,
@@ -72,6 +77,7 @@ def build_auction_document(auction: Auction, *, favorite_count: int = 0) -> Sear
         "bidCount": auction.bid_count,
         "uniqueBidderCount": unique_bidder_count,
         "favoriteCount": favorite_count,
+        "viewMomentum": view_momentum,
         "currency": auction.currency,
         "status": auction.status,
         "endsAt": serialize_datetime(auction.ends_at),
