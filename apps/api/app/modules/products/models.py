@@ -77,6 +77,7 @@ class Auction(TimestampMixin, Base):
 
     product: Mapped[Product] = relationship(back_populates="auctions")
     bids: Mapped[list["AuctionBid"]] = relationship(back_populates="auction")
+    views: Mapped[list["AuctionView"]] = relationship(back_populates="auction")
 
 
 class AuctionBid(TimestampMixin, Base):
@@ -92,3 +93,15 @@ class AuctionBid(TimestampMixin, Base):
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
 
     auction: Mapped[Auction] = relationship(back_populates="bids")
+
+
+class AuctionView(TimestampMixin, Base):
+    __tablename__ = "auction_views"
+    __table_args__ = (
+        Index("ix_auction_views_auction_id_created_at", "auction_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    auction_id: Mapped[str] = mapped_column(ForeignKey("auctions.id"), nullable=False)
+
+    auction: Mapped[Auction] = relationship(back_populates="views")

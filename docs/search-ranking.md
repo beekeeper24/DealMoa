@@ -47,6 +47,7 @@ Domain-event indexing also updates single documents:
 - `deal.created` upserts the matching `deals_current` document.
 - `auction.created` upserts the matching `auctions_current` document.
 - `auction.bid.placed` upserts the matching `auctions_current` document so bid-driven ranking signals stay fresh.
+- `auction.view.recorded` upserts the matching `auctions_current` document so view-momentum ranking stays fresh.
 
 The admin full reindex endpoint remains the recovery path when mappings change or an index needs rebuilding from PostgreSQL.
 
@@ -93,9 +94,10 @@ signals available in the current schema:
 
 - `BidActivity`: capped `bidCount` contribution, max 45 points.
 - `UniqueBidder`: capped `uniqueBidderCount` contribution, max 20 points.
+- `ViewMomentum`: capped recent `viewMomentum` contribution from auction detail views in the last 24 hours, max 15 points.
 - `Interest`: capped `favoriteCount` contribution, max 10 points.
 - `EndingSoon`: auctions ending inside the 24-hour window receive up to 5 points.
 
-`ViewMomentum` and `Trust` stay documented target signals until views and admin
-trust/status workflows are implemented. `favoriteCount` is refreshed during full reindex,
-auction bid single-document upserts, and auction favorite create/delete events.
+`Trust` stays a documented target signal until admin trust/status workflows are implemented.
+`favoriteCount` and `viewMomentum` are refreshed during full reindex and relevant
+single-document auction upserts.

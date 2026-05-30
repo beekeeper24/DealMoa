@@ -46,6 +46,7 @@ class AuctionSearchItem(BaseModel):
     bid_count: int = Field(alias="bidCount")
     unique_bidder_count: int = Field(default=0, alias="uniqueBidderCount")
     favorite_count: int = Field(default=0, alias="favoriteCount")
+    view_momentum: int = Field(default=0, alias="viewMomentum")
     currency: str
     status: str
     ends_at: str | None = Field(default=None, alias="endsAt")

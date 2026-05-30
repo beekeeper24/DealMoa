@@ -53,6 +53,11 @@ double interest = Math.min(favoriteCount, params.favoriteCountCap)
   / params.favoriteCountCap
   * params.favoriteCountWeight;
 
+double viewMomentum = doc['viewMomentum'].size() == 0 ? 0.0 : doc['viewMomentum'].value;
+double viewMomentumScore = Math.min(viewMomentum, params.viewMomentumCap)
+  / params.viewMomentumCap
+  * params.viewMomentumWeight;
+
 double endingSoon = 0.0;
 if (doc['endsAt'].size() != 0) {
   long diffMillis = doc['endsAt'].value.toInstant().toEpochMilli() - params.nowMillis;
@@ -62,7 +67,7 @@ if (doc['endsAt'].size() != 0) {
   }
 }
 
-return bidActivity + uniqueBidder + interest + endingSoon;
+return bidActivity + uniqueBidder + interest + viewMomentumScore + endingSoon;
 """
 
 
@@ -215,6 +220,8 @@ class ElasticsearchSearchClient:
                             "uniqueBidderWeight": 20.0,
                             "favoriteCountCap": 20.0,
                             "favoriteCountWeight": 10.0,
+                            "viewMomentumCap": 100.0,
+                            "viewMomentumWeight": 15.0,
                             "endingSoonWindowMillis": 24.0 * 60.0 * 60.0 * 1000.0,
                             "endingSoonWeight": 5.0,
                             "nowMillis": int(now.timestamp() * 1000),

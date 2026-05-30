@@ -6,7 +6,7 @@ from app.db.base import Base
 from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.auth.models import User
 from app.modules.favorites.models import AuctionFavorite
-from app.modules.products.models import Auction, Deal, Product
+from app.modules.products.models import Auction, AuctionView, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.search.indexes import SearchIndexKind
 from consumer_app.domain_events import DomainEventSearchIndexer
@@ -293,6 +293,49 @@ def test_handle_auction_favorite_events_refreshes_auction_favorite_count() -> No
     assert deleted_handled is True
     assert [kind for kind, _document in search_client.indexed] == ["auctions", "auctions"]
     assert [document["favoriteCount"] for _kind, document in search_client.indexed] == [2, 1]
+
+
+def test_handle_auction_view_recorded_refreshes_auction_view_momentum() -> None:
+    session = next(make_session())
+    seed_product(session)
+    seed_auction(session)
+    now = datetime.now(UTC)
+    session.add_all(
+        [
+            AuctionView(
+                id="view-1",
+                auction_id="auction-1",
+                created_at=now,
+                updated_at=now,
+            ),
+            AuctionView(
+                id="view-2",
+                auction_id="auction-1",
+                created_at=now,
+                updated_at=now,
+            ),
+        ]
+    )
+    session.flush()
+    search_client = RecordingSearchClient()
+
+    handled = make_indexer(session, search_client).handle(
+        {
+            "eventId": "event-7",
+            "eventType": "auction.view.recorded",
+            "aggregateType": "auction",
+            "aggregateId": "auction-1",
+            "payload": {
+                "auctionId": "auction-1",
+                "viewId": "view-2",
+            },
+            "occurredAt": now.isoformat().replace("+00:00", "Z"),
+        }
+    )
+
+    assert handled is True
+    assert search_client.indexed[0][0] == "auctions"
+    assert search_client.indexed[0][1]["viewMomentum"] == 2
 
 
 def test_handle_unknown_event_or_missing_aggregate_is_noop() -> None:

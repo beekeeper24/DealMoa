@@ -37,7 +37,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
-- Current Kafka domain events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`.
+- Current Kafka domain events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`.
 - Initial Celery tasks: `crawl_hot_deals_mock`, `ai_review_submission_mock`, `rebuild_search_index`.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
@@ -153,6 +153,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Search client supports single-document upsert through the current aliases.
 - `apps/consumer` handles `product.updated`, `deal.created`, and `auction.created` events for Elasticsearch indexing.
 - `apps/consumer` handles `auction.bid.placed` by rebuilding the `auctions_current` document from persisted auction state.
+- `apps/consumer` handles `auction.view.recorded` by rebuilding the auction document with current view momentum.
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
 - Admin full reindex remains the recovery path.
 
@@ -160,11 +161,12 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 
 - Auction search documents include `uniqueBidderCount` from accepted bid rows.
 - Auction search documents include `favoriteCount` from auction favorite rows.
+- Auction search documents include `viewMomentum` from auction detail views in the last 24 hours.
 - Full auction reindex eagerly loads bids to compute unique bidder counts without N+1 queries.
-- Full auction reindex bulk-loads favorite counts, and single auction upserts query the current favorite count.
+- Full auction reindex bulk-loads favorite and view-momentum counts, and single auction upserts query current counts.
 - `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
-- The current score uses available signals: capped bid count, capped unique bidder count, favorite-count interest, and ending-soon pressure.
-- View momentum and trust signals remain later ranking slices.
+- The current score uses available signals: capped bid count, capped unique bidder count, view momentum, favorite-count interest, and ending-soon pressure.
+- Trust signals remain a later ranking slice.
 
 ## Completed Auction Favorite Event Freshness Scope
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.exceptions import InvalidSearchCursorException
 from app.core.pagination import CursorPage
 from app.modules.favorites.models import AuctionFavorite
-from app.modules.products.models import Auction, AuctionBid, Deal, Product
+from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 
 T = TypeVar("T", Product, Deal, Auction)
 
@@ -85,6 +85,11 @@ class ProductRepository:
         self.session.flush()
         return bid
 
+    def create_auction_view(self, view: AuctionView) -> AuctionView:
+        self.session.add(view)
+        self.session.flush()
+        return view
+
     def get_highest_auction_bid(self, auction_id: str) -> AuctionBid | None:
         statement = (
             select(AuctionBid)
@@ -120,6 +125,22 @@ class ProductRepository:
             select(AuctionFavorite.auction_id, func.count(AuctionFavorite.id))
             .group_by(AuctionFavorite.auction_id)
             .order_by(AuctionFavorite.auction_id)
+        )
+        return {auction_id: count for auction_id, count in self.session.execute(statement)}
+
+    def count_auction_views_since(self, auction_id: str, since: datetime) -> int:
+        statement = select(func.count(AuctionView.id)).where(
+            AuctionView.auction_id == auction_id,
+            AuctionView.created_at >= since,
+        )
+        return self.session.scalar(statement) or 0
+
+    def list_auction_view_counts_since(self, since: datetime) -> dict[str, int]:
+        statement = (
+            select(AuctionView.auction_id, func.count(AuctionView.id))
+            .where(AuctionView.created_at >= since)
+            .group_by(AuctionView.auction_id)
+            .order_by(AuctionView.auction_id)
         )
         return {auction_id: count for auction_id, count in self.session.execute(statement)}
 
