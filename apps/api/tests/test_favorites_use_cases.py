@@ -9,7 +9,10 @@ from app.core.exceptions import (
 )
 from app.db.base import Base
 from app.modules.auth.models import User
-from app.modules.favorites.models import ProductFavorite
+from app.modules.events.models import DomainEvent
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.favorites.models import AuctionFavorite, ProductFavorite
 from app.modules.favorites.repository import FavoritesRepository
 from app.modules.favorites.use_cases import FavoritesUseCases
 from app.modules.products.models import Auction, Deal, Product
@@ -101,6 +104,17 @@ def add_auction(session: Session, auction_id: str, product_id: str) -> Auction:
 
 def make_use_cases(session: Session) -> FavoritesUseCases:
     return FavoritesUseCases(repository=FavoritesRepository(session), now=lambda: NOW)
+
+
+def make_use_cases_with_events(session: Session) -> FavoritesUseCases:
+    return FavoritesUseCases(
+        repository=FavoritesRepository(session),
+        domain_events=DomainEventsUseCases(
+            repository=DomainEventsRepository(session),
+            now=lambda: NOW,
+        ),
+        now=lambda: NOW,
+    )
 
 
 def test_add_product_favorite_is_idempotent_per_user() -> None:
@@ -210,3 +224,39 @@ def test_auction_favorite_is_idempotent_and_validates_target() -> None:
 
     with pytest.raises(AuctionNotFoundException):
         use_cases.add_auction_favorite(user_id="user-1", auction_id="missing-auction")
+
+
+def test_auction_favorite_mutations_record_outbox_events_once() -> None:
+    session = next(make_session())
+    add_user(session)
+    add_product(session, "product-1")
+    add_auction(session, "auction-1", "product-1")
+    use_cases = make_use_cases_with_events(session)
+
+    created = use_cases.add_auction_favorite(user_id="user-1", auction_id="auction-1")
+    duplicate = use_cases.add_auction_favorite(user_id="user-1", auction_id="auction-1")
+    use_cases.remove_auction_favorite(user_id="user-1", auction_id="auction-1")
+    use_cases.remove_auction_favorite(user_id="user-1", auction_id="auction-1")
+
+    stored_favorites = list(session.scalars(select(AuctionFavorite)))
+    stored_events = list(session.scalars(select(DomainEvent).order_by(DomainEvent.event_type)))
+    assert created.id == duplicate.id
+    assert stored_favorites == []
+    assert [event.event_type for event in stored_events] == [
+        "auction.favorite.created",
+        "auction.favorite.deleted",
+    ]
+    assert [event.aggregate_type for event in stored_events] == ["auction", "auction"]
+    assert [event.aggregate_id for event in stored_events] == ["auction-1", "auction-1"]
+    assert [event.payload_json for event in stored_events] == [
+        {
+            "auctionId": "auction-1",
+            "favoriteId": created.id,
+            "userId": "user-1",
+        },
+        {
+            "auctionId": "auction-1",
+            "favoriteId": created.id,
+            "userId": "user-1",
+        },
+    ]

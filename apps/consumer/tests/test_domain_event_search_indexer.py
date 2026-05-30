@@ -4,6 +4,8 @@ from typing import Any
 
 from app.db.base import Base
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.auth.models import User
+from app.modules.favorites.models import AuctionFavorite
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.search.indexes import SearchIndexKind
@@ -117,6 +119,32 @@ def seed_auction(session: Session) -> None:
     )
 
 
+def add_user(session: Session, user_id: str) -> None:
+    session.add(
+        User(
+            id=user_id,
+            email=f"{user_id}@example.com",
+            nickname=user_id,
+            role="USER",
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+
+
+def add_auction_favorite(session: Session, favorite_id: str, user_id: str) -> AuctionFavorite:
+    favorite = AuctionFavorite(
+        id=favorite_id,
+        user_id=user_id,
+        auction_id="auction-1",
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    session.add(favorite)
+    session.flush()
+    return favorite
+
+
 def make_indexer(
     session: Session,
     search_client: RecordingSearchClient,
@@ -217,6 +245,54 @@ def test_handle_auction_bid_placed_refreshes_auction_document() -> None:
     assert search_client.indexed[0][1]["id"] == "auction-1"
     assert search_client.indexed[0][1]["currentPrice"] == 750000
     assert search_client.indexed[0][1]["bidCount"] == 4
+
+
+def test_handle_auction_favorite_events_refreshes_auction_favorite_count() -> None:
+    session = next(make_session())
+    seed_product(session)
+    seed_auction(session)
+    add_user(session, "user-1")
+    add_user(session, "user-2")
+    add_auction_favorite(session, "favorite-1", "user-1")
+    favorite_to_delete = add_auction_favorite(session, "favorite-2", "user-2")
+    search_client = RecordingSearchClient()
+    indexer = make_indexer(session, search_client)
+
+    created_handled = indexer.handle(
+        {
+            "eventId": "event-5",
+            "eventType": "auction.favorite.created",
+            "aggregateType": "auction",
+            "aggregateId": "auction-1",
+            "payload": {
+                "auctionId": "auction-1",
+                "favoriteId": "favorite-2",
+                "userId": "user-2",
+            },
+            "occurredAt": "2026-05-28T16:00:00Z",
+        }
+    )
+    session.delete(favorite_to_delete)
+    session.flush()
+    deleted_handled = indexer.handle(
+        {
+            "eventId": "event-6",
+            "eventType": "auction.favorite.deleted",
+            "aggregateType": "auction",
+            "aggregateId": "auction-1",
+            "payload": {
+                "auctionId": "auction-1",
+                "favoriteId": "favorite-2",
+                "userId": "user-2",
+            },
+            "occurredAt": "2026-05-28T16:01:00Z",
+        }
+    )
+
+    assert created_handled is True
+    assert deleted_handled is True
+    assert [kind for kind, _document in search_client.indexed] == ["auctions", "auctions"]
+    assert [document["favoriteCount"] for _kind, document in search_client.indexed] == [2, 1]
 
 
 def test_handle_unknown_event_or_missing_aggregate_is_noop() -> None:

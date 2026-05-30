@@ -97,6 +97,5 @@ signals available in the current schema:
 - `EndingSoon`: auctions ending inside the 24-hour window receive up to 5 points.
 
 `ViewMomentum` and `Trust` stay documented target signals until views and admin
-trust/status workflows are implemented. `favoriteCount` is refreshed during full reindex
-and existing auction single-document upserts; favorite create/delete event freshness is a
-separate follow-up slice.
+trust/status workflows are implemented. `favoriteCount` is refreshed during full reindex,
+auction bid single-document upserts, and auction favorite create/delete events.

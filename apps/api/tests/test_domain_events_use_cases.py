@@ -5,6 +5,7 @@ from app.db.base import Base
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.favorites.models import AuctionFavorite
 from app.modules.products.models import Auction, AuctionBid, Deal, Product
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -159,4 +160,37 @@ def test_record_auction_bid_placed_event() -> None:
         "bidCount": 4,
         "currency": "KRW",
         "previousHighestBidderUserId": "user-0",
+    }
+
+
+def test_record_auction_favorite_created_and_deleted_events() -> None:
+    session = next(make_session())
+    favorite = AuctionFavorite(
+        id="favorite-1",
+        user_id="user-1",
+        auction_id="auction-1",
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    use_cases = make_use_cases(session)
+
+    use_cases.record_auction_favorite_created(favorite)
+    use_cases.record_auction_favorite_deleted(favorite)
+
+    stored = list(session.scalars(select(DomainEvent).order_by(DomainEvent.event_type)))
+    assert [event.event_type for event in stored] == [
+        "auction.favorite.created",
+        "auction.favorite.deleted",
+    ]
+    assert {event.aggregate_type for event in stored} == {"auction"}
+    assert {event.aggregate_id for event in stored} == {"auction-1"}
+    assert stored[0].payload_json == {
+        "auctionId": "auction-1",
+        "favoriteId": "favorite-1",
+        "userId": "user-1",
+    }
+    assert stored[1].payload_json == {
+        "auctionId": "auction-1",
+        "favoriteId": "favorite-1",
+        "userId": "user-1",
     }
