@@ -54,6 +54,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `docs/auth.md`: OAuth/JWT/refresh token Auth MVP contract.
 - `docs/favorites.md`: Product/Deal/Auction favorite API contract.
 - `docs/notifications.md`: authenticated notification inbox API contract.
+- `docs/reports.md`: report intake, admin review queue, and ranking boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
@@ -65,7 +66,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Candidate next slices: report intake/review queue, search UX validation, or dedicated hot-deal ranking endpoint.
+2. Candidate next slices: report-to-status admin UI flow, search UX validation, or dedicated hot-deal ranking endpoint.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -179,6 +180,17 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Status updates write immutable audit logs and transactional outbox events.
 - `deal.status.changed` and `auction.status.changed` refresh Elasticsearch read models through the search consumer.
 - Report counts still do not directly hide or down-rank content.
+
+## Completed Report Review Queue Scope
+
+- Added `offer_reports` with user, target, reason, status, reviewer, resolution, and timestamps.
+- Added authenticated `POST /api/v1/reports/deals/{deal_id}`.
+- Added authenticated `POST /api/v1/reports/auctions/{auction_id}`.
+- Duplicate open reports from the same user for the same target return the existing open report.
+- Added admin-only `GET /api/v1/admin/reports`.
+- Added admin-only `PATCH /api/v1/admin/reports/{report_id}` for `resolved` / `dismissed` report review.
+- Admin report review writes `admin_audit_logs`.
+- Reports still do not directly change offer status, search visibility, or ranking.
 
 ## Completed Auction Favorite Event Freshness Scope
 

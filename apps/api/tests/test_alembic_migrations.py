@@ -36,6 +36,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "auction_bids",
         "auction_views",
         "admin_audit_logs",
+        "offer_reports",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
@@ -52,6 +53,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     admin_audit_indexes = {
         index["name"] for index in inspector.get_indexes("admin_audit_logs")
     }
+    offer_report_indexes = {index["name"] for index in inspector.get_indexes("offer_reports")}
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
     assert auction_foreign_keys[0]["referred_table"] == "products"
@@ -68,6 +70,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     }
     assert auction_view_foreign_keys[0]["referred_table"] == "auctions"
     assert inspector.get_foreign_keys("admin_audit_logs")[0]["referred_table"] == "users"
+    assert inspector.get_foreign_keys("offer_reports")[0]["referred_table"] == "users"
     assert {
         "ix_domain_events_published_at_created_at",
         "ix_domain_events_event_type",
@@ -80,6 +83,11 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "ix_admin_audit_logs_target",
         "ix_admin_audit_logs_action_created_at",
     } <= admin_audit_indexes
+    assert {
+        "ix_offer_reports_status_created_at",
+        "ix_offer_reports_target",
+        "ix_offer_reports_user_target_status",
+    } <= offer_report_indexes
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

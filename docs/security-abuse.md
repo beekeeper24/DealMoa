@@ -5,6 +5,11 @@
 Reports never automatically hide or down-rank content. They create admin review priority only.
 Only an admin status decision, such as moving a deal or auction to `active`, `verified`,
 `rejected`, or `blocked`, changes search visibility and status-derived trust.
+- Report creation requires login.
+- Duplicate open reports from the same user for the same deal/auction return the existing
+  open report instead of creating another open queue item.
+- Admin report review can mark a report `resolved` or `dismissed`, but it does not
+  automatically mutate the underlying deal/auction status.
 
 ## Submissions
 
