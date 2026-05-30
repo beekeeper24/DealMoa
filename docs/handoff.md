@@ -37,7 +37,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
-- Current Kafka domain events: `deal.created`, `auction.created`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`.
+- Current Kafka domain events: `deal.created`, `deal.status.changed`, `auction.created`, `auction.status.changed`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`.
 - Initial Celery tasks: `crawl_hot_deals_mock`, `ai_review_submission_mock`, `rebuild_search_index`.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
@@ -65,7 +65,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Candidate next slices: search UX validation, admin review workflow baseline, or dedicated hot-deal ranking endpoint.
+2. Candidate next slices: report intake/review queue, search UX validation, or dedicated hot-deal ranking endpoint.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -152,6 +152,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 
 - Search client supports single-document upsert through the current aliases.
 - `apps/consumer` handles `product.updated`, `deal.created`, and `auction.created` events for Elasticsearch indexing.
+- `apps/consumer` handles `deal.status.changed` and `auction.status.changed` by rebuilding the current offer search document with fresh status/trust fields.
 - `apps/consumer` handles `auction.bid.placed` by rebuilding the `auctions_current` document from persisted auction state.
 - `apps/consumer` handles `auction.view.recorded` by rebuilding the auction document with current view momentum.
 - Kafka subscriber command `consume-search-index` is separate from the outbox publisher command.
@@ -168,6 +169,16 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - General deal and auction search filters to `status = active`.
 - `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
 - The current score uses available signals: capped bid count, capped unique bidder count, view momentum, favorite-count interest, ending-soon pressure, and status-derived trust.
+
+## Completed Admin Offer Status Review Scope
+
+- Added `admin_audit_logs` with actor, target, action, previous status, new status, reason, and timestamps.
+- Added admin-only `PATCH /api/v1/admin/deals/{deal_id}/status`.
+- Added admin-only `PATCH /api/v1/admin/auctions/{auction_id}/status`.
+- Admin status updates require bearer auth and `role = ADMIN`; non-admin users receive `FORBIDDEN`.
+- Status updates write immutable audit logs and transactional outbox events.
+- `deal.status.changed` and `auction.status.changed` refresh Elasticsearch read models through the search consumer.
+- Report counts still do not directly hide or down-rank content.
 
 ## Completed Auction Favorite Event Freshness Scope
 

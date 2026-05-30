@@ -6,7 +6,9 @@ from app.modules.search.use_cases import SearchClient, SearchUseCases
 DomainEventType = Literal[
     "product.updated",
     "deal.created",
+    "deal.status.changed",
     "auction.created",
+    "auction.status.changed",
     "auction.bid.placed",
     "auction.favorite.created",
     "auction.favorite.deleted",
@@ -15,6 +17,7 @@ DomainEventType = Literal[
 
 AUCTION_REFRESH_EVENT_TYPES = {
     "auction.created",
+    "auction.status.changed",
     "auction.bid.placed",
     "auction.favorite.created",
     "auction.favorite.deleted",
@@ -55,6 +58,13 @@ class DomainEventSearchIndexer:
             return True
 
         if event_type == "deal.created":
+            deal = self.product_repository.get_deal(aggregate_id)
+            if deal is None:
+                return False
+            self.search_use_cases.index_deal(deal)
+            return True
+
+        if event_type == "deal.status.changed":
             deal = self.product_repository.get_deal(aggregate_id)
             if deal is None:
                 return False

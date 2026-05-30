@@ -3,6 +3,8 @@
 ## Reports
 
 Reports never automatically hide or down-rank content. They create admin review priority only.
+Only an admin status decision, such as moving a deal or auction to `active`, `verified`,
+`rejected`, or `blocked`, changes search visibility and status-derived trust.
 
 ## Submissions
 
@@ -55,3 +57,9 @@ Reports never automatically hide or down-rank content. They create admin review 
 
 - Enforce `ADMIN` role.
 - Keep audit logs for admin actions.
+- The first admin status APIs require bearer auth, fetch the current user from the database,
+  and allow only `role = ADMIN`.
+- Status changes write immutable `admin_audit_logs` rows with actor, target, previous status,
+  new status, reason, and timestamps.
+- Status-change events carry only offer IDs, status transition metadata, actor user ID, and
+  reason; downstream consumers reload canonical offer state from PostgreSQL.

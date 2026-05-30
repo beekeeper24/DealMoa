@@ -54,6 +54,28 @@ class DomainEventsUseCases:
             },
         )
 
+    def record_deal_status_changed(
+        self,
+        *,
+        deal: Deal,
+        actor_user_id: str,
+        previous_status: str,
+        reason: str | None,
+    ) -> DomainEvent:
+        return self._record_event(
+            event_type="deal.status.changed",
+            aggregate_type="deal",
+            aggregate_id=deal.id,
+            payload={
+                "dealId": deal.id,
+                "productId": deal.product_id,
+                "previousStatus": previous_status,
+                "newStatus": deal.status,
+                "actorUserId": actor_user_id,
+                "reason": reason,
+            },
+        )
+
     def record_auction_created(self, auction: Auction) -> DomainEvent:
         return self._record_event(
             event_type="auction.created",
@@ -69,6 +91,28 @@ class DomainEventsUseCases:
                 "bidCount": auction.bid_count,
                 "currency": auction.currency,
                 "status": auction.status,
+            },
+        )
+
+    def record_auction_status_changed(
+        self,
+        *,
+        auction: Auction,
+        actor_user_id: str,
+        previous_status: str,
+        reason: str | None,
+    ) -> DomainEvent:
+        return self._record_event(
+            event_type="auction.status.changed",
+            aggregate_type="auction",
+            aggregate_id=auction.id,
+            payload={
+                "auctionId": auction.id,
+                "productId": auction.product_id,
+                "previousStatus": previous_status,
+                "newStatus": auction.status,
+                "actorUserId": actor_user_id,
+                "reason": reason,
             },
         )
 

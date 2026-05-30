@@ -21,7 +21,9 @@ Initial event types:
 | --- | --- | --- |
 | `product.updated` | `product` | Product API product create/update paths |
 | `deal.created` | `deal` | Product API deal create path |
+| `deal.status.changed` | `deal` | Admin API deal status review path |
 | `auction.created` | `auction` | Product API auction create path |
+| `auction.status.changed` | `auction` | Admin API auction status review path |
 | `auction.bid.placed` | `auction` | Product API auction bid path |
 | `auction.favorite.created` | `auction` | Favorites API auction favorite create path |
 | `auction.favorite.deleted` | `auction` | Favorites API auction favorite delete path |
@@ -80,7 +82,9 @@ The search indexer currently handles:
 
 - `product.updated` -> upsert one `products_current` document.
 - `deal.created` -> upsert one `deals_current` document.
+- `deal.status.changed` -> upsert one `deals_current` document from the latest persisted deal state, including current `status` and `trustScore`.
 - `auction.created` -> upsert one `auctions_current` document.
+- `auction.status.changed` -> upsert one `auctions_current` document from the latest persisted auction state, including current `status` and `trustScore`.
 - `auction.bid.placed` -> upsert one `auctions_current` document from the latest persisted auction state.
 - `auction.favorite.created` / `auction.favorite.deleted` -> upsert one `auctions_current` document from the latest persisted auction state, including current `favoriteCount`.
 - `auction.view.recorded` -> upsert one `auctions_current` document from the latest persisted auction state, including current 24-hour `viewMomentum`.
@@ -143,6 +147,14 @@ The auction-ending task scans active auctions whose `ends_at` is inside the look
 ## Auction View Momentum
 
 The auction detail API records an immutable `auction_views` row and writes `auction.view.recorded` to the transactional outbox. The search consumer handles that event by reloading the auction aggregate and upserting the `auctions_current` document with the current 24-hour `viewMomentum` count.
+
+## Admin Status Review Events
+
+The admin offer status APIs write `deal.status.changed` and `auction.status.changed`
+events in the same transaction as the status mutation and `admin_audit_logs` row.
+Search consumers reload the canonical offer row from PostgreSQL instead of trusting the
+event payload. This keeps report counts out of automatic ranking while allowing admin
+status decisions to affect search visibility and trust freshness.
 
 ## Next Steps
 
