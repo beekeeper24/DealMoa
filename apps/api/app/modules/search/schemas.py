@@ -27,6 +27,7 @@ class DealSearchItem(BaseModel):
     sale_price: int = Field(alias="salePrice")
     currency: str
     status: str
+    trust_score: int = Field(default=0, alias="trustScore")
     started_at: str | None = Field(default=None, alias="startedAt")
     ended_at: str | None = Field(default=None, alias="endedAt")
     created_at: str = Field(alias="createdAt")
@@ -49,6 +50,7 @@ class AuctionSearchItem(BaseModel):
     view_momentum: int = Field(default=0, alias="viewMomentum")
     currency: str
     status: str
+    trust_score: int = Field(default=0, alias="trustScore")
     ends_at: str | None = Field(default=None, alias="endsAt")
     created_at: str = Field(alias="createdAt")
     updated_at: str = Field(alias="updatedAt")

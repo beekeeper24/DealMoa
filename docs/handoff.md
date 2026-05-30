@@ -65,7 +65,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Candidate next slices: refresh-token based web session hardening, auction view-momentum ranking, or admin trust/status ranking signals.
+2. Candidate next slices: search UX validation, admin review workflow baseline, or dedicated hot-deal ranking endpoint.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -162,11 +162,12 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Auction search documents include `uniqueBidderCount` from accepted bid rows.
 - Auction search documents include `favoriteCount` from auction favorite rows.
 - Auction search documents include `viewMomentum` from auction detail views in the last 24 hours.
+- Auction and deal search documents include status-derived `trustScore`.
 - Full auction reindex eagerly loads bids to compute unique bidder counts without N+1 queries.
 - Full auction reindex bulk-loads favorite and view-momentum counts, and single auction upserts query current counts.
+- General deal and auction search filters to `status = active`.
 - `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
-- The current score uses available signals: capped bid count, capped unique bidder count, view momentum, favorite-count interest, and ending-soon pressure.
-- Trust signals remain a later ranking slice.
+- The current score uses available signals: capped bid count, capped unique bidder count, view momentum, favorite-count interest, ending-soon pressure, and status-derived trust.
 
 ## Completed Auction Favorite Event Freshness Scope
 

@@ -51,6 +51,29 @@ def test_bulk_indexing_errors_raise_search_unavailable() -> None:
         client.replace_documents("products", [{"id": "product-1", "name": "Galaxy"}])
 
 
+def test_offer_search_filters_to_active_status() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"hits": {"hits": []}})
+
+    client = ElasticsearchSearchClient(
+        "http://elasticsearch.test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    client.search("deals", query="galaxy", limit=20, cursor=None)
+    client.search("auctions", query="galaxy", limit=20, cursor=None)
+
+    deal_body = json_from_request(requests[0])
+    auction_body = json_from_request(requests[1])
+    assert deal_body["query"]["bool"]["filter"] == [{"term": {"status": "active"}}]
+    assert auction_body["query"]["bool"]["filter"] == [{"term": {"status": "active"}}]
+    assert deal_body["query"]["bool"]["must"]["multi_match"]["query"] == "galaxy"
+    assert auction_body["query"]["bool"]["must"]["multi_match"]["query"] == "galaxy"
+
+
 def test_index_document_puts_document_to_alias_with_refresh() -> None:
     requests: list[httpx.Request] = []
 
@@ -95,6 +118,7 @@ def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
                                 "uniqueBidderCount": 3,
                                 "favoriteCount": 7,
                                 "viewMomentum": 9,
+                                "trustScore": 5,
                                 "currency": "KRW",
                                 "status": "active",
                                 "endsAt": "2026-05-29T12:00:00Z",
@@ -129,11 +153,13 @@ def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
     assert "uniqueBidderCount" in script["source"]
     assert "favoriteCount" in script["source"]
     assert "viewMomentum" in script["source"]
+    assert "trustScore" in script["source"]
     assert "endsAt" in script["source"]
     assert script["params"]["bidActivityWeight"] == 45.0
     assert script["params"]["uniqueBidderWeight"] == 20.0
     assert script["params"]["favoriteCountWeight"] == 10.0
     assert script["params"]["viewMomentumWeight"] == 15.0
+    assert script["params"]["trustScoreWeight"] == 5.0
     assert script["params"]["endingSoonWeight"] == 5.0
     assert body["sort"] == [{"_score": "desc"}, {"updatedAt": "desc"}, {"id": "desc"}]
     assert page.items[0]["score"] == 52.0

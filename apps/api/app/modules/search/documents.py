@@ -5,6 +5,15 @@ from app.modules.products.models import Auction, Deal, Product
 
 SearchDocument = dict[str, Any]
 
+TRUSTED_OFFER_STATUSES = frozenset({"active", "verified"})
+
+
+def status_trust_score(status: str, *, max_score: int) -> int:
+    normalized_status = status.strip().lower()
+    if normalized_status in TRUSTED_OFFER_STATUSES:
+        return max_score
+    return 0
+
 
 def serialize_datetime(value: datetime | None) -> str | None:
     if value is None:
@@ -53,6 +62,7 @@ def build_deal_document(deal: Deal) -> SearchDocument:
         "salePrice": deal.sale_price,
         "currency": deal.currency,
         "status": deal.status,
+        "trustScore": status_trust_score(deal.status, max_score=10),
         "startedAt": serialize_datetime(deal.started_at),
         "endedAt": serialize_datetime(deal.ended_at),
         "createdAt": serialize_datetime(deal.created_at),
@@ -80,6 +90,7 @@ def build_auction_document(
         "viewMomentum": view_momentum,
         "currency": auction.currency,
         "status": auction.status,
+        "trustScore": status_trust_score(auction.status, max_score=5),
         "endsAt": serialize_datetime(auction.ends_at),
         "createdAt": serialize_datetime(auction.created_at),
         "updatedAt": serialize_datetime(auction.updated_at),

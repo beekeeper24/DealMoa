@@ -51,6 +51,12 @@ Domain-event indexing also updates single documents:
 
 The admin full reindex endpoint remains the recovery path when mappings change or an index needs rebuilding from PostgreSQL.
 
+Deal and auction search documents carry a status-derived `trustScore` read-model field.
+For the current MVP, `active` and `verified` offers receive the full trust score and all
+other statuses receive zero. General deal and auction search filters to `status = active`
+so admin/status validation can gate visibility without letting report counts directly
+affect ranking.
+
 Search list responses use the same response envelope shape as Product API lists:
 
 ```json
@@ -73,6 +79,9 @@ PriceScore 50
 ```
 
 Reports do not directly lower rank. They only prioritize admin review.
+The current search read model exposes `trustScore` for deals as a status-derived target
+signal. A dedicated hot-deal ranking endpoint is still deferred, so general deal search
+keeps text relevance dominant and uses status as the visibility gate.
 
 ## Auction Activity Ranking
 
@@ -97,7 +106,8 @@ signals available in the current schema:
 - `ViewMomentum`: capped recent `viewMomentum` contribution from auction detail views in the last 24 hours, max 15 points.
 - `Interest`: capped `favoriteCount` contribution, max 10 points.
 - `EndingSoon`: auctions ending inside the 24-hour window receive up to 5 points.
+- `Trust`: status-derived `trustScore`, max 5 points.
 
-`Trust` stays a documented target signal until admin trust/status workflows are implemented.
-`favoriteCount` and `viewMomentum` are refreshed during full reindex and relevant
-single-document auction upserts.
+`favoriteCount`, `viewMomentum`, and `trustScore` are refreshed during full reindex and
+relevant single-document auction upserts. Reports still do not directly hide or down-rank
+content; only status changes from an admin/review workflow affect visibility and trust.
