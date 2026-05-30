@@ -80,6 +80,7 @@ def test_auction_search_document_keeps_activity_fields() -> None:
     assert document["productId"] == "product-1"
     assert document["currentPrice"] == 720000
     assert document["bidCount"] == 3
+    assert document["favoriteCount"] == 0
     assert document["endsAt"] == "2026-05-26T00:00:00Z"
 
 
@@ -128,3 +129,24 @@ def test_auction_search_document_counts_unique_bidders() -> None:
     document = build_auction_document(auction)
 
     assert document["uniqueBidderCount"] == 2
+
+
+def test_auction_search_document_keeps_favorite_count_signal() -> None:
+    auction = Auction(
+        id="auction-1",
+        product_id="product-1",
+        title="Galaxy S26 sealed auction",
+        source_url="https://example.com/auctions/galaxy-s26",
+        seller="Auction House",
+        current_price=780000,
+        bid_count=3,
+        currency="KRW",
+        status="active",
+        ends_at=datetime(2026, 5, 26, tzinfo=UTC),
+        created_at=datetime(2026, 5, 25, tzinfo=UTC),
+        updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+    )
+
+    document = build_auction_document(auction, favorite_count=7)
+
+    assert document["favoriteCount"] == 7

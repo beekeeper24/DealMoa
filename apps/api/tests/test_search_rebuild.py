@@ -59,6 +59,12 @@ class FakeSearchSourceRepository:
             )
         ]
 
+    def list_auction_favorite_counts(self) -> dict[str, int]:
+        return {"auction-1": 7}
+
+    def count_auction_favorites(self, auction_id: str) -> int:
+        return {"auction-1": 7}.get(auction_id, 0)
+
 
 class RecordingSearchClient:
     def __init__(self) -> None:
@@ -113,6 +119,7 @@ def test_rebuild_indexes_recreates_indexes_and_replaces_all_documents() -> None:
     assert search_client.replaced[0][1][0]["id"] == "product-1"
     assert search_client.replaced[1][1][0]["id"] == "deal-1"
     assert search_client.replaced[2][1][0]["id"] == "auction-1"
+    assert search_client.replaced[2][1][0]["favoriteCount"] == 7
     assert summary == {"products": 1, "deals": 1, "auctions": 1}
 
 
@@ -133,3 +140,4 @@ def test_index_single_product_deal_and_auction_documents() -> None:
     assert search_client.indexed[0][1]["id"] == "product-1"
     assert search_client.indexed[1][1]["id"] == "deal-1"
     assert search_client.indexed[2][1]["id"] == "auction-1"
+    assert search_client.indexed[2][1]["favoriteCount"] == 7

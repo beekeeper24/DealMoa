@@ -93,7 +93,10 @@ signals available in the current schema:
 
 - `BidActivity`: capped `bidCount` contribution, max 45 points.
 - `UniqueBidder`: capped `uniqueBidderCount` contribution, max 20 points.
+- `Interest`: capped `favoriteCount` contribution, max 10 points.
 - `EndingSoon`: auctions ending inside the 24-hour window receive up to 5 points.
 
-`ViewMomentum`, `Interest`, and `Trust` stay documented target signals until views,
-favorite-count denormalization, and admin trust/status workflows are implemented.
+`ViewMomentum` and `Trust` stay documented target signals until views and admin
+trust/status workflows are implemented. `favoriteCount` is refreshed during full reindex
+and existing auction single-document upserts; favorite create/delete event freshness is a
+separate follow-up slice.
