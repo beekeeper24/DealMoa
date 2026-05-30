@@ -7,6 +7,8 @@ from app.modules.favorites.router import router as favorites_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.products.router import offer_router
 from app.modules.products.router import router as products_router
+from app.modules.reports.router import admin_router as admin_reports_router
+from app.modules.reports.router import router as reports_router
 from app.modules.search.router import admin_router as admin_search_router
 from app.modules.search.router import router as search_router
 
@@ -16,6 +18,8 @@ api_router.include_router(auth_router)
 api_router.include_router(favorites_router)
 api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
+api_router.include_router(reports_router)
+api_router.include_router(admin_reports_router)
 api_router.include_router(products_router)
 api_router.include_router(offer_router)
 api_router.include_router(search_router)

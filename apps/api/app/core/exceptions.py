@@ -74,6 +74,11 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "알림을 찾을 수 없습니다.",
     )
+    REPORT_NOT_FOUND = (
+        "REPORT_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "신고를 찾을 수 없습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -245,4 +250,16 @@ class NotificationNotFoundException(NotificationException):
         super().__init__(
             ErrorCode.NOTIFICATION_NOT_FOUND,
             details={"notificationId": notification_id},
+        )
+
+
+class ReportException(DealMoaException):
+    pass
+
+
+class ReportNotFoundException(ReportException):
+    def __init__(self, report_id: str) -> None:
+        super().__init__(
+            ErrorCode.REPORT_NOT_FOUND,
+            details={"reportId": report_id},
         )
