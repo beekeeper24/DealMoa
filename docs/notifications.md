@@ -110,7 +110,7 @@ Read-all response:
 
 ## Web UI
 
-`apps/web` renders a compact notification dropdown in the search workspace header when an access token is present in the MVP web session.
+`apps/web` renders a compact notification dropdown in the search workspace header when the refresh-cookie session has been recovered and an in-memory access token is present.
 
 - The trigger fetches and displays unread notification count.
 - Opening the dropdown fetches recent notifications.

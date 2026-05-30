@@ -22,6 +22,46 @@ function mockSearchResponse(body: unknown): Response {
   });
 }
 
+function mockAuthErrorResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: "INVALID_REFRESH_TOKEN",
+        message: "로그인이 필요합니다.",
+        details: {},
+        traceId: "req_1"
+      }
+    }),
+    { status: 401, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+const authSessionResponse = {
+  user: {
+    id: "user-1",
+    email: "user@example.com",
+    nickname: "Deal User",
+    role: "USER"
+  },
+  accessToken: "access-1",
+  tokenType: "Bearer"
+};
+
+function installFetch(
+  handler: (url: string, init?: RequestInit) => Response | Promise<Response>
+) {
+  const fetchMock = vi.fn((input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    return Promise.resolve(handler(url, init));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function failUnexpectedFetch(url: string): never {
+  throw new Error(`Unexpected fetch: ${url}`);
+}
+
 describe("SearchWorkspace", () => {
   it("server-renders auth-dependent header controls in a neutral state", () => {
     const markup = renderToString(<SearchWorkspace />);
@@ -31,12 +71,19 @@ describe("SearchWorkspace", () => {
     expect(markup).not.toContain("알림");
   });
 
-  it("renders the search shell and empty state before searching", () => {
+  it("renders the search shell and empty state before searching", async () => {
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      return failUnexpectedFetch(url);
+    });
+
     render(<SearchWorkspace />);
 
     expect(screen.getByRole("searchbox", { name: "검색어" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "검색" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /알림/ })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "상품" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("검색어를 입력하면 상품 결과부터 확인합니다.")).toBeInTheDocument();
@@ -44,10 +91,12 @@ describe("SearchWorkspace", () => {
 
   it("searches products and renders result rows", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        mockSearchResponse({
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20") {
+        return mockSearchResponse({
           items: [
             {
               id: "product-1",
@@ -62,11 +111,13 @@ describe("SearchWorkspace", () => {
             }
           ],
           nextCursor: null
-        })
-      )
-    );
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
     render(<SearchWorkspace />);
 
+    await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
     await user.click(screen.getByRole("button", { name: "검색" }));
 
@@ -77,32 +128,38 @@ describe("SearchWorkspace", () => {
 
   it("switches tabs and searches deals with the current query", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn().mockResolvedValue(
-      mockSearchResponse({
-        items: [
-          {
-            id: "deal-1",
-            productId: "product-1",
-            title: "Galaxy S26 launch deal",
-            sourceUrl: "https://example.com/deals/galaxy-s26",
-            seller: "Example Store",
-            originalPrice: null,
-            salePrice: 1090000,
-            currency: "KRW",
-            status: "active",
-            startedAt: null,
-            endedAt: null,
-            createdAt: "2026-05-25T00:00:00Z",
-            updatedAt: "2026-05-25T00:00:00Z",
-            score: 1.1
-          }
-        ],
-        nextCursor: null
-      })
-    );
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/search/deals?q=galaxy&limit=20") {
+        return mockSearchResponse({
+          items: [
+            {
+              id: "deal-1",
+              productId: "product-1",
+              title: "Galaxy S26 launch deal",
+              sourceUrl: "https://example.com/deals/galaxy-s26",
+              seller: "Example Store",
+              originalPrice: null,
+              salePrice: 1090000,
+              currency: "KRW",
+              status: "active",
+              startedAt: null,
+              endedAt: null,
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 1.1
+            }
+          ],
+          nextCursor: null
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
     render(<SearchWorkspace />);
 
+    await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
     await user.click(screen.getByRole("tab", { name: "핫딜" }));
 
@@ -115,10 +172,12 @@ describe("SearchWorkspace", () => {
 
   it("shows api error messages", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20") {
+        return new Response(
           JSON.stringify({
             error: {
               code: "SEARCH_UNAVAILABLE",
@@ -128,11 +187,13 @@ describe("SearchWorkspace", () => {
             }
           }),
           { status: 503, headers: { "Content-Type": "application/json" } }
-        )
-      )
-    );
+        );
+      }
+      return failUnexpectedFetch(url);
+    });
     render(<SearchWorkspace />);
 
+    await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
     await user.click(screen.getByRole("button", { name: "검색" }));
 
@@ -141,10 +202,12 @@ describe("SearchWorkspace", () => {
 
   it("loads the next page with nextCursor", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        mockSearchResponse({
+    const fetchMock = installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20") {
+        return mockSearchResponse({
           items: [
             {
               id: "product-1",
@@ -159,10 +222,10 @@ describe("SearchWorkspace", () => {
             }
           ],
           nextCursor: "cursor-2"
-        })
-      )
-      .mockResolvedValueOnce(
-        mockSearchResponse({
+        });
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20&cursor=cursor-2") {
+        return mockSearchResponse({
           items: [
             {
               id: "product-2",
@@ -177,11 +240,13 @@ describe("SearchWorkspace", () => {
             }
           ],
           nextCursor: null
-        })
-      );
-    vi.stubGlobal("fetch", fetchMock);
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
     render(<SearchWorkspace />);
 
+    await screen.findByRole("button", { name: "Google 로그인" });
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
     await user.click(screen.getByRole("button", { name: "검색" }));
     const results = await screen.findByRole("list", { name: "검색 결과" });
@@ -197,24 +262,15 @@ describe("SearchWorkspace", () => {
 
   it("sends favorite requests from logged-in search results", async () => {
     const user = userEvent.setup();
-    sessionStorage.setItem(
-      "dealmoa.authSession",
-      JSON.stringify({
-        user: {
-          id: "user-1",
-          email: "user@example.com",
-          nickname: "Deal User",
-          role: "USER"
-        },
-        accessToken: "access-1",
-        tokenType: "Bearer"
-      })
-    );
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(mockSearchResponse({ count: 0 }))
-      .mockResolvedValueOnce(
-        mockSearchResponse({
+    const fetchMock = installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockSearchResponse(authSessionResponse);
+      }
+      if (url === "/api/v1/notifications/unread-count") {
+        return mockSearchResponse({ count: 0 });
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20") {
+        return mockSearchResponse({
           items: [
             {
               id: "product-1",
@@ -229,17 +285,19 @@ describe("SearchWorkspace", () => {
             }
           ],
           nextCursor: null
-        })
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: "favorite-1", productId: "product-1" }), {
+        });
+      }
+      if (url === "/api/v1/me/favorites/products/product-1") {
+        return new Response(JSON.stringify({ id: "favorite-1", productId: "product-1" }), {
           status: 200,
           headers: { "Content-Type": "application/json" }
-        })
-      );
-    vi.stubGlobal("fetch", fetchMock);
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
     render(<SearchWorkspace />);
 
+    await screen.findByText("user@example.com");
     await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
     await user.click(screen.getByRole("button", { name: "검색" }));
     await user.click(await screen.findByRole("button", { name: "찜하기" }));

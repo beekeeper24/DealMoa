@@ -8,7 +8,38 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthStatus } from "../AuthStatus";
-import { getStoredAuthSession, saveAuthSession } from "../session";
+
+const authSessionResponse = {
+  user: {
+    id: "user-1",
+    email: "user@example.com",
+    nickname: "Deal User",
+    role: "USER"
+  },
+  accessToken: "access-token",
+  tokenType: "Bearer"
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+function authErrorResponse(code = "INVALID_REFRESH_TOKEN"): Response {
+  return jsonResponse(
+    {
+      error: {
+        code,
+        message: "로그인이 필요합니다.",
+        details: {},
+        traceId: "req_1"
+      }
+    },
+    401
+  );
+}
 
 afterEach(() => {
   cleanup();
@@ -25,10 +56,12 @@ describe("AuthStatus", () => {
     expect(markup).not.toContain("Google 로그인");
   });
 
-  it("renders oauth provider login buttons", () => {
+  it("renders oauth provider login buttons when refresh cookie is missing", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(authErrorResponse()));
+
     render(<AuthStatus />);
 
-    expect(screen.getByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Google 로그인" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kakao 로그인" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Naver 로그인" })).toBeInTheDocument();
   });
@@ -37,17 +70,18 @@ describe("AuthStatus", () => {
     const user = userEvent.setup();
     const navigate = vi.fn();
     vi.spyOn(crypto, "randomUUID").mockReturnValue("state-1");
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ authorizationUrl: "https://accounts.example/oauth" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      })
-    );
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url.includes("/auth/token/refresh")) {
+        return Promise.resolve(authErrorResponse());
+      }
+      return Promise.resolve(jsonResponse({ authorizationUrl: "https://accounts.example/oauth" }));
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     render(<AuthStatus navigate={navigate} origin="http://localhost:3000" />);
 
-    await user.click(screen.getByRole("button", { name: "Google 로그인" }));
+    await user.click(await screen.findByRole("button", { name: "Google 로그인" }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("https://accounts.example/oauth"));
     expect(fetchMock).toHaveBeenCalledWith(
@@ -56,29 +90,31 @@ describe("AuthStatus", () => {
     );
   });
 
-  it("shows stored session and clears it on logout", async () => {
+  it("recovers the session from the HttpOnly refresh cookie and clears it on logout", async () => {
     const user = userEvent.setup();
-    saveAuthSession({
-      user: {
-        id: "user-1",
-        email: "user@example.com",
-        nickname: "Deal User",
-        role: "USER"
-      },
-      accessToken: "access-token",
-      tokenType: "Bearer"
-    });
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    sessionStorage.setItem(
+      "dealmoa.authSession",
+      JSON.stringify({ accessToken: "legacy-access-token" })
+    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(authSessionResponse))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
     render(<AuthStatus />);
 
-    expect(screen.getByText("user@example.com")).toBeInTheDocument();
+    expect(await screen.findByText("user@example.com")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/v1/auth/token/refresh", {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      method: "POST"
+    });
 
     await user.click(screen.getByRole("button", { name: "로그아웃" }));
 
-    await waitFor(() => expect(getStoredAuthSession()).toBeNull());
-    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/logout", {
+    await waitFor(() => expect(sessionStorage.getItem("dealmoa.authSession")).toBeNull());
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/auth/logout", {
       credentials: "include",
       headers: { Accept: "application/json" },
       method: "POST"

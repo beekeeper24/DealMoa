@@ -56,8 +56,10 @@ Supported `provider` values:
 - Only refresh token hashes are stored in PostgreSQL.
 - Refresh token use rotates the token: the previous token is revoked and a new one is issued.
 - Logout revokes the refresh token from the HttpOnly cookie and deletes that cookie.
-- The web MVP stores the returned access token and user in `sessionStorage`.
-- The web UI reads that `sessionStorage` session only after browser mount. Server render and the first client render use a neutral auth-checking state so login, notification, and favorite controls do not create hydration mismatches.
+- The web app stores access tokens only in React memory. It does not persist bearer tokens in `sessionStorage` or `localStorage`.
+- On browser mount, the web UI calls `POST /api/v1/auth/token/refresh` with `credentials: include` to recover the short-lived access token from the API-owned HttpOnly refresh cookie.
+- Server render and the first client render use a neutral auth-checking state so login, notification, and favorite controls do not create hydration mismatches.
+- The web app removes legacy `dealmoa.authSession` entries if they exist from earlier MVP builds.
 - OAuth `state` is provider-scoped and stored in `sessionStorage` until the callback consumes it once.
 
 ## Environment Variables

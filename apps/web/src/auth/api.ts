@@ -39,7 +39,7 @@ export async function loginWithOAuthCallback(request: {
   code: string;
   redirectUri: string;
 }): Promise<AuthSession> {
-  return postJson<AuthSession>(
+  const session = await postJson<unknown>(
     `/auth/oauth/${request.provider}/callback`,
     {
       code: request.code,
@@ -47,10 +47,14 @@ export async function loginWithOAuthCallback(request: {
     },
     { includeCredentials: true }
   );
+  return parseAuthSession(session);
 }
 
 export async function refreshAuthSession(): Promise<AuthSession> {
-  return postWithoutBody<AuthSession>("/auth/token/refresh", { includeCredentials: true });
+  const session = await postWithoutBody<unknown>("/auth/token/refresh", {
+    includeCredentials: true
+  });
+  return parseAuthSession(session);
 }
 
 export async function logout(): Promise<void> {
@@ -127,5 +131,28 @@ function isAuthErrorResponse(value: unknown): value is AuthErrorResponse {
     "error" in value &&
     typeof (value as AuthErrorResponse).error.code === "string" &&
     typeof (value as AuthErrorResponse).error.message === "string"
+  );
+}
+
+function parseAuthSession(value: unknown): AuthSession {
+  if (isAuthSession(value)) {
+    return value;
+  }
+  throw new Error("인증 응답 형식이 올바르지 않습니다.");
+}
+
+function isAuthSession(value: unknown): value is AuthSession {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const session = value as AuthSession;
+  return (
+    typeof session.accessToken === "string" &&
+    session.tokenType === "Bearer" &&
+    typeof session.user === "object" &&
+    session.user !== null &&
+    typeof session.user.id === "string" &&
+    typeof session.user.email === "string" &&
+    typeof session.user.role === "string"
   );
 }
