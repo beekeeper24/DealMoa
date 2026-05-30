@@ -114,8 +114,11 @@ Read-all response:
 
 - The trigger fetches and displays unread notification count.
 - Opening the dropdown fetches recent notifications.
+- Users can switch between all recent notifications and unread-only notifications.
+- The dropdown supports cursor-based load more when the inbox has additional pages.
 - Each unread notification can be marked read.
 - The dropdown can mark all current notifications as read.
+- Escape and outside pointer interactions close the dropdown without leaving the page.
 - Logged-out users do not see the notification trigger.
 
 ## Error Behavior
