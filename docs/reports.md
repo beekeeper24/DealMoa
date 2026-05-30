@@ -39,7 +39,8 @@ Review request:
 ```json
 {
   "status": "resolved",
-  "resolutionNote": "Changed deal status to rejected"
+  "resolutionNote": "Changed deal status to rejected",
+  "targetStatus": "rejected"
 }
 ```
 
@@ -49,8 +50,23 @@ Allowed report statuses are:
 - `resolved`
 - `dismissed`
 
-Admin report review writes an `admin_audit_logs` row with the actor, report target,
-previous report status, new report status, resolution note, and timestamps.
+`targetStatus` is optional. When omitted, the review only changes the report row. When
+provided, the API also changes the reported deal or auction status in the same database
+transaction, writes the target status audit log, and creates the existing
+`deal.status.changed` or `auction.status.changed` outbox event.
+
+Allowed target statuses are:
+
+- `pending`
+- `active`
+- `verified`
+- `rejected`
+- `blocked`
+- `closed`
+
+Admin report review always writes an `admin_audit_logs` row with the actor, report target,
+previous report status, new report status, resolution note, and timestamps. Target status
+changes write a second audit log row for the underlying deal or auction.
 
 ## Ranking Boundary
 

@@ -190,7 +190,10 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Added admin-only `GET /api/v1/admin/reports`.
 - Added admin-only `PATCH /api/v1/admin/reports/{report_id}` for `resolved` / `dismissed` report review.
 - Admin report review writes `admin_audit_logs`.
-- Reports still do not directly change offer status, search visibility, or ranking.
+- Admin report review can include optional `targetStatus` to change the reported deal or
+  auction status in the same transaction.
+- Report counts still do not directly change offer status, search visibility, or ranking.
+  Only explicit admin status decisions do.
 
 ## Completed Auction Favorite Event Freshness Scope
 

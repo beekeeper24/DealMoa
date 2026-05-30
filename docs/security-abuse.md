@@ -8,8 +8,10 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Report creation requires login.
 - Duplicate open reports from the same user for the same deal/auction return the existing
   open report instead of creating another open queue item.
-- Admin report review can mark a report `resolved` or `dismissed`, but it does not
-  automatically mutate the underlying deal/auction status.
+- Admin report review can mark a report `resolved` or `dismissed`.
+- Admin report review can also include an explicit `targetStatus` decision to mutate the
+  underlying deal/auction status in the same transaction; the report count itself never
+  performs that mutation automatically.
 
 ## Submissions
 

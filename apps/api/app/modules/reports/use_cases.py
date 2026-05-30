@@ -10,6 +10,7 @@ from app.core.exceptions import (
 from app.core.pagination import CursorPage
 from app.modules.admin.models import AdminAuditLog
 from app.modules.auth.use_cases import AuthenticatedUser
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.reports.models import OfferReport
 from app.modules.reports.repository import ReportsRepository
 from app.modules.reports.schemas import ReportCreateRequest, ReportReviewRequest, ReportStatus
@@ -24,9 +25,11 @@ class ReportsUseCases:
         self,
         *,
         repository: ReportsRepository,
+        domain_events: DomainEventsUseCases,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.repository = repository
+        self.domain_events = domain_events
         self.now = now or utc_now
 
     def report_deal(
@@ -91,6 +94,14 @@ class ReportsUseCases:
         report.resolution_note = request.resolution_note
         report.resolved_at = now
         report.updated_at = now
+        if request.target_status is not None:
+            self._change_report_target_status(
+                actor=actor,
+                report=report,
+                status=request.target_status,
+                reason=request.resolution_note,
+                now=now,
+            )
         self.repository.create_audit_log(
             AdminAuditLog(
                 actor_user_id=actor.id,
@@ -139,3 +150,83 @@ class ReportsUseCases:
     def _ensure_admin(self, actor: AuthenticatedUser) -> None:
         if actor.role != "ADMIN":
             raise ForbiddenException()
+
+    def _change_report_target_status(
+        self,
+        *,
+        actor: AuthenticatedUser,
+        report: OfferReport,
+        status: str,
+        reason: str | None,
+        now: datetime,
+    ) -> None:
+        if report.target_type == "deal":
+            deal = self.repository.get_deal(report.target_id)
+            if deal is None:
+                raise DealNotFoundException(report.target_id)
+            previous_status = deal.status
+            deal.status = status
+            deal.updated_at = now
+            self._record_target_status_audit_log(
+                actor=actor,
+                target_type="deal",
+                target_id=deal.id,
+                previous_status=previous_status,
+                status=status,
+                reason=reason,
+                now=now,
+            )
+            self.domain_events.record_deal_status_changed(
+                deal=deal,
+                actor_user_id=actor.id,
+                previous_status=previous_status,
+                reason=reason,
+            )
+            return
+
+        auction = self.repository.get_auction(report.target_id)
+        if auction is None:
+            raise AuctionNotFoundException(report.target_id)
+        previous_status = auction.status
+        auction.status = status
+        auction.updated_at = now
+        self._record_target_status_audit_log(
+            actor=actor,
+            target_type="auction",
+            target_id=auction.id,
+            previous_status=previous_status,
+            status=status,
+            reason=reason,
+            now=now,
+        )
+        self.domain_events.record_auction_status_changed(
+            auction=auction,
+            actor_user_id=actor.id,
+            previous_status=previous_status,
+            reason=reason,
+        )
+
+    def _record_target_status_audit_log(
+        self,
+        *,
+        actor: AuthenticatedUser,
+        target_type: str,
+        target_id: str,
+        previous_status: str,
+        status: str,
+        reason: str | None,
+        now: datetime,
+    ) -> None:
+        self.repository.create_audit_log(
+            AdminAuditLog(
+                actor_user_id=actor.id,
+                action=f"{target_type}.status.changed",
+                target_type=target_type,
+                target_id=target_id,
+                previous_status=previous_status,
+                new_status=status,
+                reason=reason,
+                created_at=now,
+                updated_at=now,
+            )
+        )

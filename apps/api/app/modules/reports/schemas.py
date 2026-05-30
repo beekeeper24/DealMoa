@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.modules.admin.schemas import OfferStatus
+
 ReportTargetType = Literal["deal", "auction"]
 ReportStatus = Literal["open", "resolved", "dismissed"]
 ReportReviewStatus = Literal["resolved", "dismissed"]
@@ -24,6 +26,7 @@ class ReportCreateRequest(BaseModel):
 class ReportReviewRequest(BaseModel):
     status: ReportReviewStatus
     resolution_note: str | None = Field(default=None, alias="resolutionNote", max_length=2000)
+    target_status: OfferStatus | None = Field(default=None, alias="targetStatus")
 
 
 class ReportResponse(BaseModel):

@@ -8,6 +8,8 @@ from app.core.exceptions import UnauthorizedException
 from app.db.session import get_session
 from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
+from app.modules.events.repository import DomainEventsRepository
+from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.reports.repository import ReportsRepository
 from app.modules.reports.schemas import (
     ReportCreateRequest,
@@ -25,7 +27,10 @@ admin_router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
 def get_reports_use_cases(
     session: Annotated[Session, Depends(get_session)],
 ) -> ReportsUseCases:
-    return ReportsUseCases(repository=ReportsRepository(session))
+    return ReportsUseCases(
+        repository=ReportsRepository(session),
+        domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
+    )
 
 
 def get_current_user(
