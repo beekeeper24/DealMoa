@@ -4,6 +4,7 @@ import {
   DetailApiError,
   getAuction,
   getDeal,
+  getProductPurchaseCheck,
   getProduct,
   createVerifiedReview,
   listProductAuctions,
@@ -99,6 +100,22 @@ const verifiedReviewFixture = {
   updatedAt: "2026-06-01T00:05:00Z"
 };
 
+const purchaseCheckFixture = {
+  productId: "product-1",
+  recommendation: "buy",
+  confidence: 0.78,
+  summary: "현재 가격이 가격 이력 최저가 수준이고 승인된 구매 인증 후기가 있어 구매 후보입니다.",
+  evidence: [
+    {
+      type: "current_deal",
+      label: "최저 핫딜",
+      value: "Galaxy S26 launch deal / 1,090,000 KRW",
+      sourceType: "deal",
+      sourceId: "deal-1"
+    }
+  ]
+};
+
 describe("details api", () => {
   it("fetches product detail and product offers", async () => {
     const fetchMock = vi.fn((input: string | URL | Request) => {
@@ -132,6 +149,18 @@ describe("details api", () => {
     });
     await expect(listProductVerifiedReviews("product-1")).resolves.toMatchObject({
       items: [verifiedReviewFixture]
+    });
+  });
+
+  it("fetches product purchase checks", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(purchaseCheckFixture));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getProductPurchaseCheck("product-1")).resolves.toMatchObject({
+      recommendation: "buy"
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/ai/products/product-1/purchase-check", {
+      headers: { Accept: "application/json" }
     });
   });
 

@@ -67,6 +67,15 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Rate-limit AI requests.
 - Validate structured outputs.
 - Never let AI approve publishing by itself.
+- AI search must convert user text or future model output into a validated `SearchIntent`
+  before building Elasticsearch queries.
+- AI search may use only allowlisted target types and filters; raw user text or model
+  text must never become query DSL.
+- Purchase-check evidence uses approved verified reviews only and does not expose proof
+  references, AI review reasoning, or admin moderation notes.
+- The first AI assistant implementation is deterministic mock logic. Real provider
+  integration must add cost controls, prompt/output validation, and abuse logging before
+  production use.
 
 ## Admin
 

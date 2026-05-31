@@ -6,6 +6,7 @@ import type {
   DetailListResponse,
   PriceHistorySnapshot,
   ProductDetail,
+  ProductPurchaseCheck,
   PublicVerifiedReview,
   Report,
   VerifiedReview
@@ -55,6 +56,10 @@ export async function listProductVerifiedReviews(
   return requestJson<DetailListResponse<PublicVerifiedReview>>(
     `/products/${productId}/verified-reviews?limit=10`
   );
+}
+
+export async function getProductPurchaseCheck(productId: string): Promise<ProductPurchaseCheck> {
+  return requestJson<ProductPurchaseCheck>(`/ai/products/${productId}/purchase-check`);
 }
 
 export async function createVerifiedReview(request: {

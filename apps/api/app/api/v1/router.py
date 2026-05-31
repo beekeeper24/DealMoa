@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.routes import health
 from app.modules.admin.router import router as admin_router
+from app.modules.ai_assistant.router import router as ai_assistant_router
 from app.modules.auth.router import router as auth_router
 from app.modules.evidence.router import admin_router as admin_evidence_router
 from app.modules.evidence.router import router as evidence_router
@@ -19,6 +20,7 @@ from app.modules.submissions.router import router as submissions_router
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
+api_router.include_router(ai_assistant_router)
 api_router.include_router(auth_router)
 api_router.include_router(favorites_router)
 api_router.include_router(notifications_router)

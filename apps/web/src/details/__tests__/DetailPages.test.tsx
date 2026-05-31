@@ -120,6 +120,29 @@ const verifiedReviewFixture = {
   updatedAt: "2026-06-01T00:05:00Z"
 };
 
+const purchaseCheckFixture = {
+  productId: "product-1",
+  recommendation: "buy",
+  confidence: 0.78,
+  summary: "현재 가격이 가격 이력 최저가 수준이고 승인된 구매 인증 후기가 있어 구매 후보입니다.",
+  evidence: [
+    {
+      type: "current_deal",
+      label: "최저 핫딜",
+      value: "Galaxy S26 launch deal / 1,090,000 KRW",
+      sourceType: "deal",
+      sourceId: "deal-1"
+    },
+    {
+      type: "verified_review",
+      label: "인증 후기 평점 5/5",
+      value: "실구매 기준 만족: 배송과 제품 상태 모두 좋았습니다.",
+      sourceType: "verified_review",
+      sourceId: "review-1"
+    }
+  ]
+};
+
 function installFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>
 ) {
@@ -243,6 +266,44 @@ describe("detail pages", () => {
       },
       method: "POST"
     });
+  });
+
+  it("renders a product purchase check report", async () => {
+    const user = userEvent.setup();
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return jsonResponse(authError(), { status: 401 });
+      }
+      if (url === "/api/v1/products/product-1") {
+        return jsonResponse(productFixture);
+      }
+      if (url === "/api/v1/products/product-1/deals?limit=10") {
+        return jsonResponse({ items: [dealFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/auctions?limit=10") {
+        return jsonResponse({ items: [auctionFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/price-history?limit=10") {
+        return jsonResponse({ items: [priceHistoryFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return jsonResponse({ items: [verifiedReviewFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/ai/products/product-1/purchase-check") {
+        return jsonResponse(purchaseCheckFixture);
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderWithAuthProvider(<ProductDetailPage productId="product-1" />);
+
+    await screen.findByRole("heading", { name: "Galaxy S26 Ultra" });
+    await user.click(screen.getByRole("button", { name: "AI 구매 체크" }));
+
+    expect(await screen.findByText("구매 후보 · 78%")).toBeInTheDocument();
+    expect(screen.getByText(purchaseCheckFixture.summary)).toBeInTheDocument();
+    expect(screen.getByText("최저 핫딜")).toBeInTheDocument();
+    expect(screen.getByText("인증 후기 평점 5/5")).toBeInTheDocument();
   });
 
   it("submits an authenticated deal report", async () => {
