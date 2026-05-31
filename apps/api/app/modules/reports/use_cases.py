@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from app.core.exceptions import (
@@ -18,6 +19,16 @@ from app.modules.reports.schemas import ReportCreateRequest, ReportReviewRequest
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+@dataclass(frozen=True)
+class ReportTargetSummary:
+    target_type: str
+    target_id: str
+    title: str
+    status: str
+    seller: str | None
+    source_url: str
 
 
 class ReportsUseCases:
@@ -116,6 +127,46 @@ class ReportsUseCases:
             )
         )
         return report
+
+    def get_report_target_summary(self, report: OfferReport) -> ReportTargetSummary | None:
+        return self.get_report_target_summaries([report]).get(report.id)
+
+    def get_report_target_summaries(
+        self,
+        reports: list[OfferReport],
+    ) -> dict[str, ReportTargetSummary]:
+        deal_ids = {
+            report.target_id for report in reports if report.target_type == "deal"
+        }
+        auction_ids = {
+            report.target_id for report in reports if report.target_type == "auction"
+        }
+        deals = self.repository.get_deals(deal_ids)
+        auctions = self.repository.get_auctions(auction_ids)
+
+        summaries: dict[str, ReportTargetSummary] = {}
+        for report in reports:
+            if report.target_type == "deal" and report.target_id in deals:
+                deal = deals[report.target_id]
+                summaries[report.id] = ReportTargetSummary(
+                    target_type="deal",
+                    target_id=deal.id,
+                    title=deal.title,
+                    status=deal.status,
+                    seller=deal.seller,
+                    source_url=deal.source_url,
+                )
+            if report.target_type == "auction" and report.target_id in auctions:
+                auction = auctions[report.target_id]
+                summaries[report.id] = ReportTargetSummary(
+                    target_type="auction",
+                    target_id=auction.id,
+                    title=auction.title,
+                    status=auction.status,
+                    seller=auction.seller,
+                    source_url=auction.source_url,
+                )
+        return summaries
 
     def _create_or_get_open_report(
         self,
