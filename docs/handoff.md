@@ -202,6 +202,17 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Report counts still do not directly change offer status, search visibility, or ranking.
   Only explicit admin status decisions do.
 
+## Completed Admin Report Web UI Scope
+
+- Added `/admin` web route for the admin report review queue.
+- Admin users can filter reports by `open`, `resolved`, and `dismissed`.
+- Report cards show target summary, current target status, seller, source URL, reason,
+  description, reporter, and created time.
+- Admin users can resolve or dismiss a report and optionally change the reported deal
+  or auction status in the same action.
+- The search header shows an `관리자` entry link only for hydrated admin sessions.
+- Anonymous users and authenticated non-admin users receive explicit access guidance.
+
 ## Completed Auction Favorite Event Freshness Scope
 
 - Auction favorite create/delete mutations write `auction.favorite.created` and `auction.favorite.deleted` outbox events.

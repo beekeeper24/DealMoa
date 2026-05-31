@@ -48,6 +48,17 @@ const authSessionResponse = {
   tokenType: "Bearer"
 };
 
+const adminAuthSessionResponse = {
+  user: {
+    id: "admin-1",
+    email: "admin@example.com",
+    nickname: "Deal Admin",
+    role: "ADMIN"
+  },
+  accessToken: "admin-access-1",
+  tokenType: "Bearer"
+};
+
 function installFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>
 ) {
@@ -315,5 +326,21 @@ describe("SearchWorkspace", () => {
       headers: { Accept: "application/json", Authorization: "Bearer access-1" },
       method: "PUT"
     });
+  });
+
+  it("shows an admin entry link only for admin sessions", async () => {
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockSearchResponse(adminAuthSessionResponse);
+      }
+      if (url === "/api/v1/notifications/unread-count") {
+        return mockSearchResponse({ count: 0 });
+      }
+      return failUnexpectedFetch(url);
+    });
+    renderWithAuthProvider(<SearchWorkspace />);
+
+    expect(await screen.findByText("admin@example.com")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "관리자" })).toHaveAttribute("href", "/admin");
   });
 });
