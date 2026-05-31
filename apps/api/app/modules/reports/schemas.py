@@ -62,6 +62,26 @@ class ReportResponse(BaseModel):
         return serialized
 
 
+class ReportTargetSummaryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    target_type: ReportTargetType = Field(alias="targetType")
+    target_id: str = Field(alias="targetId")
+    title: str
+    status: str
+    seller: str | None = None
+    source_url: str = Field(alias="sourceUrl")
+
+
+class AdminReportResponse(ReportResponse):
+    target: ReportTargetSummaryResponse | None = None
+
+
 class ReportListResponse(BaseModel):
     items: list[ReportResponse]
+    next_cursor: str | None = Field(alias="nextCursor")
+
+
+class AdminReportListResponse(BaseModel):
+    items: list[AdminReportResponse]
     next_cursor: str | None = Field(alias="nextCursor")

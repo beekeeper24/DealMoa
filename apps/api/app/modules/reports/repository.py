@@ -19,8 +19,20 @@ class ReportsRepository:
     def get_deal(self, deal_id: str) -> Deal | None:
         return self.session.get(Deal, deal_id)
 
+    def get_deals(self, deal_ids: set[str]) -> dict[str, Deal]:
+        if not deal_ids:
+            return {}
+        statement = select(Deal).where(Deal.id.in_(deal_ids))
+        return {deal.id: deal for deal in self.session.scalars(statement)}
+
     def get_auction(self, auction_id: str) -> Auction | None:
         return self.session.get(Auction, auction_id)
+
+    def get_auctions(self, auction_ids: set[str]) -> dict[str, Auction]:
+        if not auction_ids:
+            return {}
+        statement = select(Auction).where(Auction.id.in_(auction_ids))
+        return {auction.id: auction for auction in self.session.scalars(statement)}
 
     def get_report(self, report_id: str) -> OfferReport | None:
         return self.session.get(OfferReport, report_id)

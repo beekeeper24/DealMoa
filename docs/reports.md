@@ -34,6 +34,26 @@ GET /api/v1/admin/reports?status=open&limit=20&cursor=...
 PATCH /api/v1/admin/reports/{report_id}
 ```
 
+List/review responses include a `target` summary for the admin queue:
+
+```json
+{
+  "id": "report-id",
+  "targetType": "deal",
+  "targetId": "deal-id",
+  "reasonCode": "fraud",
+  "status": "open",
+  "target": {
+    "targetType": "deal",
+    "targetId": "deal-id",
+    "title": "Galaxy S26 launch deal",
+    "status": "active",
+    "seller": "Example",
+    "sourceUrl": "https://example.com/deals/galaxy-s26"
+  }
+}
+```
+
 Review request:
 
 ```json

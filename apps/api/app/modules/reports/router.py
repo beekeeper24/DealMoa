@@ -10,15 +10,18 @@ from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.reports.models import OfferReport
 from app.modules.reports.repository import ReportsRepository
 from app.modules.reports.schemas import (
+    AdminReportListResponse,
+    AdminReportResponse,
     ReportCreateRequest,
-    ReportListResponse,
     ReportResponse,
     ReportReviewRequest,
     ReportStatus,
+    ReportTargetSummaryResponse,
 )
-from app.modules.reports.use_cases import ReportsUseCases
+from app.modules.reports.use_cases import ReportsUseCases, ReportTargetSummary
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 admin_router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
@@ -72,36 +75,57 @@ def report_auction(
     return ReportResponse.model_validate(report)
 
 
-@admin_router.get("", response_model=ReportListResponse)
+@admin_router.get("", response_model=AdminReportListResponse)
 def list_reports(
     current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     use_cases: Annotated[ReportsUseCases, Depends(get_reports_use_cases)],
     report_status: Annotated[ReportStatus, Query(alias="status")] = "open",
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
     cursor: str | None = None,
-) -> ReportListResponse:
+) -> AdminReportListResponse:
     page = use_cases.list_reports(
         actor=current_user,
         status=report_status,
         limit=limit,
         cursor=cursor,
     )
-    return ReportListResponse(
-        items=[ReportResponse.model_validate(item) for item in page.items],
+    target_summaries = use_cases.get_report_target_summaries(page.items)
+    return AdminReportListResponse(
+        items=[
+            admin_report_response(
+                report=item,
+                target_summary=target_summaries.get(item.id),
+            )
+            for item in page.items
+        ],
         nextCursor=page.next_cursor,
     )
 
 
-@admin_router.patch("/{report_id}", response_model=ReportResponse)
+@admin_router.patch("/{report_id}", response_model=AdminReportResponse)
 def review_report(
     report_id: str,
     request: ReportReviewRequest,
     current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     use_cases: Annotated[ReportsUseCases, Depends(get_reports_use_cases)],
-) -> ReportResponse:
+) -> AdminReportResponse:
     report = use_cases.review_report(
         actor=current_user,
         report_id=report_id,
         request=request,
     )
-    return ReportResponse.model_validate(report)
+    return admin_report_response(
+        report=report,
+        target_summary=use_cases.get_report_target_summary(report),
+    )
+
+
+def admin_report_response(
+    *,
+    report: OfferReport,
+    target_summary: ReportTargetSummary | None,
+) -> AdminReportResponse:
+    response = AdminReportResponse.model_validate(report)
+    if target_summary is not None:
+        response.target = ReportTargetSummaryResponse.model_validate(target_summary)
+    return response

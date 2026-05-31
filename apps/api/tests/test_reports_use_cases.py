@@ -218,6 +218,40 @@ def test_admin_lists_open_reports_with_cursor_pagination() -> None:
     assert second_page.next_cursor is None
 
 
+def test_admin_report_target_summary_matches_deal_or_auction() -> None:
+    session = next(make_session())
+    seed_data(session)
+    use_cases = make_use_cases(session)
+    deal_report = use_cases.report_deal(
+        actor=user(),
+        deal_id="deal-1",
+        request=ReportCreateRequest(reasonCode="fraud", description=None),
+    )
+    auction_report = use_cases.report_auction(
+        actor=user(),
+        auction_id="auction-1",
+        request=ReportCreateRequest(reasonCode="broken_link", description=None),
+    )
+
+    deal_summary = use_cases.get_report_target_summary(deal_report)
+    auction_summary = use_cases.get_report_target_summary(auction_report)
+
+    assert deal_summary is not None
+    assert auction_summary is not None
+    assert deal_summary.target_type == "deal"
+    assert deal_summary.target_id == "deal-1"
+    assert deal_summary.title == "Galaxy S26 launch deal"
+    assert deal_summary.status == "active"
+    assert deal_summary.seller == "Example"
+    assert deal_summary.source_url == "https://example.com/deals/galaxy-s26"
+    assert auction_summary.target_type == "auction"
+    assert auction_summary.target_id == "auction-1"
+    assert auction_summary.title == "Galaxy S26 sealed auction"
+    assert auction_summary.status == "active"
+    assert auction_summary.seller == "Example"
+    assert auction_summary.source_url == "https://example.com/auctions/galaxy-s26"
+
+
 def test_non_admin_cannot_list_or_review_reports() -> None:
     session = next(make_session())
     seed_data(session)

@@ -189,6 +189,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Duplicate open reports from the same user for the same target return the existing open report.
 - Added admin-only `GET /api/v1/admin/reports`.
 - Added admin-only `PATCH /api/v1/admin/reports/{report_id}` for `resolved` / `dismissed` report review.
+- Admin report list/review responses include a `target` summary with target type, ID,
+  title, current status, seller, and source URL for initial web admin queue rendering.
 - Admin report review writes `admin_audit_logs`.
 - Admin report review can include optional `targetStatus` to change the reported deal or
   auction status in the same transaction.

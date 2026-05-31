@@ -207,12 +207,67 @@ def test_admin_can_list_and_review_reports() -> None:
     assert list_response.status_code == 200
     assert list_response.json()["items"][0]["id"] == report_id
     assert list_response.json()["items"][0]["status"] == "open"
+    assert list_response.json()["items"][0]["target"] == {
+        "targetType": "deal",
+        "targetId": "deal-1",
+        "title": "Galaxy S26 launch deal",
+        "status": "active",
+        "seller": "Example",
+        "sourceUrl": "https://example.com/deals/galaxy-s26",
+    }
     assert list_response.json()["nextCursor"] is None
     assert review_response.status_code == 200
     assert review_response.json()["id"] == report_id
     assert review_response.json()["status"] == "resolved"
+    assert review_response.json()["target"]["status"] == "active"
     assert review_response.json()["reviewedByUserId"] == "admin-1"
     assert review_response.json()["resolutionNote"] == "status changed"
+
+
+def test_admin_report_queue_includes_auction_target_summary() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_data(session_factory)
+    report_response = user_client.post(
+        "/api/v1/reports/auctions/auction-1",
+        json={"reasonCode": "broken_link", "description": None},
+        headers={"Authorization": "Bearer access-1"},
+    )
+    report_id = report_response.json()["id"]
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+
+    response = admin_client.get(
+        "/api/v1/admin/reports?status=open&limit=20",
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == [
+        {
+            "id": report_id,
+            "userId": "user-1",
+            "targetType": "auction",
+            "targetId": "auction-1",
+            "reasonCode": "broken_link",
+            "description": None,
+            "status": "open",
+            "reviewedByUserId": None,
+            "resolutionNote": None,
+            "resolvedAt": None,
+            "createdAt": response.json()["items"][0]["createdAt"],
+            "updatedAt": response.json()["items"][0]["updatedAt"],
+            "target": {
+                "targetType": "auction",
+                "targetId": "auction-1",
+                "title": "Galaxy S26 sealed auction",
+                "status": "active",
+                "seller": "Example",
+                "sourceUrl": "https://example.com/auctions/galaxy-s26",
+            },
+        }
+    ]
 
 
 def test_admin_can_review_report_and_change_target_status() -> None:
