@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createProductDiscussion,
   DetailApiError,
   getAuction,
   getDeal,
@@ -9,6 +10,7 @@ import {
   createVerifiedReview,
   listProductAuctions,
   listProductDeals,
+  listProductDiscussions,
   listProductPriceHistory,
   listProductVerifiedReviews,
   placeAuctionBid,
@@ -100,6 +102,20 @@ const verifiedReviewFixture = {
   updatedAt: "2026-06-01T00:05:00Z"
 };
 
+const discussionFixture = {
+  id: "discussion-1",
+  productId: "product-1",
+  userId: "user-1",
+  userNickname: "Deal User",
+  body: "이 가격이면 실사용 기준으로 괜찮아 보입니다.",
+  status: "visible",
+  moderatedByUserId: null,
+  moderationNote: null,
+  moderatedAt: null,
+  createdAt: "2026-06-01T00:00:00Z",
+  updatedAt: "2026-06-01T00:00:00Z"
+};
+
 const purchaseCheckFixture = {
   productId: "product-1",
   recommendation: "buy",
@@ -135,6 +151,9 @@ describe("details api", () => {
       if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
         return Promise.resolve(jsonResponse({ items: [verifiedReviewFixture], nextCursor: null }));
       }
+      if (url === "/api/v1/products/product-1/discussions?limit=10") {
+        return Promise.resolve(jsonResponse({ items: [discussionFixture], nextCursor: null }));
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -149,6 +168,9 @@ describe("details api", () => {
     });
     await expect(listProductVerifiedReviews("product-1")).resolves.toMatchObject({
       items: [verifiedReviewFixture]
+    });
+    await expect(listProductDiscussions("product-1")).resolves.toMatchObject({
+      items: [discussionFixture]
     });
   });
 
@@ -186,6 +208,27 @@ describe("details api", () => {
         rating: 5,
         title: "실구매 기준 만족"
       }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
+  });
+
+  it("creates product discussion comments with bearer auth", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(discussionFixture, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createProductDiscussion({
+      accessToken: "access-1",
+      body: "  이 가격이면 실사용 기준으로 괜찮아 보입니다.  ",
+      productId: "product-1"
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/products/product-1/discussions", {
+      body: JSON.stringify({ body: "이 가격이면 실사용 기준으로 괜찮아 보입니다." }),
       headers: {
         Accept: "application/json",
         Authorization: "Bearer access-1",

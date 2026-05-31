@@ -4,9 +4,11 @@ import type {
   DealDetail,
   DetailErrorResponse,
   DetailListResponse,
+  DiscussionComment,
   PriceHistorySnapshot,
   ProductDetail,
   ProductPurchaseCheck,
+  PublicDiscussionComment,
   PublicVerifiedReview,
   Report,
   VerifiedReview
@@ -58,6 +60,14 @@ export async function listProductVerifiedReviews(
   );
 }
 
+export async function listProductDiscussions(
+  productId: string
+): Promise<DetailListResponse<PublicDiscussionComment>> {
+  return requestJson<DetailListResponse<PublicDiscussionComment>>(
+    `/products/${productId}/discussions?limit=10`
+  );
+}
+
 export async function getProductPurchaseCheck(productId: string): Promise<ProductPurchaseCheck> {
   return requestJson<ProductPurchaseCheck>(`/ai/products/${productId}/purchase-check`);
 }
@@ -80,6 +90,18 @@ export async function createVerifiedReview(request: {
       rating: request.rating,
       title: request.title.trim()
     },
+    method: "POST"
+  });
+}
+
+export async function createProductDiscussion(request: {
+  accessToken: string;
+  body: string;
+  productId: string;
+}): Promise<DiscussionComment> {
+  return requestJson<DiscussionComment>(`/products/${request.productId}/discussions`, {
+    accessToken: request.accessToken,
+    body: { body: request.body.trim() },
     method: "POST"
   });
 }

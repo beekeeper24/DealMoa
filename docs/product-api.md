@@ -23,6 +23,11 @@ POST /api/v1/products/{product_id}/auctions
 GET /api/v1/products/{product_id}/auctions
 GET /api/v1/auctions/{auction_id}
 POST /api/v1/auctions/{auction_id}/bids
+
+GET /api/v1/products/{product_id}/price-history
+GET /api/v1/products/{product_id}/verified-reviews
+GET /api/v1/products/{product_id}/discussions
+POST /api/v1/products/{product_id}/discussions
 ```
 
 Routers stay thin: request validation happens through Pydantic schemas, business behavior goes through use cases, persistence goes through repositories, and business errors are raised as DealMoa domain exceptions.
@@ -37,6 +42,9 @@ new aggregate detail endpoint:
   `GET /api/v1/products/{product_id}/auctions`.
 - Product detail also calls `GET /api/v1/products/{product_id}/price-history`
   and `GET /api/v1/products/{product_id}/verified-reviews` for evidence panels.
+- Product detail calls `GET /api/v1/products/{product_id}/discussions` for
+  visible community comments and uses `POST /api/v1/products/{product_id}/discussions`
+  for authenticated plain-text comment creation.
 - Deal detail calls `GET /api/v1/deals/{deal_id}` and then loads the linked
   product with `GET /api/v1/products/{product_id}`.
 - Auction detail calls `GET /api/v1/auctions/{auction_id}` and then loads the
@@ -45,8 +53,8 @@ new aggregate detail endpoint:
   `docs/reports.md`.
 - Auction detail uses `POST /api/v1/auctions/{auction_id}/bids`.
 
-This keeps the MVP simple and demoable while discussion and AI purchase checks are
-still deferred.
+This keeps the MVP simple and demoable while realtime auction updates and richer
+discussion moderation UX are still deferred.
 
 ## Cursor Pagination
 
@@ -131,6 +139,7 @@ Implemented Product API errors:
 | `BID_TOO_LOW` | 409 | Bid amount is below the fixed 1,000 KRW minimum increment. |
 | `VERIFIED_REVIEW_NOT_FOUND` | 404 | Verified review id does not exist. |
 | `VERIFIED_REVIEW_ALREADY_REVIEWED` | 409 | Verified review was already approved or rejected. |
+| `DISCUSSION_COMMENT_NOT_FOUND` | 404 | Discussion comment id does not exist. |
 | `UNAUTHORIZED` | 401 | Bid request is missing a valid bearer token. |
 | `FORBIDDEN` | 403 | Current user is not allowed to perform the requested admin action. |
 | `INVALID_SEARCH_CURSOR` | 400 | Cursor id is invalid for the requested list. |

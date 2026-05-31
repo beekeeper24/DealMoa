@@ -35,6 +35,17 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   text, admin reviewer ids, and resolution notes.
 - Only verified reviews are strong AI purchase-check evidence.
 
+## Product Discussions
+
+- Public discussion reads include visible comments only.
+- Comment creation requires login.
+- Public comment responses expose nickname and body only; they exclude internal user ids,
+  moderation notes, reviewer ids, and hidden comments.
+- Admin hide/restore requires `role = ADMIN` and writes `admin_audit_logs`.
+- The web UI renders comment bodies as plain React text, not HTML.
+- Discussion content is not used as AI purchase-check evidence, and comment volume does
+  not affect ranking/trust scores in this slice.
+
 ## Favorites
 
 - `unique(user_id, target_type, target_id)`.

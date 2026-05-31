@@ -123,6 +123,24 @@ test("opens product detail from product search results", async ({ page }) => {
       })
     });
   });
+  await page.route("**/api/v1/products/product-1/discussions?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            id: "discussion-1",
+            productId: "product-1",
+            userNickname: "Deal User",
+            body: "이 가격이면 실사용 기준으로 괜찮아 보입니다.",
+            createdAt: "2026-06-01T00:00:00Z",
+            updatedAt: "2026-06-01T00:00:00Z"
+          }
+        ],
+        nextCursor: null
+      })
+    });
+  });
   await page.route("**/api/v1/ai/products/product-1/purchase-check", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -165,6 +183,8 @@ test("opens product detail from product search results", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Galaxy S26 sealed auction" })).toBeVisible();
   await expect(page.getByText("가격 이력")).toBeVisible();
   await expect(page.getByText("실구매 기준 만족")).toBeVisible();
+  await expect(page.getByText("상품 토론").first()).toBeVisible();
+  await expect(page.getByText("이 가격이면 실사용 기준으로 괜찮아 보입니다.")).toBeVisible();
   await page.getByRole("button", { name: "AI 구매 체크" }).click();
   await expect(page.getByText("구매 후보 · 78%")).toBeVisible();
   await expect(page.getByText("최저 경매")).toBeVisible();
