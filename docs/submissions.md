@@ -63,7 +63,26 @@ Admins can list and review submissions:
 
 ```http
 GET /api/v1/admin/submissions?status=pending_review&limit=20&cursor=...
+GET /api/v1/admin/submissions/{submission_id}/product-matches
 PATCH /api/v1/admin/submissions/{submission_id}
+```
+
+Product match responses are read-only admin hints:
+
+```json
+{
+  "items": [
+    {
+      "productId": "product-1",
+      "name": "Galaxy S26 Ultra",
+      "brand": "Samsung",
+      "modelName": "SM-S260",
+      "category": "smartphone",
+      "score": 95,
+      "matchedReasons": ["model", "brand", "category", "name"]
+    }
+  ]
+}
 ```
 
 Review request:
@@ -71,6 +90,7 @@ Review request:
 ```json
 {
   "action": "approve",
+  "targetProductId": "product-1",
   "resolutionNote": "Approved for MVP seed data"
 }
 ```
@@ -86,9 +106,11 @@ Allowed statuses:
 - `approved`
 - `rejected`
 
-Approval creates a Product plus either a Deal or Auction in the same transaction, records
-the published IDs on the submission, writes an `admin_audit_logs` row, and emits the
-existing `product.updated` plus `deal.created` or `auction.created` outbox events.
+Approval creates a Product plus either a Deal or Auction by default. If `targetProductId`
+is provided, approval attaches only the new Deal/Auction to the existing Product. In both
+paths the API records the published IDs on the submission, writes an `admin_audit_logs`
+row, and emits the existing `product.updated` plus `deal.created` or `auction.created`
+outbox events.
 
 Rejection only updates the submission status/resolution fields and writes an
 `admin_audit_logs` row. It does not create Product, Deal, Auction, search documents, or
@@ -100,6 +122,8 @@ ranking signals.
 - `/admin/submissions`: admin submission review queue.
 - Search header always links to `/submit`.
 - Admin sessions see both report review and submission review links.
+- The admin submission queue shows product match candidates and lets admins approve into
+  an existing Product or publish as a new Product.
 
 ## Deferred
 
@@ -107,6 +131,6 @@ ranking signals.
 - Server-side rate limit storage.
 - URL allowlist/blocklist and suspicious-link scoring beyond the current `http/https`
   scheme check.
-- Product matching/merge suggestions before approval.
+- Product merge UI and background duplicate cleanup.
 - Crawler integration.
 - Dedicated user "my submissions" page.

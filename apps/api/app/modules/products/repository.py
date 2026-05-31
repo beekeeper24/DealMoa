@@ -37,6 +37,12 @@ class ProductRepository:
         statement = select(Product).order_by(Product.created_at.desc(), Product.id.desc())
         return list(self.session.scalars(statement))
 
+    def list_products_for_matching(self, *, limit: int) -> list[Product]:
+        statement = select(Product).order_by(Product.updated_at.desc(), Product.id.desc()).limit(
+            limit
+        )
+        return list(self.session.scalars(statement))
+
     def create_deal(self, deal: Deal) -> Deal:
         self.session.add(deal)
         self.session.flush()

@@ -1,9 +1,11 @@
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from app.core.exceptions import (
     ForbiddenException,
+    ProductNotFoundException,
     SubmissionAlreadyReviewedException,
     SubmissionNotFoundException,
 )
@@ -32,6 +34,13 @@ class SubmissionCreateResult:
 class MockAiReviewResult:
     decision: str
     reason: str
+
+
+@dataclass(frozen=True)
+class ProductMatch:
+    product: Product
+    score: int
+    matched_reasons: list[str]
 
 
 class SubmissionsUseCases:
@@ -114,6 +123,25 @@ class SubmissionsUseCases:
             cursor=cursor,
         )
 
+    def list_product_matches(
+        self,
+        *,
+        actor: AuthenticatedUser,
+        submission_id: str,
+        limit: int,
+    ) -> list[ProductMatch]:
+        self._ensure_admin(actor)
+        submission = self.submissions_repository.get_submission(submission_id)
+        if submission is None:
+            raise SubmissionNotFoundException(submission_id)
+        candidates = self.product_repository.list_products_for_matching(limit=100)
+        matches = [
+            match
+            for product in candidates
+            if (match := self._score_product_match(submission, product)).score > 0
+        ]
+        return sorted(matches, key=lambda match: (-match.score, match.product.name))[:limit]
+
     def review_submission(
         self,
         *,
@@ -131,7 +159,7 @@ class SubmissionsUseCases:
         now = self.now()
         previous_status = submission.status
         if request.action == "approve":
-            self._approve_submission(submission, now)
+            self._approve_submission(submission, now, target_product_id=request.target_product_id)
             submission.status = "approved"
             action = "submission.approved"
         else:
@@ -163,18 +191,30 @@ class SubmissionsUseCases:
             reason="mock review passed: admin approval required",
         )
 
-    def _approve_submission(self, submission: Submission, now: datetime) -> None:
-        product = self.product_repository.create_product(
-            Product(
-                name=submission.product_name,
-                brand=submission.brand,
-                model_name=submission.model_name,
-                category=submission.category,
-                specs=None,
-                created_at=now,
-                updated_at=now,
+    def _approve_submission(
+        self,
+        submission: Submission,
+        now: datetime,
+        *,
+        target_product_id: str | None,
+    ) -> None:
+        if target_product_id is not None:
+            product = self.product_repository.get_product(target_product_id)
+            if product is None:
+                raise ProductNotFoundException(target_product_id)
+            product.updated_at = now
+        else:
+            product = self.product_repository.create_product(
+                Product(
+                    name=submission.product_name,
+                    brand=submission.brand,
+                    model_name=submission.model_name,
+                    category=submission.category,
+                    specs=None,
+                    created_at=now,
+                    updated_at=now,
+                )
             )
-        )
         self.domain_events.record_product_updated(product)
         submission.published_product_id = product.id
 
@@ -219,3 +259,44 @@ class SubmissionsUseCases:
     def _ensure_admin(self, actor: AuthenticatedUser) -> None:
         if actor.role != "ADMIN":
             raise ForbiddenException()
+
+    def _score_product_match(self, submission: Submission, product: Product) -> ProductMatch:
+        score = 0
+        reasons: list[str] = []
+        submission_model = normalize_text(submission.model_name)
+        product_model = normalize_text(product.model_name)
+        if submission_model and product_model and submission_model == product_model:
+            score += 55
+            reasons.append("model")
+
+        submission_brand = normalize_text(submission.brand)
+        product_brand = normalize_text(product.brand)
+        if submission_brand and product_brand and submission_brand == product_brand:
+            score += 20
+            reasons.append("brand")
+
+        submission_category = normalize_text(submission.category)
+        product_category = normalize_text(product.category)
+        if submission_category and product_category and submission_category == product_category:
+            score += 10
+            reasons.append("category")
+
+        shared_tokens = normalized_tokens(submission.product_name) & normalized_tokens(product.name)
+        if shared_tokens:
+            score += min(len(shared_tokens) * 10, 30)
+            reasons.append("name")
+
+        return ProductMatch(product=product, score=score, matched_reasons=reasons)
+
+
+def normalize_text(value: str | None) -> str:
+    if value is None:
+        return ""
+    return " ".join(value.casefold().strip().split())
+
+
+def normalized_tokens(value: str | None) -> set[str]:
+    normalized = normalize_text(value)
+    if not normalized:
+        return set()
+    return {token for token in re.split(r"[^0-9a-z가-힣]+", normalized) if token}

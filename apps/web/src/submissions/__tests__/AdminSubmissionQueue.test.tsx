@@ -109,6 +109,21 @@ describe("AdminSubmissionQueue", () => {
       if (url === "/api/v1/admin/submissions?status=pending_review&limit=20") {
         return jsonResponse({ items: [submissionFixture()], nextCursor: null });
       }
+      if (url === "/api/v1/admin/submissions/submission-1/product-matches?limit=5") {
+        return jsonResponse({
+          items: [
+            {
+              productId: "product-1",
+              name: "Galaxy S26 Ultra",
+              brand: "Samsung",
+              modelName: "SM-S260",
+              category: "smartphone",
+              score: 95,
+              matchedReasons: ["model", "brand", "category", "name"]
+            }
+          ]
+        });
+      }
       if (url === "/api/v1/admin/submissions/submission-1" && init?.method === "PATCH") {
         return jsonResponse(
           submissionFixture({
@@ -132,13 +147,19 @@ describe("AdminSubmissionQueue", () => {
     expect(
       within(card).getByText("mock review passed: admin approval required")
     ).toBeInTheDocument();
+    expect(await within(card).findByText("Galaxy S26 Ultra")).toBeInTheDocument();
+    expect(within(card).getByText("점수 95")).toBeInTheDocument();
 
     await user.type(within(card).getByLabelText("처리 메모"), "승인");
     await user.click(within(card).getByRole("button", { name: "제보 처리" }));
 
     expect(await screen.findByText("표시할 제보가 없습니다.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/admin/submissions/submission-1", {
-      body: JSON.stringify({ action: "approve", resolutionNote: "승인" }),
+      body: JSON.stringify({
+        action: "approve",
+        resolutionNote: "승인",
+        targetProductId: "product-1"
+      }),
       headers: {
         Accept: "application/json",
         Authorization: "Bearer access-1",

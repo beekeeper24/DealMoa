@@ -9,6 +9,7 @@ from app.main import create_app
 from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
+from app.modules.products.models import Product
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -211,6 +212,43 @@ def test_admin_can_list_and_approve_submission() -> None:
     assert review_response.json()["publishedOfferId"] is not None
 
 
+def test_admin_can_list_product_matches_and_approve_with_existing_product() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    seed_product(session_factory)
+    submission_response = user_client.post(
+        "/api/v1/submissions",
+        json=submission_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+    submission_id = submission_response.json()["id"]
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+
+    matches_response = admin_client.get(
+        f"/api/v1/admin/submissions/{submission_id}/product-matches",
+        headers={"Authorization": "Bearer access-1"},
+    )
+    review_response = admin_client.patch(
+        f"/api/v1/admin/submissions/{submission_id}",
+        json={
+            "action": "approve",
+            "targetProductId": "product-1",
+            "resolutionNote": "기존 상품 연결",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert matches_response.status_code == 200
+    assert matches_response.json()["items"][0]["productId"] == "product-1"
+    assert matches_response.json()["items"][0]["score"] > 0
+    assert review_response.status_code == 200
+    assert review_response.json()["status"] == "approved"
+    assert review_response.json()["publishedProductId"] == "product-1"
+
+
 def test_admin_submission_queue_requires_admin_role() -> None:
     client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
@@ -222,3 +260,23 @@ def test_admin_submission_queue_requires_admin_role() -> None:
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+def seed_product(session_factory: sessionmaker[Session]) -> None:
+    session = session_factory()
+    try:
+        session.add(
+            Product(
+                id="product-1",
+                name="Galaxy S26 Ultra",
+                brand="Samsung",
+                model_name="SM-S260",
+                category="smartphone",
+                specs=None,
+                created_at=NOW,
+                updated_at=NOW,
+            )
+        )
+        session.commit()
+    finally:
+        session.close()

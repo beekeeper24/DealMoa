@@ -1,4 +1,5 @@
 import type {
+  ProductMatchListResponse,
   Submission,
   SubmissionCreateInput,
   SubmissionErrorResponse,
@@ -59,18 +60,38 @@ export async function listAdminSubmissions(request: {
   });
 }
 
+export async function listSubmissionProductMatches(request: {
+  accessToken: string;
+  submissionId: string;
+}): Promise<ProductMatchListResponse> {
+  return requestJson<ProductMatchListResponse>(
+    `/admin/submissions/${request.submissionId}/product-matches?limit=5`,
+    {
+      accessToken: request.accessToken
+    }
+  );
+}
+
 export async function reviewSubmission(request: {
   accessToken: string;
   action: SubmissionReviewAction;
   resolutionNote: string;
   submissionId: string;
+  targetProductId?: string;
 }): Promise<Submission> {
-  const body: { action: SubmissionReviewAction; resolutionNote?: string } = {
+  const body: {
+    action: SubmissionReviewAction;
+    resolutionNote?: string;
+    targetProductId?: string;
+  } = {
     action: request.action
   };
   const note = request.resolutionNote.trim();
   if (note) {
     body.resolutionNote = note;
+  }
+  if (request.targetProductId) {
+    body.targetProductId = request.targetProductId;
   }
   return requestJson<Submission>(`/admin/submissions/${request.submissionId}`, {
     accessToken: request.accessToken,

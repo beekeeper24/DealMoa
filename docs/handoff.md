@@ -72,7 +72,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after product discussion foundation: crawler/product matching, real AI
+2. Next PR sequence after product matching foundation: crawler ingestion, real AI
    provider/OCR hardening, or My Page contribution history.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
@@ -293,8 +293,10 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Duplicate `sourceUrl` submissions return the existing submission.
 - Added admin-only `GET /api/v1/admin/submissions` and
   `PATCH /api/v1/admin/submissions/{submission_id}`.
-- Approval creates Product plus Deal/Auction in one transaction and emits the existing
-  `product.updated` plus `deal.created` or `auction.created` events.
+- Approval creates Product plus Deal/Auction by default, or attaches the new offer to an
+  existing Product when admin approval includes `targetProductId`.
+- Approval emits the existing `product.updated` plus `deal.created` or
+  `auction.created` events.
 - Rejection records the admin decision without publishing content.
 - Approval and rejection write `admin_audit_logs`.
 - `apps/worker` mock AI review task returns the same deterministic review result used
@@ -302,8 +304,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Added `/submit` user web form and `/admin/submissions` admin review queue.
 - The search header links to user submission, and admin sessions can enter both report
   and submission review queues.
-- Real AI provider, server-side rate limit store, URL reputation checks, product
-  matching/merge, crawler ingestion, and a dedicated user submissions page remain deferred.
+- Real AI provider, server-side rate limit store, URL reputation checks, product merge UI,
+  crawler ingestion, and a dedicated user submissions page remain deferred.
 
 ## Completed Price History And Verified Review Foundation Scope
 
@@ -352,6 +354,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   evidence or ranking signal.
 - Nested replies, voting, notifications, author edit/delete, spam/rate-limit hardening,
   and a dedicated admin discussion web queue remain deferred.
+
+## Completed Product Matching Foundation Scope
+
+- Added deterministic Product match suggestions for pending submissions using normalized
+  model, brand, category, and product-name token overlap.
+- Added admin-only `GET /api/v1/admin/submissions/{submission_id}/product-matches`.
+- Extended admin submission approval with optional `targetProductId`.
+- Approval without `targetProductId` keeps the old behavior and creates a new Product.
+- Approval with `targetProductId` attaches the new deal/auction to the existing Product,
+  records published IDs on the submission, and emits the existing product/offer outbox
+  events.
+- Admin submission web queue now shows match candidates and lets admins choose existing
+  Product or new Product publishing.
+- Matching suggestions are admin hints only; they never auto-publish content.
+- Real crawler ingestion, vector/AI matching, product merge UI, and background duplicate
+  cleanup remain deferred.
 
 ## Cautions
 

@@ -4,6 +4,7 @@ import {
   createSubmission,
   listAdminSubmissions,
   listMySubmissions,
+  listSubmissionProductMatches,
   reviewSubmission,
   SubmissionApiError
 } from "../api";
@@ -124,25 +125,43 @@ describe("submissions api", () => {
     );
   });
 
-  it("reviews a submission", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({
-        ...submissionFixture,
-        status: "approved",
-        publishedOfferId: "deal-1"
-      })
+  it("lists product matches and reviews a submission", async () => {
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse({
+          ...submissionFixture,
+          status: "approved",
+          publishedOfferId: "deal-1"
+        })
+      )
     );
     vi.stubGlobal("fetch", fetchMock);
 
+    await listSubmissionProductMatches({
+      accessToken: "access-1",
+      submissionId: "submission-1"
+    });
     await reviewSubmission({
       accessToken: "access-1",
       action: "approve",
       resolutionNote: "approved",
-      submissionId: "submission-1"
+      submissionId: "submission-1",
+      targetProductId: "product-1"
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/submissions/submission-1", {
-      body: JSON.stringify({ action: "approve", resolutionNote: "approved" }),
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/admin/submissions/submission-1/product-matches?limit=5",
+      {
+        headers: { Accept: "application/json", Authorization: "Bearer access-1" }
+      }
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/admin/submissions/submission-1", {
+      body: JSON.stringify({
+        action: "approve",
+        resolutionNote: "approved",
+        targetProductId: "product-1"
+      }),
       headers: {
         Accept: "application/json",
         Authorization: "Bearer access-1",

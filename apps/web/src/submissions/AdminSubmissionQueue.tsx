@@ -5,8 +5,13 @@ import React, { FormEvent, ReactNode, useEffect, useState } from "react";
 
 import { useAuthSession } from "../auth/useAuthSession";
 
-import { listAdminSubmissions, reviewSubmission, SubmissionApiError } from "./api";
-import type { Submission, SubmissionReviewAction, SubmissionStatus } from "./types";
+import {
+  listAdminSubmissions,
+  listSubmissionProductMatches,
+  reviewSubmission,
+  SubmissionApiError
+} from "./api";
+import type { ProductMatch, Submission, SubmissionReviewAction, SubmissionStatus } from "./types";
 
 const statuses: Array<{ key: SubmissionStatus; label: string }> = [
   { key: "pending_review", label: "검토 대기" },
@@ -65,6 +70,7 @@ export function AdminSubmissionQueue() {
     action: SubmissionReviewAction;
     resolutionNote: string;
     submissionId: string;
+    targetProductId?: string;
   }) {
     if (!accessToken) {
       return;
@@ -138,7 +144,12 @@ export function AdminSubmissionQueue() {
             </p>
           ) : null}
           {items.map((submission) => (
-            <SubmissionCard key={submission.id} onReview={handleReview} submission={submission} />
+            <SubmissionCard
+              accessToken={accessToken}
+              key={submission.id}
+              onReview={handleReview}
+              submission={submission}
+            />
           ))}
         </div>
         {nextCursor ? (
@@ -166,27 +177,74 @@ export function AdminSubmissionQueue() {
 }
 
 function SubmissionCard({
+  accessToken,
   onReview,
   submission
 }: {
+  accessToken?: string;
   onReview: (request: {
     action: SubmissionReviewAction;
     resolutionNote: string;
     submissionId: string;
+    targetProductId?: string;
   }) => Promise<void>;
   submission: Submission;
 }) {
   const [action, setAction] = useState<SubmissionReviewAction>("approve");
   const [resolutionNote, setResolutionNote] = useState("");
+  const [matches, setMatches] = useState<ProductMatch[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken || submission.status !== "pending_review") {
+      return;
+    }
+    const token = accessToken;
+    let isCurrent = true;
+
+    async function fetchMatches() {
+      setIsLoadingMatches(true);
+      try {
+        const page = await listSubmissionProductMatches({
+          accessToken: token,
+          submissionId: submission.id
+        });
+        if (isCurrent) {
+          setMatches(page.items);
+          setSelectedProductId(page.items[0]?.productId ?? "");
+        }
+      } catch {
+        if (isCurrent) {
+          setMatches([]);
+          setSelectedProductId("");
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoadingMatches(false);
+        }
+      }
+    }
+
+    void fetchMatches();
+    return () => {
+      isCurrent = false;
+    };
+  }, [accessToken, submission.id, submission.status]);
 
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
     setErrorMessage(null);
     try {
-      await onReview({ action, resolutionNote, submissionId: submission.id });
+      await onReview({
+        action,
+        resolutionNote,
+        submissionId: submission.id,
+        targetProductId: action === "approve" ? selectedProductId || undefined : undefined
+      });
     } catch (error) {
       setErrorMessage(
         error instanceof SubmissionApiError ? error.message : "제보 처리 저장에 실패했습니다."
@@ -233,6 +291,49 @@ function SubmissionCard({
 
         {submission.status === "pending_review" ? (
           <form className="grid gap-3" onSubmit={submitReview}>
+            <section className="rounded border border-black/10 bg-paper p-3">
+              <h3 className="text-sm font-bold">상품 매칭 후보</h3>
+              {isLoadingMatches ? (
+                <p className="mt-2 text-xs text-black/60">후보 조회 중</p>
+              ) : null}
+              {!isLoadingMatches && matches.length === 0 ? (
+                <p className="mt-2 text-xs text-black/60">추천할 기존 상품이 없습니다.</p>
+              ) : null}
+              {matches.length > 0 ? (
+                <div className="mt-2 grid gap-2">
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      checked={selectedProductId === ""}
+                      className="mt-1"
+                      name={`product-match-${submission.id}`}
+                      onChange={() => setSelectedProductId("")}
+                      type="radio"
+                    />
+                    <span>
+                      <span className="font-semibold">새 상품으로 발행</span>
+                    </span>
+                  </label>
+                  {matches.map((match) => (
+                    <label className="flex items-start gap-2 text-sm" key={match.productId}>
+                      <input
+                        checked={selectedProductId === match.productId}
+                        className="mt-1"
+                        name={`product-match-${submission.id}`}
+                        onChange={() => setSelectedProductId(match.productId)}
+                        type="radio"
+                      />
+                      <span>
+                        <span className="font-semibold">{match.name}</span>
+                        <span className="ml-2 text-xs text-signal">점수 {match.score}</span>
+                        <span className="block text-xs text-black/55">
+                          {[match.brand, match.modelName, match.category].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+            </section>
             <label className="grid gap-1 text-sm font-semibold">
               처리
               <select
