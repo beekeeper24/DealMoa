@@ -273,6 +273,16 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Low bids and ended/inactive auctions use DealMoa domain exceptions and common error responses.
 - Successful bids write `auction.bid.placed` outbox events; the search consumer now uses them for auction document freshness.
 
+## Completed Product Deal Auction Detail Web Scope
+
+- Product, deal, and auction search result titles link to detail pages.
+- Added `/products/{productId}`, `/deals/{dealId}`, and `/auctions/{auctionId}` web routes.
+- Product detail shows core metadata, specs, current deals, current auctions, and product favorite control.
+- Deal detail shows offer price, seller/status, linked product, external source link, deal favorite control, and authenticated report submission.
+- Auction detail shows current price, bid count, seller/status, linked product, external source link, auction favorite control, authenticated report submission, and authenticated bid submission.
+- Auction detail uses the fixed 1,000 KRW bid increment and updates local current price/bid count after a successful bid response.
+- Price history, verified reviews, discussion, realtime auction updates, and AI purchase checks remain deferred.
+
 ## Cautions
 
 - Do not commit `.env` or real OAuth/JWT secrets.

@@ -290,7 +290,11 @@ function ProductResult({ accessToken, item }: { accessToken?: string; item: Prod
     <article>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-bold">{item.name}</h3>
+          <h3 className="font-bold">
+            <Link className="transition hover:text-signal" href={`/products/${item.id}`}>
+              {item.name}
+            </Link>
+          </h3>
           <p className="mt-1 text-sm text-black/65">
             {[item.brand, item.modelName].filter(Boolean).join(" · ")}
           </p>
@@ -314,7 +318,11 @@ function DealResult({ accessToken, item }: { accessToken?: string; item: DealSea
     <article>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-bold">{item.title}</h3>
+          <h3 className="font-bold">
+            <Link className="transition hover:text-signal" href={`/deals/${item.id}`}>
+              {item.title}
+            </Link>
+          </h3>
           <p className="mt-1 text-sm text-black/65">{item.seller ?? "판매처 미상"}</p>
         </div>
         <div className="flex items-start gap-2">
@@ -334,7 +342,11 @@ function AuctionResult({ accessToken, item }: { accessToken?: string; item: Auct
     <article>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-bold">{item.title}</h3>
+          <h3 className="font-bold">
+            <Link className="transition hover:text-signal" href={`/auctions/${item.id}`}>
+              {item.title}
+            </Link>
+          </h3>
           <p className="mt-1 text-sm text-black/65">{item.seller ?? "판매처 미상"}</p>
         </div>
         <div className="flex items-start gap-2">
