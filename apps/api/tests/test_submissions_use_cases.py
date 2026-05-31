@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 
 import pytest
-from app.core.exceptions import ForbiddenException
+from app.core.exceptions import ForbiddenException, ProductNotFoundException
 from app.core.pagination import CursorPage
 from app.db.base import Base
 from app.modules.admin.models import AdminAuditLog
@@ -195,6 +195,116 @@ def test_admin_approval_publishes_deal_and_records_events_and_audit_log() -> Non
     assert audit_logs[0].action == "submission.approved"
     assert audit_logs[0].target_id == submission.submission.id
     assert {event.event_type for event in events} == {"deal.created", "product.updated"}
+
+
+def test_admin_can_list_submission_product_matches_sorted_by_score() -> None:
+    session = next(make_session())
+    seed_users(session)
+    session.add_all(
+        [
+            Product(
+                id="product-1",
+                name="Galaxy S26 Ultra",
+                brand="Samsung",
+                model_name="SM-S260",
+                category="smartphone",
+                specs=None,
+                created_at=NOW,
+                updated_at=NOW,
+            ),
+            Product(
+                id="product-2",
+                name="Galaxy Buds",
+                brand="Samsung",
+                model_name="Buds",
+                category="audio",
+                specs=None,
+                created_at=NOW,
+                updated_at=NOW,
+            ),
+        ]
+    )
+    use_cases = make_use_cases(session)
+    submission = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    matches = use_cases.list_product_matches(
+        actor=actor(role="ADMIN"),
+        submission_id=submission.submission.id,
+        limit=5,
+    )
+
+    assert [match.product.id for match in matches] == ["product-1", "product-2"]
+    assert matches[0].score > matches[1].score
+    assert "model" in matches[0].matched_reasons
+    assert "brand" in matches[0].matched_reasons
+
+
+def test_non_admin_cannot_list_submission_product_matches() -> None:
+    session = next(make_session())
+    seed_users(session)
+    use_cases = make_use_cases(session)
+    submission = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    with pytest.raises(ForbiddenException):
+        use_cases.list_product_matches(
+            actor=actor(),
+            submission_id=submission.submission.id,
+            limit=5,
+        )
+
+
+def test_admin_approval_can_attach_offer_to_existing_product() -> None:
+    session = next(make_session())
+    seed_users(session)
+    existing_product = Product(
+        id="product-1",
+        name="Galaxy S26 Ultra",
+        brand="Samsung",
+        model_name="SM-S260",
+        category="smartphone",
+        specs=None,
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    session.add(existing_product)
+    use_cases = make_use_cases(session)
+    submission = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    reviewed = use_cases.review_submission(
+        actor=actor(role="ADMIN"),
+        submission_id=submission.submission.id,
+        request=SubmissionReviewRequest(
+            action="approve",
+            targetProductId=existing_product.id,
+            resolutionNote="기존 상품 연결",
+        ),
+    )
+
+    products = list(session.scalars(select(Product)))
+    deals = list(session.scalars(select(Deal)))
+    events = list(session.scalars(select(DomainEvent).order_by(DomainEvent.event_type)))
+    assert len(products) == 1
+    assert reviewed.published_product_id == existing_product.id
+    assert deals[0].product_id == existing_product.id
+    assert {event.event_type for event in events} == {"deal.created", "product.updated"}
+
+
+def test_admin_approval_rejects_missing_target_product() -> None:
+    session = next(make_session())
+    seed_users(session)
+    use_cases = make_use_cases(session)
+    submission = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    with pytest.raises(ProductNotFoundException):
+        use_cases.review_submission(
+            actor=actor(role="ADMIN"),
+            submission_id=submission.submission.id,
+            request=SubmissionReviewRequest(
+                action="approve",
+                targetProductId="missing-product",
+                resolutionNote="기존 상품 연결",
+            ),
+        )
 
 
 def test_admin_approval_publishes_auction() -> None:

@@ -32,6 +32,16 @@ export type Submission = {
   updatedAt: string;
 };
 
+export type ProductMatch = {
+  productId: string;
+  name: string;
+  brand: string | null;
+  modelName: string | null;
+  category: string | null;
+  score: number;
+  matchedReasons: string[];
+};
+
 export type SubmissionCreateInput = {
   brand: string;
   category: string;
@@ -50,6 +60,10 @@ export type SubmissionCreateInput = {
 export type SubmissionListResponse = {
   items: Submission[];
   nextCursor: string | null;
+};
+
+export type ProductMatchListResponse = {
+  items: ProductMatch[];
 };
 
 export type SubmissionErrorResponse = {

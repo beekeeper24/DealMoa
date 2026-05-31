@@ -63,6 +63,7 @@ class SubmissionCreateRequest(BaseModel):
 
 class SubmissionReviewRequest(BaseModel):
     action: SubmissionReviewAction
+    target_product_id: str | None = Field(default=None, alias="targetProductId", max_length=36)
     resolution_note: str | None = Field(default=None, alias="resolutionNote", max_length=2000)
 
 
@@ -110,3 +111,17 @@ class SubmissionResponse(BaseModel):
 class SubmissionListResponse(BaseModel):
     items: list[SubmissionResponse]
     next_cursor: str | None = Field(alias="nextCursor")
+
+
+class ProductMatchResponse(BaseModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    brand: str | None
+    model_name: str | None = Field(alias="modelName")
+    category: str | None
+    score: int
+    matched_reasons: list[str] = Field(alias="matchedReasons")
+
+
+class ProductMatchListResponse(BaseModel):
+    items: list[ProductMatchResponse]

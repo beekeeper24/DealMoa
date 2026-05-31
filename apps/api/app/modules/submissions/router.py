@@ -13,13 +13,15 @@ from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.products.repository import ProductRepository
 from app.modules.submissions.repository import SubmissionsRepository
 from app.modules.submissions.schemas import (
+    ProductMatchListResponse,
+    ProductMatchResponse,
     SubmissionCreateRequest,
     SubmissionListResponse,
     SubmissionResponse,
     SubmissionReviewRequest,
     SubmissionStatus,
 )
-from app.modules.submissions.use_cases import SubmissionsUseCases
+from app.modules.submissions.use_cases import ProductMatch, SubmissionsUseCases
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 me_router = APIRouter(prefix="/me/submissions", tags=["submissions"])
@@ -92,6 +94,25 @@ def list_admin_submissions(
     )
 
 
+@admin_router.get("/{submission_id}/product-matches", response_model=ProductMatchListResponse)
+def list_submission_product_matches(
+    submission_id: str,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    use_cases: Annotated[SubmissionsUseCases, Depends(get_submissions_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=10)] = 5,
+) -> ProductMatchListResponse:
+    return ProductMatchListResponse(
+        items=[
+            product_match_response(match)
+            for match in use_cases.list_product_matches(
+                actor=current_user,
+                submission_id=submission_id,
+                limit=limit,
+            )
+        ]
+    )
+
+
 @admin_router.patch("/{submission_id}", response_model=SubmissionResponse)
 def review_submission(
     submission_id: str,
@@ -105,4 +126,16 @@ def review_submission(
             submission_id=submission_id,
             request=request,
         )
+    )
+
+
+def product_match_response(match: ProductMatch) -> ProductMatchResponse:
+    return ProductMatchResponse(
+        productId=match.product.id,
+        name=match.product.name,
+        brand=match.product.brand,
+        modelName=match.product.model_name,
+        category=match.product.category,
+        score=match.score,
+        matchedReasons=match.matched_reasons,
     )

@@ -104,11 +104,30 @@ test("admin approves a pending submission", async ({ page }) => {
       body: JSON.stringify({ items: [submissionFixture()], nextCursor: null })
     });
   });
+  await page.route("**/api/v1/admin/submissions/submission-1/product-matches?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            productId: "product-1",
+            name: "Galaxy S26 Ultra",
+            brand: "Samsung",
+            modelName: "SM-S260",
+            category: "smartphone",
+            score: 95,
+            matchedReasons: ["model", "brand", "category", "name"]
+          }
+        ]
+      })
+    });
+  });
   await page.route("**/api/v1/admin/submissions/submission-1", async (route) => {
     expect(route.request().headers().authorization).toBe("Bearer access-1");
     expect(route.request().postDataJSON()).toEqual({
       action: "approve",
-      resolutionNote: "승인"
+      resolutionNote: "승인",
+      targetProductId: "product-1"
     });
     await route.fulfill({
       contentType: "application/json",
@@ -130,6 +149,7 @@ test("admin approves a pending submission", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "제보 검토" })).toBeVisible();
   await expect(page.getByText("Galaxy S26 launch deal")).toBeVisible();
+  await expect(page.getByText("Galaxy S26 Ultra")).toBeVisible();
 
   await page.getByLabel("처리 메모").fill("승인");
   await page.getByRole("button", { name: "제보 처리" }).click();
