@@ -120,6 +120,20 @@ const verifiedReviewFixture = {
   updatedAt: "2026-06-01T00:05:00Z"
 };
 
+const discussionFixture = {
+  id: "discussion-1",
+  productId: "product-1",
+  userId: "user-1",
+  userNickname: "Deal User",
+  body: "이 가격이면 실사용 기준으로 괜찮아 보입니다.",
+  status: "visible",
+  moderatedByUserId: null,
+  moderationNote: null,
+  moderatedAt: null,
+  createdAt: "2026-06-01T00:00:00Z",
+  updatedAt: "2026-06-01T00:00:00Z"
+};
+
 const purchaseCheckFixture = {
   productId: "product-1",
   recommendation: "buy",
@@ -179,6 +193,9 @@ describe("detail pages", () => {
       if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
         return jsonResponse({ items: [verifiedReviewFixture], nextCursor: null });
       }
+      if (url === "/api/v1/products/product-1/discussions?limit=10") {
+        return jsonResponse({ items: [discussionFixture], nextCursor: null });
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
 
@@ -199,7 +216,10 @@ describe("detail pages", () => {
     expect(screen.getAllByText("₩1,090,000").length).toBeGreaterThan(0);
     expect(screen.getByText("실구매 기준 만족")).toBeInTheDocument();
     expect(screen.getByText("배송과 제품 상태 모두 좋았습니다.")).toBeInTheDocument();
+    expect(screen.getAllByText("상품 토론").length).toBeGreaterThan(0);
+    expect(screen.getByText("이 가격이면 실사용 기준으로 괜찮아 보입니다.")).toBeInTheDocument();
     expect(screen.getByText("로그인 후 인증 후기를 제출할 수 있습니다.")).toBeInTheDocument();
+    expect(screen.getByText("로그인 후 토론에 참여할 수 있습니다.")).toBeInTheDocument();
   });
 
   it("submits an authenticated verified review candidate", async () => {
@@ -221,6 +241,9 @@ describe("detail pages", () => {
         return jsonResponse({ items: [], nextCursor: null });
       }
       if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/discussions?limit=10") {
         return jsonResponse({ items: [], nextCursor: null });
       }
       if (url === "/api/v1/products/product-1/verified-reviews" && init?.method === "POST") {
@@ -268,6 +291,57 @@ describe("detail pages", () => {
     });
   });
 
+  it("submits an authenticated product discussion comment", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch((url, init) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return jsonResponse(authSession());
+      }
+      if (url === "/api/v1/products/product-1") {
+        return jsonResponse(productFixture);
+      }
+      if (url === "/api/v1/products/product-1/deals?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/auctions?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/price-history?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/discussions?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/discussions" && init?.method === "POST") {
+        return jsonResponse(discussionFixture, { status: 201 });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderWithAuthProvider(<ProductDetailPage productId="product-1" />);
+
+    await screen.findByRole("heading", { name: "Galaxy S26 Ultra" });
+    await screen.findByText("user@example.com");
+    const form = screen.getByRole("form", { name: "상품 토론" });
+    await user.type(within(form).getByLabelText("댓글"), "이 가격이면 실사용 기준으로 괜찮아 보입니다.");
+    await user.click(within(form).getByRole("button", { name: "댓글 등록" }));
+
+    expect(await screen.findByText("댓글이 등록되었습니다.")).toBeInTheDocument();
+    expect(screen.getByText("이 가격이면 실사용 기준으로 괜찮아 보입니다.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/products/product-1/discussions", {
+      body: JSON.stringify({ body: "이 가격이면 실사용 기준으로 괜찮아 보입니다." }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
+  });
+
   it("renders a product purchase check report", async () => {
     const user = userEvent.setup();
     installFetch((url) => {
@@ -288,6 +362,9 @@ describe("detail pages", () => {
       }
       if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
         return jsonResponse({ items: [verifiedReviewFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/discussions?limit=10") {
+        return jsonResponse({ items: [discussionFixture], nextCursor: null });
       }
       if (url === "/api/v1/ai/products/product-1/purchase-check") {
         return jsonResponse(purchaseCheckFixture);

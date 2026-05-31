@@ -89,6 +89,25 @@ export type PublicVerifiedReview = Pick<
   "body" | "createdAt" | "id" | "productId" | "rating" | "title" | "updatedAt"
 >;
 
+export type DiscussionComment = {
+  id: string;
+  productId: string;
+  userId: string;
+  userNickname: string;
+  body: string;
+  status: "visible" | "hidden";
+  moderatedByUserId: string | null;
+  moderationNote: string | null;
+  moderatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicDiscussionComment = Pick<
+  DiscussionComment,
+  "body" | "createdAt" | "id" | "productId" | "updatedAt" | "userNickname"
+>;
+
 export type PurchaseRecommendation = "buy" | "watch" | "avoid";
 
 export type PurchaseCheckEvidence = {

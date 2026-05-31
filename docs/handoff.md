@@ -58,6 +58,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `docs/reports.md`: report intake, admin review queue, and ranking boundary.
 - `docs/submissions.md`: user submission intake, mock AI review, admin approval, and publishing boundary.
 - `docs/price-reviews.md`: price history snapshots, verified review submission, public display, and admin approval boundary.
+- `docs/discussions.md`: product discussion comments, public visibility, and admin moderation boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
@@ -71,8 +72,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after the current AI assistant foundation slice: product discussion,
-   crawler matching, or real AI provider/OCR hardening.
+2. Next PR sequence after product discussion foundation: crawler/product matching, real AI
+   provider/OCR hardening, or My Page contribution history.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -282,7 +283,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Deal detail shows offer price, seller/status, linked product, external source link, deal favorite control, and authenticated report submission.
 - Auction detail shows current price, bid count, seller/status, linked product, external source link, auction favorite control, authenticated report submission, and authenticated bid submission.
 - Auction detail uses the fixed 1,000 KRW bid increment and updates local current price/bid count after a successful bid response.
-- Discussion and realtime auction updates remain deferred.
+- Realtime auction updates remain deferred.
 
 ## Completed Submission Review MVP Scope
 
@@ -317,8 +318,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Product detail now shows price history and approved verified reviews.
 - Public verified-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.
-- Receipt upload/OCR, real AI provider integration, review scoring impact, product
-  discussion, and My Page review history remain deferred.
+- Receipt upload/OCR, real AI provider integration, review scoring impact, and My Page
+  review history remain deferred.
 
 ## Completed AI Assistant Foundation Scope
 
@@ -335,6 +336,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Product detail exposes an AI purchase-check button and report panel.
 - Real OpenAI/Spring AI provider calls, vector embeddings, prompt persistence, streaming,
   personalization, and community sentiment summarization remain deferred.
+
+## Completed Product Discussion Foundation Scope
+
+- Added `product_discussion_comments` with product, user, body, moderation status,
+  moderator, note, and timestamps.
+- Added public `GET /api/v1/products/{product_id}/discussions` for visible comments.
+- Added authenticated `POST /api/v1/products/{product_id}/discussions`.
+- Added admin-only `GET /api/v1/admin/discussions` and
+  `PATCH /api/v1/admin/discussions/{comment_id}` for hide/restore moderation.
+- Admin discussion moderation writes `admin_audit_logs`.
+- Product detail now shows visible discussion comments and an authenticated comment form.
+- Public discussion responses exclude internal user ids, moderation notes, and reviewer ids.
+- Discussion text is rendered as plain React text and is not used as AI purchase-check
+  evidence or ranking signal.
+- Nested replies, voting, notifications, author edit/delete, spam/rate-limit hardening,
+  and a dedicated admin discussion web queue remain deferred.
 
 ## Cautions
 

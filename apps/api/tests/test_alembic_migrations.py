@@ -40,6 +40,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "submissions",
         "price_history_snapshots",
         "verified_reviews",
+        "product_discussion_comments",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
@@ -63,6 +64,9 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     }
     verified_review_indexes = {
         index["name"] for index in inspector.get_indexes("verified_reviews")
+    }
+    discussion_indexes = {
+        index["name"] for index in inspector.get_indexes("product_discussion_comments")
     }
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
@@ -89,6 +93,10 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     assert {
         foreign_key["referred_table"]
         for foreign_key in inspector.get_foreign_keys("verified_reviews")
+    } == {"products", "users"}
+    assert {
+        foreign_key["referred_table"]
+        for foreign_key in inspector.get_foreign_keys("product_discussion_comments")
     } == {"products", "users"}
     assert {
         "ix_domain_events_published_at_created_at",
@@ -121,6 +129,11 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "ix_verified_reviews_status_created_at",
         "ix_verified_reviews_user_id_created_at",
     } <= verified_review_indexes
+    assert {
+        "ix_product_discussion_comments_product_status_created_at",
+        "ix_product_discussion_comments_status_created_at",
+        "ix_product_discussion_comments_user_id_created_at",
+    } <= discussion_indexes
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

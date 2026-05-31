@@ -7,12 +7,14 @@ import { useAuthSession } from "../auth/useAuthSession";
 import { FavoriteButton } from "../favorites/FavoriteButton";
 
 import {
+  createProductDiscussion,
   createVerifiedReview,
   DetailApiError,
   getProduct,
   getProductPurchaseCheck,
   listProductAuctions,
   listProductDeals,
+  listProductDiscussions,
   listProductPriceHistory,
   listProductVerifiedReviews
 } from "./api";
@@ -20,9 +22,11 @@ import { DetailShell, formatCurrency, specsEntries, statusLabel } from "./Detail
 import type {
   AuctionDetail,
   DealDetail,
+  DiscussionComment,
   PriceHistorySnapshot,
   ProductDetail,
   ProductPurchaseCheck,
+  PublicDiscussionComment,
   PublicVerifiedReview,
   VerifiedReview
 } from "./types";
@@ -30,6 +34,7 @@ import type {
 type ProductDetailState = {
   auctions: AuctionDetail[];
   deals: DealDetail[];
+  discussions: PublicDiscussionComment[];
   priceHistory: PriceHistorySnapshot[];
   product: ProductDetail;
   verifiedReviews: PublicVerifiedReview[];
@@ -53,18 +58,27 @@ export function ProductDetailPage({ productId }: { productId: string }) {
       setIsLoading(true);
       setErrorMessage(null);
       try {
-        const [product, dealsPage, auctionsPage, priceHistoryPage, verifiedReviewsPage] =
+        const [
+          product,
+          dealsPage,
+          auctionsPage,
+          priceHistoryPage,
+          verifiedReviewsPage,
+          discussionsPage
+        ] =
           await Promise.all([
             getProduct(productId),
             listProductDeals(productId),
             listProductAuctions(productId),
             listProductPriceHistory(productId),
-            listProductVerifiedReviews(productId)
+            listProductVerifiedReviews(productId),
+            listProductDiscussions(productId)
           ]);
         if (isCurrent) {
           setState({
             auctions: auctionsPage.items,
             deals: dealsPage.items,
+            discussions: discussionsPage.items,
             priceHistory: priceHistoryPage.items,
             product,
             verifiedReviews: verifiedReviewsPage.items
@@ -145,6 +159,7 @@ export function ProductDetailPage({ productId }: { productId: string }) {
               </section>
               <PriceHistoryList items={state.priceHistory} />
               <VerifiedReviewList items={state.verifiedReviews} />
+              <DiscussionList items={state.discussions} />
               {purchaseCheck ? <PurchaseCheckReport report={purchaseCheck} /> : null}
             </div>
 
@@ -190,12 +205,39 @@ export function ProductDetailPage({ productId }: { productId: string }) {
                 }
                 productId={state.product.id}
               />
+              <DiscussionForm
+                accessToken={accessToken}
+                onCreated={(comment) =>
+                  comment.status === "visible"
+                    ? setState((current) =>
+                        current
+                          ? {
+                              ...current,
+                              discussions: [publicDiscussionComment(comment), ...current.discussions]
+                            }
+                          : current
+                      )
+                    : undefined
+                }
+                productId={state.product.id}
+              />
             </aside>
           </article>
         ) : null}
       </section>
     </DetailShell>
   );
+}
+
+function publicDiscussionComment(comment: DiscussionComment): PublicDiscussionComment {
+  return {
+    body: comment.body,
+    createdAt: comment.createdAt,
+    id: comment.id,
+    productId: comment.productId,
+    updatedAt: comment.updatedAt,
+    userNickname: comment.userNickname
+  };
 }
 
 function PurchaseCheckReport({ report }: { report: ProductPurchaseCheck }) {
@@ -275,6 +317,28 @@ function VerifiedReviewList({ items }: { items: PublicVerifiedReview[] }) {
               <span className="text-xs font-semibold text-signal">평점 {item.rating}/5</span>
             </div>
             <p className="mt-2 text-sm leading-6 text-black/70">{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function DiscussionList({ items }: { items: PublicDiscussionComment[] }) {
+  return (
+    <section className="mt-6">
+      <h2 className="text-lg font-bold">상품 토론</h2>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-black/60">아직 등록된 토론 댓글이 없습니다.</p>
+      ) : null}
+      <ul className="mt-3 grid gap-3">
+        {items.map((item) => (
+          <li className="rounded border border-black/10 bg-white p-4" key={item.id}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-bold">{item.userNickname}</p>
+              <p className="text-xs text-black/50">{formatDate(item.createdAt)}</p>
+            </div>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-black/70">{item.body}</p>
           </li>
         ))}
       </ul>
@@ -392,6 +456,77 @@ function VerifiedReviewForm({
         type="submit"
       >
         {isSubmitting ? "접수 중" : "후기 제출"}
+      </button>
+    </form>
+  );
+}
+
+function DiscussionForm({
+  accessToken,
+  onCreated,
+  productId
+}: {
+  accessToken?: string;
+  onCreated: (comment: DiscussionComment) => void;
+  productId: string;
+}) {
+  const [body, setBody] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function submitComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      const comment = await createProductDiscussion({
+        accessToken,
+        body,
+        productId
+      });
+      setMessage("댓글이 등록되었습니다.");
+      setBody("");
+      onCreated(comment);
+    } catch (error) {
+      setErrorMessage(error instanceof DetailApiError ? error.message : "댓글 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form
+      aria-label="상품 토론"
+      className="rounded-md border border-black/10 bg-white p-4"
+      onSubmit={submitComment}
+    >
+      <h2 className="text-base font-bold">상품 토론</h2>
+      {!accessToken ? (
+        <p className="mt-3 text-sm text-black/60">로그인 후 토론에 참여할 수 있습니다.</p>
+      ) : null}
+      <label className="mt-3 grid gap-1 text-sm font-semibold">
+        댓글
+        <textarea
+          className="min-h-24 rounded border border-black/15 bg-paper px-3 py-2 text-sm font-normal"
+          disabled={!accessToken || isSubmitting}
+          maxLength={2000}
+          onChange={(event) => setBody(event.target.value)}
+          value={body}
+        />
+      </label>
+      {message ? <p className="mt-3 text-sm font-semibold text-signal">{message}</p> : null}
+      {errorMessage ? <p className="mt-3 text-sm font-semibold text-deal">{errorMessage}</p> : null}
+      <button
+        className="mt-4 rounded bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-black/40"
+        disabled={!accessToken || isSubmitting || !body.trim()}
+        type="submit"
+      >
+        {isSubmitting ? "등록 중" : "댓글 등록"}
       </button>
     </form>
   );

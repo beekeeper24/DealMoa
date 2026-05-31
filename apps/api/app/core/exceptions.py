@@ -99,6 +99,11 @@ class ErrorCode(Enum):
         HTTPStatus.CONFLICT,
         "이미 검토가 완료된 인증 후기입니다.",
     )
+    DISCUSSION_COMMENT_NOT_FOUND = (
+        "DISCUSSION_COMMENT_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "토론 댓글을 찾을 수 없습니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -322,4 +327,16 @@ class VerifiedReviewAlreadyReviewedException(VerifiedReviewException):
         super().__init__(
             ErrorCode.VERIFIED_REVIEW_ALREADY_REVIEWED,
             details={"reviewId": review_id, "status": status},
+        )
+
+
+class DiscussionException(DealMoaException):
+    pass
+
+
+class DiscussionCommentNotFoundException(DiscussionException):
+    def __init__(self, comment_id: str) -> None:
+        super().__init__(
+            ErrorCode.DISCUSSION_COMMENT_NOT_FOUND,
+            details={"commentId": comment_id},
         )

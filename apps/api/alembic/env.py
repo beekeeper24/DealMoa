@@ -5,6 +5,7 @@ from alembic import context
 from app.db.base import Base
 from app.modules.admin import models as admin_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.discussions import models as discussion_models  # noqa: F401
 from app.modules.events import models as event_models  # noqa: F401
 from app.modules.evidence import models as evidence_models  # noqa: F401
 from app.modules.favorites import models as favorite_models  # noqa: F401

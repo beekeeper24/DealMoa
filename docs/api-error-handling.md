@@ -50,6 +50,7 @@ DealMoaException
   ├─ NotificationException
   ├─ ReportException
   ├─ VerifiedReviewException
+  ├─ DiscussionException
   ├─ SubmissionException
   ├─ AdminException
   ├─ SearchException
@@ -123,6 +124,7 @@ Admin/Review/Submission
 - SUBMISSION_ALREADY_REVIEWED
 - VERIFIED_REVIEW_NOT_FOUND
 - VERIFIED_REVIEW_ALREADY_REVIEWED
+- DISCUSSION_COMMENT_NOT_FOUND
 ```
 
 ## HTTP Status Mapping
