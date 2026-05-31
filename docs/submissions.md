@@ -1,8 +1,8 @@
 # Submissions
 
-User submissions are candidate deal or auction listings. They are never published
-automatically. The API stores the candidate, records a deterministic mock AI first-pass
-review, and waits for an explicit admin decision.
+User and crawler submissions are candidate deal or auction listings. They are never
+published automatically. The API or worker stores the candidate, records a deterministic
+mock AI first-pass review, and waits for an explicit admin decision.
 
 ## User API
 
@@ -42,6 +42,23 @@ can add normalized URL and product-matching rules.
 
 `sourceUrl` must be an `http` or `https` URL. Allowlist/blocklist and source reputation
 checks are deferred, but non-web schemes are rejected at intake.
+
+## Crawler Ingestion
+
+`dealmoa.crawl_hot_deals_mock` is the first crawler ingestion boundary. It uses
+deterministic mock crawled items and writes them into the same `submissions` table through
+the existing submission intake use case.
+
+The task:
+
+- creates or reuses a non-admin crawler system user;
+- stores deal/auction candidates as `pending_review`;
+- records the same mock AI first-pass result used by user submissions;
+- relies on `sourceUrl` idempotency so repeated runs do not create duplicates;
+- returns scanned, created, and duplicate counts.
+
+It does not fetch live external pages, publish Product/Deal/Auction rows, or bypass admin
+approval.
 
 ## AI First Pass
 
@@ -132,5 +149,5 @@ ranking signals.
 - URL allowlist/blocklist and suspicious-link scoring beyond the current `http/https`
   scheme check.
 - Product merge UI and background duplicate cleanup.
-- Crawler integration.
+- Real crawler integration and source-specific parsing.
 - Dedicated user "my submissions" page.

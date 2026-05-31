@@ -19,6 +19,9 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Duplicate `sourceUrl` checks in the MVP return the existing submission row.
 - Submission `sourceUrl` accepts only `http` and `https` URLs at intake.
 - Mock AI first-pass review records `needs_admin_review`; it never publishes content.
+- Mock crawler ingestion writes `pending_review` submissions only; it does not fetch live
+  external pages or publish Product/Deal/Auction rows.
+- The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
 - Admin approval may attach an offer to an existing Product with `targetProductId`; missing

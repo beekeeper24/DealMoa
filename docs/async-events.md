@@ -129,6 +129,9 @@ CELERY_RESULT_BACKEND=redis://redis:6379/2
 AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES=60
 AUCTION_ENDING_SOON_BATCH_SIZE=100
 AUCTION_ENDING_SOON_SCHEDULE_SECONDS=300
+CRAWLER_SYSTEM_USER_ID=system-crawler
+CRAWLER_SYSTEM_USER_EMAIL=crawler@dealmoa.local
+CRAWLER_SYSTEM_USER_NICKNAME=DealMoa Crawler
 ```
 
 Local runtime:
@@ -138,6 +141,13 @@ docker compose --profile core --profile worker up --build
 ```
 
 `worker` runs Celery workers. `worker-beat` runs Celery beat and enqueues the auction-ending notification task every `AUCTION_ENDING_SOON_SCHEDULE_SECONDS` seconds.
+
+`dealmoa.crawl_hot_deals_mock` is a deterministic ingestion boundary. It creates or
+reuses a non-admin crawler system user and writes mock crawled deal/auction items into
+`submissions` through the same submission intake use case used by the API. Items remain
+`pending_review`; the task does not create Product, Deal, Auction, search documents, or
+notifications. Duplicate `sourceUrl` rows are counted as duplicates instead of creating
+extra queue rows.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API
