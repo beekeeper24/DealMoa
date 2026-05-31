@@ -176,6 +176,18 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `GET /api/v1/search/auctions/activity` returns active auctions ordered by Elasticsearch script score.
 - The current score uses available signals: capped bid count, capped unique bidder count, view momentum, favorite-count interest, ending-soon pressure, and status-derived trust.
 
+## Completed Hot Deal Ranking Scope
+
+- Deal search documents include `favoriteCount` from deal favorite rows.
+- Full deal reindex bulk-loads favorite counts, and single deal upserts query the
+  current favorite count.
+- `GET /api/v1/search/deals/hot` returns active deals ordered by Elasticsearch script score.
+- The current score uses available signals: capped discount ratio from original/sale
+  price, capped favorite-count interest, 72-hour freshness, and status-derived trust.
+- General deal search remains text-relevance-first.
+- Deal favorite create/delete event freshness remains deferred; favorite-count ranking
+  freshness depends on reindex or deal document refresh until that slice is implemented.
+
 ## Completed Admin Offer Status Review Scope
 
 - Added `admin_audit_logs` with actor, target, action, previous status, new status, reason, and timestamps.

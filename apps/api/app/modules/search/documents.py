@@ -51,7 +51,7 @@ def build_product_document(product: Product) -> SearchDocument:
     }
 
 
-def build_deal_document(deal: Deal) -> SearchDocument:
+def build_deal_document(deal: Deal, *, favorite_count: int = 0) -> SearchDocument:
     return {
         "id": deal.id,
         "productId": deal.product_id,
@@ -63,6 +63,7 @@ def build_deal_document(deal: Deal) -> SearchDocument:
         "currency": deal.currency,
         "status": deal.status,
         "trustScore": status_trust_score(deal.status, max_score=10),
+        "favoriteCount": favorite_count,
         "startedAt": serialize_datetime(deal.started_at),
         "endedAt": serialize_datetime(deal.ended_at),
         "createdAt": serialize_datetime(deal.created_at),

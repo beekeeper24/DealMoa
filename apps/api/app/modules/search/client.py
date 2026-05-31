@@ -75,6 +75,39 @@ if (doc['endsAt'].size() != 0) {
 return bidActivity + uniqueBidder + interest + viewMomentumScore + endingSoon + trust;
 """
 
+HOT_DEAL_SCORE_SCRIPT = """
+double originalPrice = doc['originalPrice'].size() == 0 ? 0.0 : doc['originalPrice'].value;
+double salePrice = doc['salePrice'].size() == 0 ? 0.0 : doc['salePrice'].value;
+double discountRatio = 0.0;
+if (originalPrice > 0.0 && salePrice > 0.0 && salePrice < originalPrice) {
+  discountRatio = (originalPrice - salePrice) / originalPrice;
+}
+double priceScore = Math.min(discountRatio, params.discountRatioCap)
+  / params.discountRatioCap
+  * params.priceScoreWeight;
+
+double favoriteCount = doc['favoriteCount'].size() == 0 ? 0.0 : doc['favoriteCount'].value;
+double interest = Math.min(favoriteCount, params.favoriteCountCap)
+  / params.favoriteCountCap
+  * params.favoriteCountWeight;
+
+double freshness = 0.0;
+if (doc['createdAt'].size() != 0) {
+  long ageMillis = params.nowMillis - doc['createdAt'].value.toInstant().toEpochMilli();
+  if (ageMillis >= 0 && ageMillis <= params.freshnessWindowMillis) {
+    freshness = (1.0 - (ageMillis / params.freshnessWindowMillis))
+      * params.freshnessWeight;
+  }
+}
+
+double trustScore = doc['trustScore'].size() == 0 ? 0.0 : doc['trustScore'].value;
+double trust = Math.min(trustScore, params.trustScoreCap)
+  / params.trustScoreCap
+  * params.trustScoreWeight;
+
+return priceScore + interest + freshness + trust;
+"""
+
 
 def encode_search_cursor(sort_values: list[Any]) -> str:
     payload = json.dumps(sort_values, ensure_ascii=False, separators=(",", ":")).encode()
@@ -243,6 +276,60 @@ class ElasticsearchSearchClient:
                             "trustScoreWeight": 5.0,
                             "endingSoonWindowMillis": 24.0 * 60.0 * 60.0 * 1000.0,
                             "endingSoonWeight": 5.0,
+                            "nowMillis": int(now.timestamp() * 1000),
+                        },
+                    },
+                }
+            },
+            "sort": [
+                {"_score": "desc"},
+                {"updatedAt": "desc"},
+                {"id": "desc"},
+            ],
+        }
+        if cursor is not None:
+            body["search_after"] = decode_search_cursor(cursor)
+
+        try:
+            with self._client(timeout=10.0) as client:
+                response = client.post(f"/{spec.alias_name}/_search", json=body)
+                response.raise_for_status()
+                hits = response.json()["hits"]["hits"]
+        except httpx.HTTPError:
+            raise SearchUnavailableException() from None
+
+        page_hits = hits[:limit]
+        items = [self._search_item(hit) for hit in page_hits]
+        next_cursor = None
+        if len(hits) > limit and page_hits:
+            next_cursor = encode_search_cursor(page_hits[-1]["sort"])
+        return CursorPage(items=items, next_cursor=next_cursor)
+
+    def rank_deals(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+        now: datetime | None = None,
+    ) -> CursorPage[dict[str, Any]]:
+        spec = SEARCH_INDEXES["deals"]
+        now = now or datetime.now(UTC)
+        body: dict[str, Any] = {
+            "size": limit + 1,
+            "query": {
+                "script_score": {
+                    "query": {"term": {"status": "active"}},
+                    "script": {
+                        "source": HOT_DEAL_SCORE_SCRIPT,
+                        "params": {
+                            "discountRatioCap": 0.5,
+                            "priceScoreWeight": 50.0,
+                            "favoriteCountCap": 50.0,
+                            "favoriteCountWeight": 30.0,
+                            "freshnessWindowMillis": 72.0 * 60.0 * 60.0 * 1000.0,
+                            "freshnessWeight": 10.0,
+                            "trustScoreCap": 10.0,
+                            "trustScoreWeight": 10.0,
                             "nowMillis": int(now.timestamp() * 1000),
                         },
                     },

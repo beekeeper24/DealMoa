@@ -20,6 +20,12 @@ class SearchSourceRepository(Protocol):
     def list_deals_for_search(self) -> Sequence[Deal]:
         pass
 
+    def list_deal_favorite_counts(self) -> dict[str, int]:
+        pass
+
+    def count_deal_favorites(self, deal_id: str) -> int:
+        pass
+
     def list_auctions_for_search(self) -> Sequence[Auction]:
         pass
 
@@ -68,6 +74,14 @@ class SearchClient(Protocol):
     ) -> CursorPage[dict[str, Any]]:
         pass
 
+    def rank_deals(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        pass
+
 
 class SearchUseCases:
     def __init__(
@@ -87,8 +101,10 @@ class SearchUseCases:
             build_product_document(product)
             for product in self.source_repository.list_products_for_search()
         ]
+        deal_favorite_counts = self.source_repository.list_deal_favorite_counts()
         deal_documents = [
-            build_deal_document(deal) for deal in self.source_repository.list_deals_for_search()
+            build_deal_document(deal, favorite_count=deal_favorite_counts.get(deal.id, 0))
+            for deal in self.source_repository.list_deals_for_search()
         ]
         auction_favorite_counts = self.source_repository.list_auction_favorite_counts()
         auction_view_counts = self.source_repository.list_auction_view_counts_since(
@@ -118,7 +134,13 @@ class SearchUseCases:
         self.search_client.index_document("products", build_product_document(product))
 
     def index_deal(self, deal: Deal) -> None:
-        self.search_client.index_document("deals", build_deal_document(deal))
+        self.search_client.index_document(
+            "deals",
+            build_deal_document(
+                deal,
+                favorite_count=self.source_repository.count_deal_favorites(deal.id),
+            ),
+        )
 
     def index_auction(self, auction: Auction) -> None:
         self.search_client.index_document(
@@ -167,6 +189,14 @@ class SearchUseCases:
         cursor: str | None,
     ) -> CursorPage[dict[str, Any]]:
         return self.search_client.rank_auctions(limit=limit, cursor=cursor)
+
+    def rank_deals(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        return self.search_client.rank_deals(limit=limit, cursor=cursor)
 
     def _view_momentum_since(self) -> datetime:
         return self.now() - self.view_momentum_window

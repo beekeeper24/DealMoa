@@ -41,6 +41,12 @@ class FakeSearchSourceRepository:
             )
         ]
 
+    def list_deal_favorite_counts(self) -> dict[str, int]:
+        return {"deal-1": 9}
+
+    def count_deal_favorites(self, deal_id: str) -> int:
+        return {"deal-1": 9}.get(deal_id, 0)
+
     def list_auctions_for_search(self) -> list[Auction]:
         return [
             Auction(
@@ -109,6 +115,14 @@ class RecordingSearchClient:
     ) -> CursorPage[dict[str, Any]]:
         raise AssertionError("rebuild test should not call auction ranking")
 
+    def rank_deals(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        raise AssertionError("rebuild test should not call deal ranking")
+
 
 def test_rebuild_indexes_recreates_indexes_and_replaces_all_documents() -> None:
     search_client = RecordingSearchClient()
@@ -125,6 +139,7 @@ def test_rebuild_indexes_recreates_indexes_and_replaces_all_documents() -> None:
     assert search_client.replaced[0][1][0]["id"] == "product-1"
     assert search_client.replaced[1][1][0]["id"] == "deal-1"
     assert search_client.replaced[1][1][0]["trustScore"] == 10
+    assert search_client.replaced[1][1][0]["favoriteCount"] == 9
     assert search_client.replaced[2][1][0]["id"] == "auction-1"
     assert search_client.replaced[2][1][0]["favoriteCount"] == 7
     assert search_client.replaced[2][1][0]["viewMomentum"] == 11
@@ -149,6 +164,7 @@ def test_index_single_product_deal_and_auction_documents() -> None:
     assert search_client.indexed[0][1]["id"] == "product-1"
     assert search_client.indexed[1][1]["id"] == "deal-1"
     assert search_client.indexed[1][1]["trustScore"] == 10
+    assert search_client.indexed[1][1]["favoriteCount"] == 9
     assert search_client.indexed[2][1]["id"] == "auction-1"
     assert search_client.indexed[2][1]["favoriteCount"] == 7
     assert search_client.indexed[2][1]["viewMomentum"] == 11

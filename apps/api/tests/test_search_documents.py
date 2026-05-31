@@ -56,7 +56,30 @@ def test_deal_search_document_keeps_product_and_price_fields() -> None:
     assert document["salePrice"] == 1090000
     assert document["status"] == "active"
     assert document["trustScore"] == 10
+    assert document["favoriteCount"] == 0
     assert document["createdAt"] == "2026-05-25T00:00:00Z"
+
+
+def test_deal_search_document_keeps_favorite_count_signal() -> None:
+    deal = Deal(
+        id="deal-1",
+        product_id="product-1",
+        title="Galaxy S26 launch deal",
+        source_url="https://example.com/deals/galaxy-s26",
+        seller="Example Store",
+        original_price=1400000,
+        sale_price=1090000,
+        currency="KRW",
+        status="active",
+        started_at=None,
+        ended_at=None,
+        created_at=datetime(2026, 5, 25, tzinfo=UTC),
+        updated_at=datetime(2026, 5, 25, tzinfo=UTC),
+    )
+
+    document = build_deal_document(deal, favorite_count=9)
+
+    assert document["favoriteCount"] == 9
 
 
 def test_auction_search_document_keeps_activity_fields() -> None:

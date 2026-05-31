@@ -28,6 +28,7 @@ class DealSearchItem(BaseModel):
     currency: str
     status: str
     trust_score: int = Field(default=0, alias="trustScore")
+    favorite_count: int = Field(default=0, alias="favoriteCount")
     started_at: str | None = Field(default=None, alias="startedAt")
     ended_at: str | None = Field(default=None, alias="endedAt")
     created_at: str = Field(alias="createdAt")

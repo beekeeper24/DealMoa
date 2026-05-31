@@ -37,6 +37,7 @@ def test_offer_index_mappings_keep_status_price_and_product_fields_typed() -> No
     assert deal_mapping["productId"]["type"] == "keyword"
     assert deal_mapping["status"]["type"] == "keyword"
     assert deal_mapping["trustScore"]["type"] == "integer"
+    assert deal_mapping["favoriteCount"]["type"] == "integer"
     assert deal_mapping["salePrice"]["type"] == "integer"
     assert deal_mapping["createdAt"]["type"] == "date"
     assert auction_mapping["productId"]["type"] == "keyword"

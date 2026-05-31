@@ -165,6 +165,72 @@ def test_rank_auctions_uses_activity_script_over_active_auctions() -> None:
     assert page.items[0]["score"] == 52.0
 
 
+def test_rank_deals_uses_hot_deal_score_script_over_active_deals() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "hits": {
+                    "hits": [
+                        {
+                            "_score": 78.0,
+                            "_source": {
+                                "id": "deal-1",
+                                "productId": "product-1",
+                                "title": "Galaxy S26 launch deal",
+                                "sourceUrl": "https://example.com/deals/galaxy-s26",
+                                "seller": "Example Store",
+                                "originalPrice": 1400000,
+                                "salePrice": 1090000,
+                                "favoriteCount": 9,
+                                "trustScore": 10,
+                                "currency": "KRW",
+                                "status": "active",
+                                "startedAt": "2026-05-29T00:00:00Z",
+                                "endedAt": None,
+                                "createdAt": "2026-05-29T00:00:00Z",
+                                "updatedAt": "2026-05-29T09:00:00Z",
+                            },
+                            "sort": [78.0, "2026-05-29T09:00:00Z", "deal-1"],
+                        }
+                    ]
+                }
+            },
+        )
+
+    client = ElasticsearchSearchClient(
+        "http://elasticsearch.test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    page = client.rank_deals(
+        limit=1,
+        cursor=None,
+        now=datetime(2026, 5, 29, 9, 0, tzinfo=UTC),
+    )
+
+    body = json_from_request(requests[0])
+    script = body["query"]["script_score"]["script"]
+    assert requests[0].method == "POST"
+    assert requests[0].url.path == "/deals_current/_search"
+    assert body["size"] == 2
+    assert body["query"]["script_score"]["query"] == {"term": {"status": "active"}}
+    assert "originalPrice" in script["source"]
+    assert "salePrice" in script["source"]
+    assert "favoriteCount" in script["source"]
+    assert "createdAt" in script["source"]
+    assert "trustScore" in script["source"]
+    assert script["params"]["priceScoreWeight"] == 50.0
+    assert script["params"]["favoriteCountWeight"] == 30.0
+    assert script["params"]["freshnessWeight"] == 10.0
+    assert script["params"]["trustScoreWeight"] == 10.0
+    assert body["sort"] == [{"_score": "desc"}, {"updatedAt": "desc"}, {"id": "desc"}]
+    assert page.items[0]["score"] == 78.0
+
+
 def json_from_request(request: httpx.Request) -> dict[str, Any]:
     import json
 
