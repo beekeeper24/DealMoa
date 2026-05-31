@@ -138,6 +138,12 @@ docker compose --profile core --profile worker up --build
 
 `worker` runs Celery workers. `worker-beat` runs Celery beat and enqueues the auction-ending notification task every `AUCTION_ENDING_SOON_SCHEDULE_SECONDS` seconds.
 
+`dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
+`needs_admin_review` plus a deterministic reason and does not publish content. The API
+currently records the same mock review synchronously during submission intake so the
+admin queue has an immediate review result; a later slice can move that call fully behind
+Celery without changing the admin approval contract.
+
 The auction-ending task scans active auctions whose `ends_at` is inside the lookahead window and creates `auction_ending_soon` notifications for users who favorited each auction. Duplicate runs are deduplicated by the notification unique target index:
 
 ```text
@@ -155,6 +161,13 @@ events in the same transaction as the status mutation and `admin_audit_logs` row
 Search consumers reload the canonical offer row from PostgreSQL instead of trusting the
 event payload. This keeps report counts out of automatic ranking while allowing admin
 status decisions to affect search visibility and trust freshness.
+
+## Submission Approval Events
+
+Submission approval does not emit a separate `submission.approved` event yet. Approval
+creates the canonical Product plus Deal/Auction rows and emits the existing
+`product.updated` plus `deal.created` or `auction.created` events. Rejection writes only
+the submission state and admin audit log.
 
 ## Next Steps
 

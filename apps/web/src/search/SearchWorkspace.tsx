@@ -143,13 +143,27 @@ export function SearchWorkspace() {
           >
             AI 검색
           </button>
+          <Link
+            className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
+            href="/submit"
+          >
+            제보하기
+          </Link>
           {authSession.session?.user.role === "ADMIN" ? (
-            <Link
-              className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
-              href="/admin"
-            >
-              관리자
-            </Link>
+            <>
+              <Link
+                className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
+                href="/admin"
+              >
+                신고 검토
+              </Link>
+              <Link
+                className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
+                href="/admin/submissions"
+              >
+                제보 검토
+              </Link>
+            </>
           ) : null}
           <NotificationCenter accessToken={accessToken} />
           <AuthStatus />

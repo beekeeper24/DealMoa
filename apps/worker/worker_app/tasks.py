@@ -25,6 +25,7 @@ def ai_review_submission_mock(submission_id: str) -> dict[str, object]:
         "task": "ai_review_submission_mock",
         "submissionId": submission_id,
         "decision": "needs_admin_review",
+        "reason": "mock review passed: admin approval required",
     }
 
 

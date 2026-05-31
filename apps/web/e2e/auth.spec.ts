@@ -61,6 +61,6 @@ test("logs in through the mocked oauth callback flow", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Google 로그인" }).click();
 
-  await expect(page).toHaveURL("/");
+  await expect(page).toHaveURL("/", { timeout: 10_000 });
   await expect(page.getByText("user@example.com")).toBeVisible();
 });

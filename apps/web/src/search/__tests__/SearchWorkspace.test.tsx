@@ -436,6 +436,11 @@ describe("SearchWorkspace", () => {
     renderWithAuthProvider(<SearchWorkspace />);
 
     expect(await screen.findByText("admin@example.com")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "관리자" })).toHaveAttribute("href", "/admin");
+    expect(screen.getByRole("link", { name: "제보하기" })).toHaveAttribute("href", "/submit");
+    expect(screen.getByRole("link", { name: "신고 검토" })).toHaveAttribute("href", "/admin");
+    expect(screen.getByRole("link", { name: "제보 검토" })).toHaveAttribute(
+      "href",
+      "/admin/submissions"
+    );
   });
 });
