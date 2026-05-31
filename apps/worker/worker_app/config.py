@@ -29,3 +29,15 @@ class WorkerSettings(BaseSettings):
         default=300,
         validation_alias="AUCTION_ENDING_SOON_SCHEDULE_SECONDS",
     )
+    crawler_system_user_id: str = Field(
+        default="system-crawler",
+        validation_alias="CRAWLER_SYSTEM_USER_ID",
+    )
+    crawler_system_user_email: str = Field(
+        default="crawler@dealmoa.local",
+        validation_alias="CRAWLER_SYSTEM_USER_EMAIL",
+    )
+    crawler_system_user_nickname: str = Field(
+        default="DealMoa Crawler",
+        validation_alias="CRAWLER_SYSTEM_USER_NICKNAME",
+    )

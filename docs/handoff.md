@@ -72,8 +72,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after product matching foundation: crawler ingestion, real AI
-   provider/OCR hardening, or My Page contribution history.
+2. Next PR sequence after crawler ingestion foundation: real AI provider/OCR hardening,
+   My Page contribution history, or real crawler source parsing.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -370,6 +370,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Matching suggestions are admin hints only; they never auto-publish content.
 - Real crawler ingestion, vector/AI matching, product merge UI, and background duplicate
   cleanup remain deferred.
+
+## Completed Crawler Ingestion Foundation Scope
+
+- `dealmoa.crawl_hot_deals_mock` now writes deterministic mock crawled items into
+  `submissions` instead of returning only a placeholder summary.
+- The worker creates or reuses a non-admin crawler system user configured by
+  `CRAWLER_SYSTEM_USER_ID`, `CRAWLER_SYSTEM_USER_EMAIL`, and
+  `CRAWLER_SYSTEM_USER_NICKNAME`.
+- Crawler-created submissions reuse the existing submission intake use case and mock AI
+  first-pass review.
+- Repeated crawls are idempotent by existing `sourceUrl` uniqueness and return duplicate
+  counts in the task summary.
+- Crawler ingestion creates only `pending_review` submissions; admin approval remains the
+  only Product/Deal/Auction publishing path.
+- Live HTTP crawling, source allowlists, parser plugins, crawl scheduling changes, and
+  real source reputation checks remain deferred.
 
 ## Cautions
 
