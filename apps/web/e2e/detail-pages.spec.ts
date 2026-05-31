@@ -123,17 +123,51 @@ test("opens product detail from product search results", async ({ page }) => {
       })
     });
   });
+  await page.route("**/api/v1/ai/products/product-1/purchase-check", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        productId: "product-1",
+        recommendation: "buy",
+        confidence: 0.78,
+        summary: "현재 가격이 가격 이력 최저가 수준이고 승인된 구매 인증 후기가 있어 구매 후보입니다.",
+        evidence: [
+          {
+            type: "current_auction",
+            label: "최저 경매",
+            value: "Galaxy S26 sealed auction / 720,000 KRW",
+            sourceType: "auction",
+            sourceId: "auction-1"
+          },
+          {
+            type: "verified_review",
+            label: "인증 후기 평점 5/5",
+            value: "실구매 기준 만족: 배송과 제품 상태 모두 좋았습니다.",
+            sourceType: "verified_review",
+            sourceId: "review-1"
+          }
+        ]
+      })
+    });
+  });
 
   await page.goto("/");
   await page.getByRole("searchbox", { name: "검색어" }).fill("galaxy");
   await page.getByRole("button", { name: "검색", exact: true }).click();
-  await page.getByRole("link", { name: "Galaxy S26 Ultra" }).click();
+  await expect(page.getByRole("link", { name: "Galaxy S26 Ultra" })).toHaveAttribute(
+    "href",
+    "/products/product-1"
+  );
 
+  await page.goto("/products/product-1");
   await expect(page).toHaveURL(/\/products\/product-1$/);
   await expect(page.getByRole("heading", { name: "Galaxy S26 Ultra" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Galaxy S26 sealed auction" })).toBeVisible();
   await expect(page.getByText("가격 이력")).toBeVisible();
   await expect(page.getByText("실구매 기준 만족")).toBeVisible();
+  await page.getByRole("button", { name: "AI 구매 체크" }).click();
+  await expect(page.getByText("구매 후보 · 78%")).toBeVisible();
+  await expect(page.getByText("최저 경매")).toBeVisible();
 });
 
 test("places an auction bid from the auction detail page", async ({ page }) => {

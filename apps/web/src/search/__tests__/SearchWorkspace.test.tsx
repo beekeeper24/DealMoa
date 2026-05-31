@@ -146,6 +146,70 @@ describe("SearchWorkspace", () => {
     expect(screen.getByText("score 2.40")).toBeInTheDocument();
   });
 
+  it("runs AI search and renders grouped candidates", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch((url, init) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/ai/search" && init?.method === "POST") {
+        return mockSearchResponse({
+          intent: {
+            query: "galaxy 100만원 이하 핫딜",
+            normalizedQuery: "galaxy 100만원 이하 핫딜",
+            targetTypes: ["deals"],
+            filters: { maxPrice: 1000000 }
+          },
+          summary: "핫딜 중심으로 1개 후보를 찾았습니다.",
+          products: { items: [], nextCursor: null },
+          deals: {
+            items: [
+              {
+                id: "deal-1",
+                productId: "product-1",
+                title: "Galaxy S26 launch deal",
+                sourceUrl: "https://example.com/deals/galaxy-s26",
+                seller: "Example Store",
+                originalPrice: 1400000,
+                salePrice: 990000,
+                currency: "KRW",
+                status: "active",
+                startedAt: null,
+                endedAt: null,
+                createdAt: "2026-05-25T00:00:00Z",
+                updatedAt: "2026-05-25T00:00:00Z",
+                score: 9
+              }
+            ],
+            nextCursor: null
+          },
+          auctions: { items: [], nextCursor: null }
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
+    renderWithAuthProvider(<SearchWorkspace />);
+
+    await screen.findByRole("button", { name: "Google 로그인" });
+    await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy 100만원 이하 핫딜");
+    await user.click(screen.getByRole("button", { name: "AI 검색" }));
+
+    expect(await screen.findByText("AI 검색 결과")).toBeInTheDocument();
+    expect(screen.getByText("핫딜 중심으로 1개 후보를 찾았습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Galaxy S26 launch deal" })).toHaveAttribute(
+      "href",
+      "/deals/deal-1"
+    );
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/ai/search", {
+      body: JSON.stringify({ limit: 5, query: "galaxy 100만원 이하 핫딜" }),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
+  });
+
   it("links search result titles to detail pages", async () => {
     const user = userEvent.setup();
     installFetch((url) => {

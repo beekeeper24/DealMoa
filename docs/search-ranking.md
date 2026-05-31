@@ -30,6 +30,7 @@ GET /api/v1/search/deals/hot?limit=20&cursor=...
 GET /api/v1/search/auctions?q=galaxy&limit=20&cursor=...
 GET /api/v1/search/auctions/activity?limit=20&cursor=...
 POST /api/v1/admin/search/reindex
+POST /api/v1/ai/search
 ```
 
 Indexes are versioned and queried through aliases:
@@ -68,6 +69,22 @@ Search list responses use the same response envelope shape as Product API lists:
 ```
 
 Search cursors encode Elasticsearch `search_after` sort values. Clients should treat them as opaque strings and pass them back unchanged.
+
+## AI Search Foundation
+
+`POST /api/v1/ai/search` is the first structured AI-search contract. It does not call a
+real LLM provider yet. The API parses a deterministic `SearchIntent` and calls existing
+product/deal/auction search use cases.
+
+Current intent fields:
+
+- `targetTypes`: allowlisted `products`, `deals`, and `auctions`.
+- `filters.category`: small category allowlist from recognized words.
+- `filters.maxPrice`: parsed from Korean won expressions such as `100만원`.
+
+The endpoint returns grouped search candidates plus a short deterministic summary. Later
+LLM integration should only produce or refine the structured intent; Elasticsearch query
+construction must remain allowlist-driven.
 
 ## Hot Deal Ranking
 

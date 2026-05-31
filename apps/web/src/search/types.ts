@@ -61,6 +61,24 @@ export type SearchResponse<T> = {
   nextCursor: string | null;
 };
 
+export type AiSearchIntent = {
+  query: string;
+  normalizedQuery: string;
+  targetTypes: SearchTab[];
+  filters: {
+    category?: string;
+    maxPrice?: number;
+  };
+};
+
+export type AiSearchResponse = {
+  intent: AiSearchIntent;
+  summary: string;
+  products: SearchResponse<ProductSearchItem>;
+  deals: SearchResponse<DealSearchItem>;
+  auctions: SearchResponse<AuctionSearchItem>;
+};
+
 export type SearchErrorResponse = {
   error: {
     code: string;

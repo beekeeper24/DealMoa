@@ -35,7 +35,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Elasticsearch indexes: `products_v1`, `deals_v1`, `auctions_v1`; unified/AI search uses multi-search.
 - Korean search: Nori analyzer from the first Elasticsearch setup.
 - General search: text relevance first, no vector by default.
-- AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
+- AI search: search-bar-side AI button, structured intent, filters, BM25, later vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
 - Current Kafka domain events: `deal.created`, `deal.status.changed`, `auction.created`, `auction.status.changed`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`, `review.verified`.
@@ -71,8 +71,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after the current price/review evidence slice: AI
-   search/purchase-check foundation, then product discussion or crawler matching.
+2. Next PR sequence after the current AI assistant foundation slice: product discussion,
+   crawler matching, or real AI provider/OCR hardening.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -282,7 +282,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Deal detail shows offer price, seller/status, linked product, external source link, deal favorite control, and authenticated report submission.
 - Auction detail shows current price, bid count, seller/status, linked product, external source link, auction favorite control, authenticated report submission, and authenticated bid submission.
 - Auction detail uses the fixed 1,000 KRW bid increment and updates local current price/bid count after a successful bid response.
-- Discussion, realtime auction updates, and AI purchase checks remain deferred.
+- Discussion and realtime auction updates remain deferred.
 
 ## Completed Submission Review MVP Scope
 
@@ -318,7 +318,23 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Public verified-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.
 - Receipt upload/OCR, real AI provider integration, review scoring impact, product
-  discussion, My Page review history, and AI purchase checks remain deferred.
+  discussion, and My Page review history remain deferred.
+
+## Completed AI Assistant Foundation Scope
+
+- Added `POST /api/v1/ai/search`.
+- Added deterministic `SearchIntent` parsing for allowlisted target types and filters.
+- AI search calls existing product/deal/auction search use cases and returns grouped
+  candidates with a stable summary.
+- Added `GET /api/v1/ai/products/{product_id}/purchase-check`.
+- Purchase checks use product metadata, active deals/auctions, price history, and approved
+  verified reviews.
+- Purchase-check responses return deterministic `buy` / `watch` / `avoid` recommendations
+  plus public-safe evidence.
+- Search UI AI button opens an AI result panel.
+- Product detail exposes an AI purchase-check button and report panel.
+- Real OpenAI/Spring AI provider calls, vector embeddings, prompt persistence, streaming,
+  personalization, and community sentiment summarization remain deferred.
 
 ## Cautions
 

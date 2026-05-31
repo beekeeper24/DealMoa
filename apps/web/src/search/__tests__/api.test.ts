@@ -4,7 +4,8 @@ import {
   SearchApiError,
   searchAuctions,
   searchDeals,
-  searchProducts
+  searchProducts,
+  searchWithAi
 } from "../api";
 
 afterEach(() => {
@@ -55,6 +56,43 @@ describe("search api client", () => {
       "/api/v1/search/auctions?q=sealed&limit=20",
       { headers: { Accept: "application/json" } }
     );
+  });
+
+  it("requests AI search with a structured body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          intent: {
+            query: "galaxy 100만원 이하",
+            normalizedQuery: "galaxy 100만원 이하",
+            targetTypes: ["deals"],
+            filters: { maxPrice: 1000000 }
+          },
+          summary: "핫딜 중심으로 1개 후보를 찾았습니다.",
+          products: { items: [], nextCursor: null },
+          deals: { items: [], nextCursor: null },
+          auctions: { items: [], nextCursor: null }
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "/api/v1");
+
+    const result = await searchWithAi({ query: "galaxy 100만원 이하", limit: 5 });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/ai/search", {
+      body: JSON.stringify({ limit: 5, query: "galaxy 100만원 이하" }),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
+    expect(result.intent.filters.maxPrice).toBe(1000000);
   });
 
   it("throws a typed error when the api returns the common error shape", async () => {

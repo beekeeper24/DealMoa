@@ -43,6 +43,39 @@ test("searches products from the browser", async ({ page }) => {
       })
     });
   });
+  await page.route("**/api/v1/ai/search", async (route) => {
+    expect(route.request().postDataJSON()).toEqual({ limit: 5, query: "galaxy" });
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        intent: {
+          query: "galaxy",
+          normalizedQuery: "galaxy",
+          targetTypes: ["products", "deals", "auctions"],
+          filters: {}
+        },
+        summary: "상품/핫딜/경매 중심으로 1개 후보를 찾았습니다.",
+        products: {
+          items: [
+            {
+              id: "product-1",
+              name: "Galaxy S26 Ultra",
+              brand: "Samsung",
+              modelName: "SM-S260",
+              category: "smartphone",
+              specsText: "storage 256GB 색상 블랙",
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 2.4
+            }
+          ],
+          nextCursor: null
+        },
+        deals: { items: [], nextCursor: null },
+        auctions: { items: [], nextCursor: null }
+      })
+    });
+  });
   await page.route("**/api/v1/me/favorites/products/product-1", async (route) => {
     expect(route.request().headers().authorization).toBe("Bearer access-1");
     await route.fulfill({
@@ -62,6 +95,9 @@ test("searches products from the browser", async ({ page }) => {
   await expect(page.getByText("Galaxy S26 Ultra")).toBeVisible();
   await expect(page.getByText("Samsung · SM-S260")).toBeVisible();
   await expect(page.getByText("score 2.40")).toBeVisible();
+  await page.getByRole("button", { name: "AI 검색" }).click();
+  await expect(page.getByText("AI 검색 결과")).toBeVisible();
+  await expect(page.getByText("상품/핫딜/경매 중심으로 1개 후보를 찾았습니다.")).toBeVisible();
   await page.getByRole("button", { name: "찜하기" }).click();
   await expect(page.getByRole("button", { name: "찜 해제" })).toBeVisible();
 });

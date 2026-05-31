@@ -10,6 +10,7 @@ import {
   createVerifiedReview,
   DetailApiError,
   getProduct,
+  getProductPurchaseCheck,
   listProductAuctions,
   listProductDeals,
   listProductPriceHistory,
@@ -21,6 +22,7 @@ import type {
   DealDetail,
   PriceHistorySnapshot,
   ProductDetail,
+  ProductPurchaseCheck,
   PublicVerifiedReview,
   VerifiedReview
 } from "./types";
@@ -38,8 +40,11 @@ export function ProductDetailPage({ productId }: { productId: string }) {
   const accessToken =
     authSession.status === "authenticated" ? authSession.accessToken : undefined;
   const [state, setState] = useState<ProductDetailState | null>(null);
+  const [purchaseCheck, setPurchaseCheck] = useState<ProductPurchaseCheck | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPurchaseCheckLoading, setIsPurchaseCheckLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [purchaseCheckError, setPurchaseCheckError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
@@ -84,6 +89,23 @@ export function ProductDetailPage({ productId }: { productId: string }) {
     };
   }, [productId]);
 
+  async function runPurchaseCheck() {
+    if (isPurchaseCheckLoading) {
+      return;
+    }
+    setIsPurchaseCheckLoading(true);
+    setPurchaseCheckError(null);
+    try {
+      setPurchaseCheck(await getProductPurchaseCheck(productId));
+    } catch (error) {
+      setPurchaseCheckError(
+        error instanceof DetailApiError ? error.message : "구매 체크를 불러오지 못했습니다."
+      );
+    } finally {
+      setIsPurchaseCheckLoading(false);
+    }
+  }
+
   return (
     <DetailShell>
       <section className="mx-auto max-w-6xl px-5 py-8">
@@ -123,9 +145,23 @@ export function ProductDetailPage({ productId }: { productId: string }) {
               </section>
               <PriceHistoryList items={state.priceHistory} />
               <VerifiedReviewList items={state.verifiedReviews} />
+              {purchaseCheck ? <PurchaseCheckReport report={purchaseCheck} /> : null}
             </div>
 
             <aside className="space-y-4">
+              <button
+                className="w-full rounded-md border border-signal bg-white px-4 py-2 text-sm font-semibold text-signal transition hover:bg-signal hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isPurchaseCheckLoading}
+                onClick={() => void runPurchaseCheck()}
+                type="button"
+              >
+                {isPurchaseCheckLoading ? "AI 체크 중" : "AI 구매 체크"}
+              </button>
+              {purchaseCheckError ? (
+                <p className="rounded-md border border-deal/30 bg-white px-3 py-2 text-sm font-semibold text-deal">
+                  {purchaseCheckError}
+                </p>
+              ) : null}
               <OfferList
                 emptyMessage="등록된 핫딜이 없습니다."
                 items={state.deals}
@@ -160,6 +196,42 @@ export function ProductDetailPage({ productId }: { productId: string }) {
       </section>
     </DetailShell>
   );
+}
+
+function PurchaseCheckReport({ report }: { report: ProductPurchaseCheck }) {
+  return (
+    <section className="mt-6 rounded-md border border-signal/30 bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">AI 구매 체크</h2>
+        <span className="text-sm font-semibold text-signal">
+          {purchaseRecommendationLabel(report.recommendation)} ·{" "}
+          {Math.round(report.confidence * 100)}%
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-black/70">{report.summary}</p>
+      <ul className="mt-4 grid gap-2">
+        {report.evidence.map((item, index) => (
+          <li
+            className="rounded border border-black/10 bg-paper px-3 py-2 text-sm"
+            key={`${item.type}-${index}`}
+          >
+            <span className="font-semibold text-signal">{item.label}</span>
+            <p className="mt-1 text-black/70">{item.value}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function purchaseRecommendationLabel(recommendation: ProductPurchaseCheck["recommendation"]) {
+  if (recommendation === "buy") {
+    return "구매 후보";
+  }
+  if (recommendation === "avoid") {
+    return "보류";
+  }
+  return "관망";
 }
 
 function PriceHistoryList({ items }: { items: PriceHistorySnapshot[] }) {

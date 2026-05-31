@@ -7,9 +7,11 @@ import {
   SearchApiError,
   searchAuctions,
   searchDeals,
-  searchProducts
+  searchProducts,
+  searchWithAi
 } from "./api";
 import type {
+  AiSearchResponse,
   AuctionSearchItem,
   DealSearchItem,
   ProductSearchItem,
@@ -49,6 +51,8 @@ export function SearchWorkspace() {
     auctions: initialSearchState
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AiSearchResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const authSession = useAuthSession();
   const accessToken =
@@ -78,6 +82,24 @@ export function SearchWorkspace() {
 
   async function loadMore() {
     await runSearch(activeTab, { append: true });
+  }
+
+  async function runAiSearch() {
+    if (!trimmedQuery || isAiLoading) {
+      return;
+    }
+
+    setIsAiLoading(true);
+    setErrorMessage(null);
+    try {
+      setAiResult(await searchWithAi({ query: trimmedQuery }));
+    } catch (error) {
+      setErrorMessage(
+        error instanceof SearchApiError ? error.message : "AI 검색 요청에 실패했습니다."
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
   }
 
   async function runSearch(tab: SearchTab, { append }: { append: boolean }) {
@@ -139,9 +161,11 @@ export function SearchWorkspace() {
           </form>
           <button
             className="rounded border border-signal px-3 py-1.5 text-sm font-semibold text-signal transition hover:bg-signal hover:text-white"
+            disabled={isAiLoading || !trimmedQuery}
+            onClick={() => void runAiSearch()}
             type="button"
           >
-            AI 검색
+            {isAiLoading ? "AI 검색 중" : "AI 검색"}
           </button>
           <Link
             className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
@@ -220,6 +244,7 @@ export function SearchWorkspace() {
         </div>
 
         <aside className="border-l border-black/10 pl-5">
+          {aiResult ? <AiSearchPanel result={aiResult} /> : null}
           <h2 className="text-base font-bold">검색 기준</h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
@@ -239,6 +264,85 @@ export function SearchWorkspace() {
       </section>
     </main>
   );
+}
+
+function AiSearchPanel({ result }: { result: AiSearchResponse }) {
+  return (
+    <section className="mb-6 rounded-md border border-signal/30 bg-white p-4">
+      <h2 className="text-base font-bold">AI 검색 결과</h2>
+      <p className="mt-2 text-sm leading-6 text-black/70">{result.summary}</p>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-signal">
+        {result.intent.targetTypes.map((target) => (
+          <span className="rounded border border-signal/30 px-2 py-1" key={target}>
+            {targetLabel(target)}
+          </span>
+        ))}
+        {result.intent.filters.maxPrice ? (
+          <span className="rounded border border-signal/30 px-2 py-1">
+            {formatCurrency(result.intent.filters.maxPrice, "KRW")} 이하
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-4 space-y-3">
+        <AiCandidateGroup
+          hrefPrefix="/products"
+          items={result.products.items.map((item) => ({ id: item.id, title: item.name }))}
+          title="상품"
+        />
+        <AiCandidateGroup
+          hrefPrefix="/deals"
+          items={result.deals.items.map((item) => ({ id: item.id, title: item.title }))}
+          title="핫딜"
+        />
+        <AiCandidateGroup
+          hrefPrefix="/auctions"
+          items={result.auctions.items.map((item) => ({ id: item.id, title: item.title }))}
+          title="경매"
+        />
+      </div>
+    </section>
+  );
+}
+
+function AiCandidateGroup({
+  hrefPrefix,
+  items,
+  title
+}: {
+  hrefPrefix: string;
+  items: Array<{ id: string; title: string }>;
+  title: string;
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <div>
+      <h3 className="text-xs font-bold text-black/55">{title}</h3>
+      <ul className="mt-1 space-y-1">
+        {items.slice(0, 3).map((item) => (
+          <li key={item.id}>
+            <Link
+              className="text-sm font-semibold transition hover:text-signal"
+              href={`${hrefPrefix}/${item.id}`}
+            >
+              {item.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function targetLabel(target: SearchTab) {
+  if (target === "products") {
+    return "상품";
+  }
+  if (target === "deals") {
+    return "핫딜";
+  }
+  return "경매";
 }
 
 async function fetchSearchPage(
@@ -381,7 +485,11 @@ function AuctionResult({ accessToken, item }: { accessToken?: string; item: Auct
 }
 
 function Score({ value }: { value: number }) {
-  return <span className="shrink-0 text-xs font-semibold text-signal">score {value.toFixed(2)}</span>;
+  return (
+    <span className="shrink-0 text-xs font-semibold text-signal">
+      score {value.toFixed(2)}
+    </span>
+  );
 }
 
 function formatCurrency(value: number, currency: string) {

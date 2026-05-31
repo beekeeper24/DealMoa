@@ -89,6 +89,24 @@ export type PublicVerifiedReview = Pick<
   "body" | "createdAt" | "id" | "productId" | "rating" | "title" | "updatedAt"
 >;
 
+export type PurchaseRecommendation = "buy" | "watch" | "avoid";
+
+export type PurchaseCheckEvidence = {
+  type: string;
+  label: string;
+  value: string;
+  sourceType?: string;
+  sourceId?: string;
+};
+
+export type ProductPurchaseCheck = {
+  productId: string;
+  recommendation: PurchaseRecommendation;
+  confidence: number;
+  summary: string;
+  evidence: PurchaseCheckEvidence[];
+};
+
 export type Report = {
   id: string;
   userId: string;
