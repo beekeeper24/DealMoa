@@ -83,6 +83,31 @@ Do not use orchestration when it would create file conflicts, duplicate the same
 - Verify meaningful edits with tests, lint, typecheck, build, focused runtime checks, or documented fallback verification.
 - Keep commits scoped to one meaningful unit.
 
+## Behavioral Guardrails
+
+- Before meaningful implementation, state the current milestone or slice, key assumptions,
+  unresolved uncertainty, and intended verification target briefly.
+- If a requirement has multiple plausible interpretations, surface the tradeoff before coding
+  instead of silently choosing one.
+- Every changed line should trace to the user request, the current plan, or cleanup caused by
+  this change.
+
+### Simplicity First
+
+- Prefer the smallest conventional implementation that satisfies the acceptance criteria.
+- Do not add features beyond the current slice.
+- Do not add abstractions for single-use code.
+- Do not add speculative flexibility, configurability, or extension points.
+- Do not add broad error handling for impossible or out-of-scope scenarios.
+- If an implementation is growing large, pause and simplify before continuing.
+
+### Surgical Changes
+
+- Touch only files needed for the current slice.
+- Do not refactor adjacent code unless it is required for the current change.
+- Match existing local style even if a different style would be preferable.
+- Remove only dead imports, variables, functions, or files created by this change.
+
 ## Review And Learning Loop
 
 For meaningful work, use this loop:
