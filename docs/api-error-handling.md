@@ -48,7 +48,8 @@ DealMoaException
   ├─ AuthException
   ├─ FavoriteException
   ├─ NotificationException
-  ├─ ReviewException
+  ├─ ReportException
+  ├─ VerifiedReviewException
   ├─ SubmissionException
   ├─ AdminException
   ├─ SearchException
@@ -120,7 +121,8 @@ Search/AI
 Admin/Review/Submission
 - SUBMISSION_NOT_FOUND
 - SUBMISSION_ALREADY_REVIEWED
-- REVIEW_ALREADY_APPROVED
+- VERIFIED_REVIEW_NOT_FOUND
+- VERIFIED_REVIEW_ALREADY_REVIEWED
 ```
 
 ## HTTP Status Mapping

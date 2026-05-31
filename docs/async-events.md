@@ -28,6 +28,7 @@ Initial event types:
 | `auction.favorite.created` | `auction` | Favorites API auction favorite create path |
 | `auction.favorite.deleted` | `auction` | Favorites API auction favorite delete path |
 | `auction.view.recorded` | `auction` | Product API auction detail view path |
+| `review.verified` | `verified_review` | Admin verified review approval path |
 
 The outbox publisher sends messages with this envelope:
 
@@ -168,6 +169,14 @@ Submission approval does not emit a separate `submission.approved` event yet. Ap
 creates the canonical Product plus Deal/Auction rows and emits the existing
 `product.updated` plus `deal.created` or `auction.created` events. Rejection writes only
 the submission state and admin audit log.
+
+## Verified Review Events
+
+Verified review approval writes `review.verified` in the same transaction as the review
+status update and `admin_audit_logs` row. The current event payload carries only the
+review id, product id, user id, and rating. Downstream AI purchase-check, scoring, or
+notification consumers should reload canonical review state from PostgreSQL instead of
+trusting event payload text.
 
 ## Next Steps
 

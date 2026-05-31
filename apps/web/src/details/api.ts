@@ -4,8 +4,11 @@ import type {
   DealDetail,
   DetailErrorResponse,
   DetailListResponse,
+  PriceHistorySnapshot,
   ProductDetail,
-  Report
+  PublicVerifiedReview,
+  Report,
+  VerifiedReview
 } from "./types";
 
 export class DetailApiError extends Error {
@@ -36,6 +39,44 @@ export async function listProductAuctions(
   productId: string
 ): Promise<DetailListResponse<AuctionDetail>> {
   return requestJson<DetailListResponse<AuctionDetail>>(`/products/${productId}/auctions?limit=10`);
+}
+
+export async function listProductPriceHistory(
+  productId: string
+): Promise<DetailListResponse<PriceHistorySnapshot>> {
+  return requestJson<DetailListResponse<PriceHistorySnapshot>>(
+    `/products/${productId}/price-history?limit=10`
+  );
+}
+
+export async function listProductVerifiedReviews(
+  productId: string
+): Promise<DetailListResponse<PublicVerifiedReview>> {
+  return requestJson<DetailListResponse<PublicVerifiedReview>>(
+    `/products/${productId}/verified-reviews?limit=10`
+  );
+}
+
+export async function createVerifiedReview(request: {
+  accessToken: string;
+  body: string;
+  productId: string;
+  proofReference: string;
+  proofType: string;
+  rating: number;
+  title: string;
+}): Promise<VerifiedReview> {
+  return requestJson<VerifiedReview>(`/products/${request.productId}/verified-reviews`, {
+    accessToken: request.accessToken,
+    body: {
+      body: request.body.trim(),
+      proofReference: request.proofReference.trim() || null,
+      proofType: request.proofType,
+      rating: request.rating,
+      title: request.title.trim()
+    },
+    method: "POST"
+  });
 }
 
 export async function getDeal(dealId: string): Promise<DealDetail> {

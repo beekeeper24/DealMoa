@@ -155,6 +155,7 @@ Initial Kafka events:
 - `product.updated`
 - `auction.bid.placed`
 - `auction.view.recorded`
+- `review.verified`
 
 Initial consumers:
 
@@ -165,7 +166,6 @@ Initial consumers:
 Later Kafka events:
 
 - `favorite.product.created`
-- `review.verified`
 - `submission.approved`
 
 Initial Celery tasks:

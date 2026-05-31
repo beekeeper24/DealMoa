@@ -89,6 +89,37 @@ const auctionFixture = {
   updatedAt: "2026-05-25T00:00:00Z"
 };
 
+const priceHistoryFixture = {
+  id: "price-1",
+  productId: "product-1",
+  sourceType: "deal",
+  sourceId: "deal-1",
+  price: 1090000,
+  currency: "KRW",
+  observedAt: "2026-06-01T00:00:00Z",
+  createdAt: "2026-06-01T00:00:00Z"
+};
+
+const verifiedReviewFixture = {
+  id: "review-1",
+  productId: "product-1",
+  userId: "user-1",
+  rating: 5,
+  title: "실구매 기준 만족",
+  body: "배송과 제품 상태 모두 좋았습니다.",
+  proofType: "receipt",
+  proofReference: "order-123",
+  status: "approved",
+  aiDecision: "needs_admin_review",
+  aiReason: "mock review passed: receipt proof requires admin approval",
+  aiReviewedAt: "2026-06-01T00:00:00Z",
+  reviewedByUserId: "admin-1",
+  resolutionNote: "영수증 확인",
+  resolvedAt: "2026-06-01T00:05:00Z",
+  createdAt: "2026-06-01T00:00:00Z",
+  updatedAt: "2026-06-01T00:05:00Z"
+};
+
 function installFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>
 ) {
@@ -119,6 +150,12 @@ describe("detail pages", () => {
       if (url === "/api/v1/products/product-1/auctions?limit=10") {
         return jsonResponse({ items: [auctionFixture], nextCursor: null });
       }
+      if (url === "/api/v1/products/product-1/price-history?limit=10") {
+        return jsonResponse({ items: [priceHistoryFixture], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return jsonResponse({ items: [verifiedReviewFixture], nextCursor: null });
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
 
@@ -135,6 +172,77 @@ describe("detail pages", () => {
       "href",
       "/auctions/auction-1"
     );
+    expect(screen.getByText("가격 이력")).toBeInTheDocument();
+    expect(screen.getAllByText("₩1,090,000").length).toBeGreaterThan(0);
+    expect(screen.getByText("실구매 기준 만족")).toBeInTheDocument();
+    expect(screen.getByText("배송과 제품 상태 모두 좋았습니다.")).toBeInTheDocument();
+    expect(screen.getByText("로그인 후 인증 후기를 제출할 수 있습니다.")).toBeInTheDocument();
+  });
+
+  it("submits an authenticated verified review candidate", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch((url, init) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return jsonResponse(authSession());
+      }
+      if (url === "/api/v1/products/product-1") {
+        return jsonResponse(productFixture);
+      }
+      if (url === "/api/v1/products/product-1/deals?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/auctions?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/price-history?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return jsonResponse({ items: [], nextCursor: null });
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews" && init?.method === "POST") {
+        return jsonResponse(
+          {
+            ...verifiedReviewFixture,
+            status: "pending_review",
+            reviewedByUserId: null,
+            resolutionNote: null,
+            resolvedAt: null
+          },
+          { status: 201 }
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderWithAuthProvider(<ProductDetailPage productId="product-1" />);
+
+    await screen.findByRole("heading", { name: "Galaxy S26 Ultra" });
+    await screen.findByText("user@example.com");
+    const form = screen.getByRole("form", { name: "구매 인증 후기" });
+    await user.type(within(form).getByLabelText("제목"), "실구매 기준 만족");
+    await user.type(within(form).getByLabelText("후기"), "배송과 제품 상태 모두 좋았습니다.");
+    await user.type(within(form).getByLabelText("구매 증빙 번호"), "order-123");
+    await user.click(within(form).getByRole("button", { name: "후기 제출" }));
+
+    expect(
+      await screen.findByText("인증 후기가 접수되었습니다. 관리자 승인 후 공개됩니다.")
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/products/product-1/verified-reviews", {
+      body: JSON.stringify({
+        body: "배송과 제품 상태 모두 좋았습니다.",
+        proofReference: "order-123",
+        proofType: "receipt",
+        rating: 5,
+        title: "실구매 기준 만족"
+      }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
   });
 
   it("submits an authenticated deal report", async () => {

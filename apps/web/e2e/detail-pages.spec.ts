@@ -74,6 +74,55 @@ test("opens product detail from product search results", async ({ page }) => {
       body: JSON.stringify({ items: [auction], nextCursor: null })
     });
   });
+  await page.route("**/api/v1/products/product-1/price-history?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            id: "price-1",
+            productId: "product-1",
+            sourceType: "auction",
+            sourceId: "auction-1",
+            price: 720000,
+            currency: "KRW",
+            observedAt: "2026-06-01T00:00:00Z",
+            createdAt: "2026-06-01T00:00:00Z"
+          }
+        ],
+        nextCursor: null
+      })
+    });
+  });
+  await page.route("**/api/v1/products/product-1/verified-reviews?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            id: "review-1",
+            productId: "product-1",
+            userId: "user-1",
+            rating: 5,
+            title: "실구매 기준 만족",
+            body: "배송과 제품 상태 모두 좋았습니다.",
+            proofType: "receipt",
+            proofReference: "order-123",
+            status: "approved",
+            aiDecision: "needs_admin_review",
+            aiReason: "mock review passed: receipt proof requires admin approval",
+            aiReviewedAt: "2026-06-01T00:00:00Z",
+            reviewedByUserId: "admin-1",
+            resolutionNote: "영수증 확인",
+            resolvedAt: "2026-06-01T00:05:00Z",
+            createdAt: "2026-06-01T00:00:00Z",
+            updatedAt: "2026-06-01T00:05:00Z"
+          }
+        ],
+        nextCursor: null
+      })
+    });
+  });
 
   await page.goto("/");
   await page.getByRole("searchbox", { name: "검색어" }).fill("galaxy");
@@ -83,6 +132,8 @@ test("opens product detail from product search results", async ({ page }) => {
   await expect(page).toHaveURL(/\/products\/product-1$/);
   await expect(page.getByRole("heading", { name: "Galaxy S26 Ultra" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Galaxy S26 sealed auction" })).toBeVisible();
+  await expect(page.getByText("가격 이력")).toBeVisible();
+  await expect(page.getByText("실구매 기준 만족")).toBeVisible();
 });
 
 test("places an auction bid from the auction detail page", async ({ page }) => {

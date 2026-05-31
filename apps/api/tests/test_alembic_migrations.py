@@ -38,6 +38,8 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "admin_audit_logs",
         "offer_reports",
         "submissions",
+        "price_history_snapshots",
+        "verified_reviews",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
@@ -56,6 +58,12 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     }
     offer_report_indexes = {index["name"] for index in inspector.get_indexes("offer_reports")}
     submission_indexes = {index["name"] for index in inspector.get_indexes("submissions")}
+    price_history_indexes = {
+        index["name"] for index in inspector.get_indexes("price_history_snapshots")
+    }
+    verified_review_indexes = {
+        index["name"] for index in inspector.get_indexes("verified_reviews")
+    }
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
     assert auction_foreign_keys[0]["referred_table"] == "products"
@@ -77,6 +85,11 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         foreign_key["referred_table"]
         for foreign_key in inspector.get_foreign_keys("submissions")
     } == {"users"}
+    assert inspector.get_foreign_keys("price_history_snapshots")[0]["referred_table"] == "products"
+    assert {
+        foreign_key["referred_table"]
+        for foreign_key in inspector.get_foreign_keys("verified_reviews")
+    } == {"products", "users"}
     assert {
         "ix_domain_events_published_at_created_at",
         "ix_domain_events_event_type",
@@ -99,6 +112,15 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "ix_submissions_user_id_created_at",
         "ix_submissions_source_url",
     } <= submission_indexes
+    assert {
+        "ix_price_history_product_observed_at",
+        "ix_price_history_source",
+    } <= price_history_indexes
+    assert {
+        "ix_verified_reviews_product_status_created_at",
+        "ix_verified_reviews_status_created_at",
+        "ix_verified_reviews_user_id_created_at",
+    } <= verified_review_indexes
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

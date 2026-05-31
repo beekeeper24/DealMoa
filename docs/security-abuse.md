@@ -27,9 +27,12 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 ## Verified Reviews
 
 - Login required.
-- Purchase record or receipt/order image.
-- AI first-pass review.
-- Admin approval before `VERIFIED`.
+- MVP proof data is a text receipt/order reference; receipt image upload and OCR are deferred.
+- Mock AI first-pass review records `needs_admin_review`; it never publishes content.
+- Admin approval is required before a review is publicly visible.
+- Admin approval/rejection writes `admin_audit_logs`.
+- Public approved-review responses exclude internal user ids, proof references, AI review
+  text, admin reviewer ids, and resolution notes.
 - Only verified reviews are strong AI purchase-check evidence.
 
 ## Favorites
