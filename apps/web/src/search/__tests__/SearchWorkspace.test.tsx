@@ -146,6 +146,101 @@ describe("SearchWorkspace", () => {
     expect(screen.getByText("score 2.40")).toBeInTheDocument();
   });
 
+  it("links search result titles to detail pages", async () => {
+    const user = userEvent.setup();
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return mockAuthErrorResponse();
+      }
+      if (url === "/api/v1/search/products?q=galaxy&limit=20") {
+        return mockSearchResponse({
+          items: [
+            {
+              id: "product-1",
+              name: "Galaxy S26 Ultra",
+              brand: "Samsung",
+              modelName: "SM-S260",
+              category: "smartphone",
+              specsText: null,
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 2.4
+            }
+          ],
+          nextCursor: null
+        });
+      }
+      if (url === "/api/v1/search/deals?q=galaxy&limit=20") {
+        return mockSearchResponse({
+          items: [
+            {
+              id: "deal-1",
+              productId: "product-1",
+              title: "Galaxy S26 launch deal",
+              sourceUrl: "https://example.com/deals/galaxy-s26",
+              seller: "Example Store",
+              originalPrice: null,
+              salePrice: 1090000,
+              currency: "KRW",
+              status: "active",
+              startedAt: null,
+              endedAt: null,
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 1.1
+            }
+          ],
+          nextCursor: null
+        });
+      }
+      if (url === "/api/v1/search/auctions?q=galaxy&limit=20") {
+        return mockSearchResponse({
+          items: [
+            {
+              id: "auction-1",
+              productId: "product-1",
+              title: "Galaxy S26 sealed auction",
+              sourceUrl: "https://example.com/auctions/galaxy-s26",
+              seller: "Auction House",
+              currentPrice: 720000,
+              bidCount: 3,
+              currency: "KRW",
+              status: "active",
+              endsAt: null,
+              createdAt: "2026-05-25T00:00:00Z",
+              updatedAt: "2026-05-25T00:00:00Z",
+              score: 1.2
+            }
+          ],
+          nextCursor: null
+        });
+      }
+      return failUnexpectedFetch(url);
+    });
+    renderWithAuthProvider(<SearchWorkspace />);
+
+    await screen.findByRole("button", { name: "Google 로그인" });
+    await user.type(screen.getByRole("searchbox", { name: "검색어" }), "galaxy");
+    await user.click(screen.getByRole("button", { name: "검색" }));
+
+    expect(await screen.findByRole("link", { name: "Galaxy S26 Ultra" })).toHaveAttribute(
+      "href",
+      "/products/product-1"
+    );
+
+    await user.click(screen.getByRole("tab", { name: "핫딜" }));
+    expect(await screen.findByRole("link", { name: "Galaxy S26 launch deal" })).toHaveAttribute(
+      "href",
+      "/deals/deal-1"
+    );
+
+    await user.click(screen.getByRole("tab", { name: "경매" }));
+    expect(await screen.findByRole("link", { name: "Galaxy S26 sealed auction" })).toHaveAttribute(
+      "href",
+      "/auctions/auction-1"
+    );
+  });
+
   it("switches tabs and searches deals with the current query", async () => {
     const user = userEvent.setup();
     const fetchMock = installFetch((url) => {

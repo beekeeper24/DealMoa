@@ -27,6 +27,25 @@ POST /api/v1/auctions/{auction_id}/bids
 
 Routers stay thin: request validation happens through Pydantic schemas, business behavior goes through use cases, persistence goes through repositories, and business errors are raised as DealMoa domain exceptions.
 
+## Web Detail MVP
+
+The first web detail slice reuses the existing routes above rather than adding a
+new aggregate detail endpoint:
+
+- Product detail calls `GET /api/v1/products/{product_id}`,
+  `GET /api/v1/products/{product_id}/deals`, and
+  `GET /api/v1/products/{product_id}/auctions`.
+- Deal detail calls `GET /api/v1/deals/{deal_id}` and then loads the linked
+  product with `GET /api/v1/products/{product_id}`.
+- Auction detail calls `GET /api/v1/auctions/{auction_id}` and then loads the
+  linked product with `GET /api/v1/products/{product_id}`.
+- Deal and auction detail pages use the existing report APIs from
+  `docs/reports.md`.
+- Auction detail uses `POST /api/v1/auctions/{auction_id}/bids`.
+
+This keeps the MVP simple and demoable while price history, verified reviews,
+discussion, and AI purchase checks are still deferred.
+
 ## Cursor Pagination
 
 List endpoints use cursor pagination from the first Product API MVP slice.
