@@ -2,7 +2,8 @@
 
 ## Current Status
 
-The project is in planning/setup. The active working path is:
+The project is past foundation/planning and is in MVP feature build-out. The
+active working path is:
 
 ```text
 \\wsl.localhost\Ubuntu\home\beekeeper24\projects\DealMoa
@@ -62,11 +63,15 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `docs/performance.md`: JMeter and Playwright verification direction.
 - `docs/observability.md`: Prometheus/Grafana direction.
 - `docs/security-abuse.md`: abuse/security guardrails.
+- `docs/project-planning-review-2026-05-31.md`: one-time whole-project planning
+  validation, current MVP gaps, next PR sequence, and workflow usage rules.
 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Candidate next slices: report-to-status admin UI flow, search UX validation, or dedicated hot-deal ranking endpoint.
+2. Next PR sequence: admin report/status Web UI, dedicated hot-deal ranking
+   endpoint, product/deal/auction detail MVP, user submission plus AI review mock
+   and admin approval, then price history plus verified review foundation.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
