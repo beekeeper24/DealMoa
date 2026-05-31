@@ -60,6 +60,19 @@ def search_deals(
     )
 
 
+@router.get("/deals/hot", response_model=DealSearchResponse)
+def rank_deals_by_hot_score(
+    use_cases: Annotated[SearchUseCases, Depends(get_search_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
+) -> DealSearchResponse:
+    page = use_cases.rank_deals(limit=limit, cursor=cursor)
+    return DealSearchResponse(
+        items=[DealSearchItem.model_validate(item) for item in page.items],
+        nextCursor=page.next_cursor,
+    )
+
+
 @router.get("/auctions/activity", response_model=AuctionSearchResponse)
 def rank_auctions_by_activity(
     use_cases: Annotated[SearchUseCases, Depends(get_search_use_cases)],

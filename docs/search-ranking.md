@@ -26,6 +26,7 @@ Routes use the `/api/v1` prefix:
 ```http
 GET /api/v1/search/products?q=galaxy&limit=20&cursor=...
 GET /api/v1/search/deals?q=galaxy&limit=20&cursor=...
+GET /api/v1/search/deals/hot?limit=20&cursor=...
 GET /api/v1/search/auctions?q=galaxy&limit=20&cursor=...
 GET /api/v1/search/auctions/activity?limit=20&cursor=...
 POST /api/v1/admin/search/reindex
@@ -80,8 +81,23 @@ PriceScore 50
 
 Reports do not directly lower rank. They only prioritize admin review.
 The current search read model exposes `trustScore` for deals as a status-derived target
-signal. A dedicated hot-deal ranking endpoint is still deferred, so general deal search
-keeps text relevance dominant and uses status as the visibility gate.
+signal.
+
+The first implemented ranking endpoint is `GET /api/v1/search/deals/hot`.
+It filters to `status = active` and scores the Elasticsearch deal read model with
+the signals available in the current schema:
+
+- `PriceScore`: capped discount ratio from `originalPrice` and `salePrice`, max 50 points.
+  Deals without a valid original price receive zero price-score contribution.
+- `InterestScore`: capped `favoriteCount` contribution, max 30 points.
+- `FreshnessScore`: linear freshness contribution for deals created inside the 72-hour
+  window, max 10 points.
+- `TrustScore`: status-derived `trustScore`, max 10 points.
+
+General deal search remains text-relevance dominant and uses status as the visibility gate.
+`favoriteCount` is refreshed during full reindex and single deal document upserts. Deal
+favorite create/delete event freshness is deferred, so favorite-driven hot-deal ranking
+freshness can lag until a reindex or deal document refresh runs.
 
 ## Auction Activity Ranking
 

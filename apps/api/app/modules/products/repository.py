@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import InvalidSearchCursorException
 from app.core.pagination import CursorPage
-from app.modules.favorites.models import AuctionFavorite
+from app.modules.favorites.models import AuctionFavorite, DealFavorite
 from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 
 T = TypeVar("T", Product, Deal, Auction)
@@ -67,6 +67,18 @@ class ProductRepository:
     def list_deals_for_search(self) -> list[Deal]:
         statement = select(Deal).order_by(Deal.created_at.desc(), Deal.id.desc())
         return list(self.session.scalars(statement))
+
+    def count_deal_favorites(self, deal_id: str) -> int:
+        statement = select(func.count(DealFavorite.id)).where(DealFavorite.deal_id == deal_id)
+        return self.session.scalar(statement) or 0
+
+    def list_deal_favorite_counts(self) -> dict[str, int]:
+        statement = (
+            select(DealFavorite.deal_id, func.count(DealFavorite.id))
+            .group_by(DealFavorite.deal_id)
+            .order_by(DealFavorite.deal_id)
+        )
+        return {deal_id: count for deal_id, count in self.session.execute(statement)}
 
     def create_auction(self, auction: Auction) -> Auction:
         self.session.add(auction)

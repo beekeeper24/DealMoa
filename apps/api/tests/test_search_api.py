@@ -53,6 +53,7 @@ class FakeSearchUseCases:
                     "seller": "Example Store",
                     "originalPrice": None,
                     "salePrice": 1090000,
+                    "favoriteCount": 9,
                     "currency": "KRW",
                     "status": "active",
                     "trustScore": 10,
@@ -64,6 +65,37 @@ class FakeSearchUseCases:
                 }
             ],
             next_cursor=None,
+        )
+
+    def rank_deals(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[dict[str, Any]]:
+        self.calls.append(("deal_hot", limit, cursor))
+        return CursorPage(
+            items=[
+                {
+                    "id": "deal-1",
+                    "productId": "product-1",
+                    "title": "Galaxy S26 launch deal",
+                    "sourceUrl": "https://example.com/deals/galaxy-s26",
+                    "seller": "Example Store",
+                    "originalPrice": 1400000,
+                    "salePrice": 1090000,
+                    "favoriteCount": 9,
+                    "currency": "KRW",
+                    "status": "active",
+                    "trustScore": 10,
+                    "startedAt": None,
+                    "endedAt": None,
+                    "createdAt": "2026-05-25T00:00:00Z",
+                    "updatedAt": "2026-05-25T00:00:00Z",
+                    "score": 78.0,
+                }
+            ],
+            next_cursor="hot-cursor-2",
         )
 
     def search_auctions(
@@ -164,6 +196,21 @@ def test_search_deals_passes_cursor_to_use_case() -> None:
     assert response.json()["items"][0]["id"] == "deal-1"
     assert response.json()["items"][0]["trustScore"] == 10
     assert use_cases.calls == [("deals", "galaxy", 20, "cursor-1")]
+
+
+def test_rank_deals_by_hot_score_calls_ranking_use_case() -> None:
+    use_cases = FakeSearchUseCases()
+    client = make_search_test_client(use_cases)
+
+    response = client.get("/api/v1/search/deals/hot?limit=1")
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["id"] == "deal-1"
+    assert response.json()["items"][0]["favoriteCount"] == 9
+    assert response.json()["items"][0]["trustScore"] == 10
+    assert response.json()["items"][0]["score"] == 78.0
+    assert response.json()["nextCursor"] == "hot-cursor-2"
+    assert use_cases.calls == [("deal_hot", 1, None)]
 
 
 def test_search_auctions_returns_activity_fields() -> None:

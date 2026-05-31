@@ -84,6 +84,7 @@ DEAL_INDEX_BODY: dict[str, Any] = {
             "currency": {"type": "keyword"},
             "status": {"type": "keyword"},
             "trustScore": {"type": "integer"},
+            "favoriteCount": {"type": "integer"},
             "startedAt": {"type": "date"},
             "endedAt": {"type": "date"},
             "createdAt": {"type": "date"},
