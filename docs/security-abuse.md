@@ -16,10 +16,13 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 ## Submissions
 
 - Login required.
-- Daily limit.
-- Duplicate URL checks.
-- AI first-pass review.
-- Admin approval before publishing.
+- Duplicate `sourceUrl` checks in the MVP return the existing submission row.
+- Submission `sourceUrl` accepts only `http` and `https` URLs at intake.
+- Mock AI first-pass review records `needs_admin_review`; it never publishes content.
+- Admin approval is required before Product, Deal, or Auction rows are created.
+- Admin approval/rejection writes `admin_audit_logs`.
+- Real rate limits, URL allowlist/blocklist, and product matching are deferred security
+  hardening items.
 
 ## Verified Reviews
 
@@ -53,6 +56,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Validate URLs.
 - Use allowlist/blocklist policy.
 - Do not expose unapproved suspicious links.
+- User-submitted source URLs remain review-queue data until admin approval. The first
+  web admin queue opens source URLs in a new tab with `rel="noreferrer"`.
 
 ## AI
 

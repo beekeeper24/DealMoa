@@ -11,6 +11,9 @@ from app.modules.reports.router import admin_router as admin_reports_router
 from app.modules.reports.router import router as reports_router
 from app.modules.search.router import admin_router as admin_search_router
 from app.modules.search.router import router as search_router
+from app.modules.submissions.router import admin_router as admin_submissions_router
+from app.modules.submissions.router import me_router as me_submissions_router
+from app.modules.submissions.router import router as submissions_router
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -20,6 +23,9 @@ api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
 api_router.include_router(reports_router)
 api_router.include_router(admin_reports_router)
+api_router.include_router(submissions_router)
+api_router.include_router(me_submissions_router)
+api_router.include_router(admin_submissions_router)
 api_router.include_router(products_router)
 api_router.include_router(offer_router)
 api_router.include_router(search_router)

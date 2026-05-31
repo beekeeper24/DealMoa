@@ -79,6 +79,16 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "신고를 찾을 수 없습니다.",
     )
+    SUBMISSION_NOT_FOUND = (
+        "SUBMISSION_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "제보를 찾을 수 없습니다.",
+    )
+    SUBMISSION_ALREADY_REVIEWED = (
+        "SUBMISSION_ALREADY_REVIEWED",
+        HTTPStatus.CONFLICT,
+        "이미 검토가 완료된 제보입니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -262,4 +272,24 @@ class ReportNotFoundException(ReportException):
         super().__init__(
             ErrorCode.REPORT_NOT_FOUND,
             details={"reportId": report_id},
+        )
+
+
+class SubmissionException(DealMoaException):
+    pass
+
+
+class SubmissionNotFoundException(SubmissionException):
+    def __init__(self, submission_id: str) -> None:
+        super().__init__(
+            ErrorCode.SUBMISSION_NOT_FOUND,
+            details={"submissionId": submission_id},
+        )
+
+
+class SubmissionAlreadyReviewedException(SubmissionException):
+    def __init__(self, submission_id: str, status: str) -> None:
+        super().__init__(
+            ErrorCode.SUBMISSION_ALREADY_REVIEWED,
+            details={"submissionId": submission_id, "status": status},
         )

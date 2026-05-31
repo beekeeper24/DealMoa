@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -218,8 +218,10 @@ describe("detail pages", () => {
     const bidPanel = screen.getByRole("form", { name: "경매 입찰" });
     expect(within(bidPanel).getByText("현재가 ₩720,000")).toBeInTheDocument();
 
-    await user.clear(within(bidPanel).getByLabelText("입찰 금액"));
-    await user.type(within(bidPanel).getByLabelText("입찰 금액"), "730000");
+    const amountInput = within(bidPanel).getByLabelText("입찰 금액");
+    await waitFor(() => expect(amountInput).toBeEnabled());
+    await user.clear(amountInput);
+    await user.type(amountInput, "730000");
     await user.click(within(bidPanel).getByRole("button", { name: "입찰하기" }));
 
     expect(await within(bidPanel).findByText("입찰이 접수되었습니다.")).toBeInTheDocument();

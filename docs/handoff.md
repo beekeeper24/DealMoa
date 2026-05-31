@@ -56,6 +56,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `docs/favorites.md`: Product/Deal/Auction favorite API contract.
 - `docs/notifications.md`: authenticated notification inbox API contract.
 - `docs/reports.md`: report intake, admin review queue, and ranking boundary.
+- `docs/submissions.md`: user submission intake, mock AI review, admin approval, and publishing boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
@@ -69,9 +70,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence: admin report/status Web UI, dedicated hot-deal ranking
-   endpoint, product/deal/auction detail MVP, user submission plus AI review mock
-   and admin approval, then price history plus verified review foundation.
+2. Next PR sequence after the current submission review slice: price history plus
+   verified review foundation, then AI search/purchase-check foundation.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -222,7 +222,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   description, reporter, and created time.
 - Admin users can resolve or dismiss a report and optionally change the reported deal
   or auction status in the same action.
-- The search header shows an `관리자` entry link only for hydrated admin sessions.
+- The search header exposes admin review entry links only for hydrated admin sessions.
 - Anonymous users and authenticated non-admin users receive explicit access guidance.
 
 ## Completed Auction Favorite Event Freshness Scope
@@ -282,6 +282,26 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Auction detail shows current price, bid count, seller/status, linked product, external source link, auction favorite control, authenticated report submission, and authenticated bid submission.
 - Auction detail uses the fixed 1,000 KRW bid increment and updates local current price/bid count after a successful bid response.
 - Price history, verified reviews, discussion, realtime auction updates, and AI purchase checks remain deferred.
+
+## Completed Submission Review MVP Scope
+
+- Added `submissions` with user candidate data, mock AI review result, status, reviewer,
+  resolution, and published Product/Offer references.
+- Added authenticated `POST /api/v1/submissions` and `GET /api/v1/me/submissions`.
+- Duplicate `sourceUrl` submissions return the existing submission.
+- Added admin-only `GET /api/v1/admin/submissions` and
+  `PATCH /api/v1/admin/submissions/{submission_id}`.
+- Approval creates Product plus Deal/Auction in one transaction and emits the existing
+  `product.updated` plus `deal.created` or `auction.created` events.
+- Rejection records the admin decision without publishing content.
+- Approval and rejection write `admin_audit_logs`.
+- `apps/worker` mock AI review task returns the same deterministic review result used
+  by submission intake.
+- Added `/submit` user web form and `/admin/submissions` admin review queue.
+- The search header links to user submission, and admin sessions can enter both report
+  and submission review queues.
+- Real AI provider, server-side rate limit store, URL reputation checks, product
+  matching/merge, crawler ingestion, and a dedicated user submissions page remain deferred.
 
 ## Cautions
 

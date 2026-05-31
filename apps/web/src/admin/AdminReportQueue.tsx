@@ -163,7 +163,15 @@ export function AdminReportQueue() {
               신고는 검토 신호입니다. 상태 변경은 명시적인 관리자 결정으로만 반영됩니다.
             </p>
           </div>
-          <p className="text-sm font-semibold text-signal">{statusLabel} {items.length}건</p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-semibold text-signal">{statusLabel} {items.length}건</p>
+            <Link
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
+              href="/admin/submissions"
+            >
+              제보 검토
+            </Link>
+          </div>
         </div>
 
         <div aria-label="신고 상태" className="mt-6 flex gap-2" role="tablist">

@@ -20,6 +20,7 @@ def test_mock_tasks_return_stable_summary_payloads() -> None:
         "task": "ai_review_submission_mock",
         "submissionId": "submission-1",
         "decision": "needs_admin_review",
+        "reason": "mock review passed: admin approval required",
     }
     assert rebuild_search_index() == {
         "task": "rebuild_search_index",

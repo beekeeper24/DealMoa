@@ -10,6 +10,7 @@ from app.modules.favorites import models as favorite_models  # noqa: F401
 from app.modules.notifications import models as notification_models  # noqa: F401
 from app.modules.products import models as product_models  # noqa: F401
 from app.modules.reports import models as report_models  # noqa: F401
+from app.modules.submissions import models as submission_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 
 config = context.config
