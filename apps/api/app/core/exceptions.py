@@ -89,6 +89,16 @@ class ErrorCode(Enum):
         HTTPStatus.CONFLICT,
         "이미 검토가 완료된 제보입니다.",
     )
+    VERIFIED_REVIEW_NOT_FOUND = (
+        "VERIFIED_REVIEW_NOT_FOUND",
+        HTTPStatus.NOT_FOUND,
+        "인증 후기를 찾을 수 없습니다.",
+    )
+    VERIFIED_REVIEW_ALREADY_REVIEWED = (
+        "VERIFIED_REVIEW_ALREADY_REVIEWED",
+        HTTPStatus.CONFLICT,
+        "이미 검토가 완료된 인증 후기입니다.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -292,4 +302,24 @@ class SubmissionAlreadyReviewedException(SubmissionException):
         super().__init__(
             ErrorCode.SUBMISSION_ALREADY_REVIEWED,
             details={"submissionId": submission_id, "status": status},
+        )
+
+
+class VerifiedReviewException(DealMoaException):
+    pass
+
+
+class VerifiedReviewNotFoundException(VerifiedReviewException):
+    def __init__(self, review_id: str) -> None:
+        super().__init__(
+            ErrorCode.VERIFIED_REVIEW_NOT_FOUND,
+            details={"reviewId": review_id},
+        )
+
+
+class VerifiedReviewAlreadyReviewedException(VerifiedReviewException):
+    def __init__(self, review_id: str, status: str) -> None:
+        super().__init__(
+            ErrorCode.VERIFIED_REVIEW_ALREADY_REVIEWED,
+            details={"reviewId": review_id, "status": status},
         )

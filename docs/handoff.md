@@ -38,7 +38,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - AI search: search-bar-side AI button, structured intent, filters, BM25, vector candidates, explanation.
 - Kafka: domain event stream.
 - Celery + Redis: long-running/scheduled Python jobs.
-- Current Kafka domain events: `deal.created`, `deal.status.changed`, `auction.created`, `auction.status.changed`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`.
+- Current Kafka domain events: `deal.created`, `deal.status.changed`, `auction.created`, `auction.status.changed`, `product.updated`, `auction.bid.placed`, `auction.favorite.created`, `auction.favorite.deleted`, `auction.view.recorded`, `review.verified`.
 - Initial Celery tasks: `crawl_hot_deals_mock`, `ai_review_submission_mock`, `rebuild_search_index`.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
@@ -57,6 +57,7 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - `docs/notifications.md`: authenticated notification inbox API contract.
 - `docs/reports.md`: report intake, admin review queue, and ranking boundary.
 - `docs/submissions.md`: user submission intake, mock AI review, admin approval, and publishing boundary.
+- `docs/price-reviews.md`: price history snapshots, verified review submission, public display, and admin approval boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
 - `docs/search-ranking.md`: ranking and search decisions.
@@ -70,8 +71,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after the current submission review slice: price history plus
-   verified review foundation, then AI search/purchase-check foundation.
+2. Next PR sequence after the current price/review evidence slice: AI
+   search/purchase-check foundation, then product discussion or crawler matching.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -277,11 +278,11 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 
 - Product, deal, and auction search result titles link to detail pages.
 - Added `/products/{productId}`, `/deals/{dealId}`, and `/auctions/{auctionId}` web routes.
-- Product detail shows core metadata, specs, current deals, current auctions, and product favorite control.
+- Product detail shows core metadata, specs, current deals, current auctions, price history, approved verified reviews, and product favorite control.
 - Deal detail shows offer price, seller/status, linked product, external source link, deal favorite control, and authenticated report submission.
 - Auction detail shows current price, bid count, seller/status, linked product, external source link, auction favorite control, authenticated report submission, and authenticated bid submission.
 - Auction detail uses the fixed 1,000 KRW bid increment and updates local current price/bid count after a successful bid response.
-- Price history, verified reviews, discussion, realtime auction updates, and AI purchase checks remain deferred.
+- Discussion, realtime auction updates, and AI purchase checks remain deferred.
 
 ## Completed Submission Review MVP Scope
 
@@ -302,6 +303,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   and submission review queues.
 - Real AI provider, server-side rate limit store, URL reputation checks, product
   matching/merge, crawler ingestion, and a dedicated user submissions page remain deferred.
+
+## Completed Price History And Verified Review Foundation Scope
+
+- Added immutable product price-history snapshots.
+- Deal creation records sale-price snapshots.
+- Auction creation and accepted auction bids record current-price snapshots.
+- Added public `GET /api/v1/products/{product_id}/price-history`.
+- Added authenticated `POST /api/v1/products/{product_id}/verified-reviews`.
+- Verified review intake records mock AI first-pass results and stays `pending_review`.
+- Added admin-only verified review queue and approve/reject API.
+- Admin review writes `admin_audit_logs`; approval writes a `review.verified` outbox event.
+- Product detail now shows price history and approved verified reviews.
+- Public verified-review responses exclude internal user ids, proof references, AI review
+  text, admin reviewer ids, and resolution notes.
+- Receipt upload/OCR, real AI provider integration, review scoring impact, product
+  discussion, My Page review history, and AI purchase checks remain deferred.
 
 ## Cautions
 

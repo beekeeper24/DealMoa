@@ -10,6 +10,8 @@ from app.core.exceptions import (
 )
 from app.core.pagination import CursorPage
 from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.evidence.models import PriceHistorySnapshot
+from app.modules.evidence.repository import EvidenceRepository
 from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
@@ -32,10 +34,12 @@ class ProductUseCases:
         self,
         repository: ProductRepository,
         domain_events: DomainEventsUseCases | None = None,
+        evidence_repository: EvidenceRepository | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.repository = repository
         self.domain_events = domain_events
+        self.evidence_repository = evidence_repository
         self.now = now or utc_now
 
     def create_product(self, request: ProductCreateRequest) -> Product:
@@ -79,6 +83,14 @@ class ProductUseCases:
             updated_at=now,
         )
         created = self.repository.create_deal(deal)
+        self._record_price_snapshot(
+            product_id=created.product_id,
+            source_type="deal",
+            source_id=created.id,
+            price=created.sale_price,
+            currency=created.currency,
+            observed_at=now,
+        )
         if self.domain_events is not None:
             self.domain_events.record_deal_created(created)
         return created
@@ -115,6 +127,14 @@ class ProductUseCases:
             updated_at=now,
         )
         created = self.repository.create_auction(auction)
+        self._record_price_snapshot(
+            product_id=created.product_id,
+            source_type="auction",
+            source_id=created.id,
+            price=created.current_price,
+            currency=created.currency,
+            observed_at=now,
+        )
         if self.domain_events is not None:
             self.domain_events.record_auction_created(created)
         return created
@@ -191,6 +211,14 @@ class ProductUseCases:
         auction.current_price = request.amount
         auction.bid_count += 1
         auction.updated_at = now
+        self._record_price_snapshot(
+            product_id=auction.product_id,
+            source_type="auction",
+            source_id=auction.id,
+            price=auction.current_price,
+            currency=auction.currency,
+            observed_at=now,
+        )
         if self.domain_events is not None:
             self.domain_events.record_auction_bid_placed(
                 auction=auction,
@@ -200,6 +228,32 @@ class ProductUseCases:
                 ),
             )
         return bid
+
+    def _record_price_snapshot(
+        self,
+        *,
+        product_id: str,
+        source_type: str,
+        source_id: str,
+        price: int,
+        currency: str,
+        observed_at: datetime,
+    ) -> None:
+        if self.evidence_repository is None:
+            return
+        now = self.now()
+        self.evidence_repository.create_price_snapshot(
+            PriceHistorySnapshot(
+                product_id=product_id,
+                source_type=source_type,
+                source_id=source_id,
+                price=price,
+                currency=currency,
+                observed_at=observed_at,
+                created_at=now,
+                updated_at=now,
+            )
+        )
 
     def _aware_utc(self, value: datetime) -> datetime:
         if value.tzinfo is None:

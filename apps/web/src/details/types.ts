@@ -53,6 +53,42 @@ export type AuctionBid = {
   createdAt: string;
 };
 
+export type PriceHistorySnapshot = {
+  id: string;
+  productId: string;
+  sourceType: "auction" | "deal";
+  sourceId: string;
+  price: number;
+  currency: string;
+  observedAt: string;
+  createdAt: string;
+};
+
+export type VerifiedReview = {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  title: string;
+  body: string;
+  proofType: string;
+  proofReference: string | null;
+  status: "approved" | "pending_review" | "rejected";
+  aiDecision: string | null;
+  aiReason: string | null;
+  aiReviewedAt: string | null;
+  reviewedByUserId: string | null;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicVerifiedReview = Pick<
+  VerifiedReview,
+  "body" | "createdAt" | "id" | "productId" | "rating" | "title" | "updatedAt"
+>;
+
 export type Report = {
   id: string;
   userId: string;

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
+from app.modules.evidence.models import VerifiedReview
 from app.modules.favorites.models import AuctionFavorite
 from app.modules.products.models import Auction, AuctionBid, AuctionView, Deal, Product
 
@@ -159,6 +160,19 @@ class DomainEventsUseCases:
             payload={
                 "auctionId": view.auction_id,
                 "viewId": view.id,
+            },
+        )
+
+    def record_review_verified(self, review: VerifiedReview) -> DomainEvent:
+        return self._record_event(
+            event_type="review.verified",
+            aggregate_type="verified_review",
+            aggregate_id=review.id,
+            payload={
+                "reviewId": review.id,
+                "productId": review.product_id,
+                "userId": review.user_id,
+                "rating": review.rating,
             },
         )
 

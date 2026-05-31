@@ -10,6 +10,7 @@ from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.evidence.repository import EvidenceRepository
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
     AuctionBidCreateRequest,
@@ -36,6 +37,7 @@ def get_product_use_cases(
     return ProductUseCases(
         ProductRepository(session),
         domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
+        evidence_repository=EvidenceRepository(session),
     )
 
 

@@ -5,8 +5,11 @@ import {
   getAuction,
   getDeal,
   getProduct,
+  createVerifiedReview,
   listProductAuctions,
   listProductDeals,
+  listProductPriceHistory,
+  listProductVerifiedReviews,
   placeAuctionBid,
   reportAuction,
   reportDeal
@@ -65,6 +68,37 @@ const auctionFixture = {
   updatedAt: "2026-05-25T00:00:00Z"
 };
 
+const priceHistoryFixture = {
+  id: "price-1",
+  productId: "product-1",
+  sourceType: "deal",
+  sourceId: "deal-1",
+  price: 1090000,
+  currency: "KRW",
+  observedAt: "2026-06-01T00:00:00Z",
+  createdAt: "2026-06-01T00:00:00Z"
+};
+
+const verifiedReviewFixture = {
+  id: "review-1",
+  productId: "product-1",
+  userId: "user-1",
+  rating: 5,
+  title: "실구매 기준 만족",
+  body: "배송과 제품 상태 모두 좋았습니다.",
+  proofType: "receipt",
+  proofReference: "order-123",
+  status: "approved",
+  aiDecision: "needs_admin_review",
+  aiReason: "mock review passed: receipt proof requires admin approval",
+  aiReviewedAt: "2026-06-01T00:00:00Z",
+  reviewedByUserId: "admin-1",
+  resolutionNote: "영수증 확인",
+  resolvedAt: "2026-06-01T00:05:00Z",
+  createdAt: "2026-06-01T00:00:00Z",
+  updatedAt: "2026-06-01T00:05:00Z"
+};
+
 describe("details api", () => {
   it("fetches product detail and product offers", async () => {
     const fetchMock = vi.fn((input: string | URL | Request) => {
@@ -78,6 +112,12 @@ describe("details api", () => {
       if (url === "/api/v1/products/product-1/auctions?limit=10") {
         return Promise.resolve(jsonResponse({ items: [auctionFixture], nextCursor: null }));
       }
+      if (url === "/api/v1/products/product-1/price-history?limit=10") {
+        return Promise.resolve(jsonResponse({ items: [priceHistoryFixture], nextCursor: null }));
+      }
+      if (url === "/api/v1/products/product-1/verified-reviews?limit=10") {
+        return Promise.resolve(jsonResponse({ items: [verifiedReviewFixture], nextCursor: null }));
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -86,6 +126,43 @@ describe("details api", () => {
     await expect(listProductDeals("product-1")).resolves.toMatchObject({ items: [dealFixture] });
     await expect(listProductAuctions("product-1")).resolves.toMatchObject({
       items: [auctionFixture]
+    });
+    await expect(listProductPriceHistory("product-1")).resolves.toMatchObject({
+      items: [priceHistoryFixture]
+    });
+    await expect(listProductVerifiedReviews("product-1")).resolves.toMatchObject({
+      items: [verifiedReviewFixture]
+    });
+  });
+
+  it("creates verified reviews with bearer auth", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(verifiedReviewFixture, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createVerifiedReview({
+      accessToken: "access-1",
+      body: "배송과 제품 상태 모두 좋았습니다.",
+      productId: "product-1",
+      proofReference: "order-123",
+      proofType: "receipt",
+      rating: 5,
+      title: "실구매 기준 만족"
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/products/product-1/verified-reviews", {
+      body: JSON.stringify({
+        body: "배송과 제품 상태 모두 좋았습니다.",
+        proofReference: "order-123",
+        proofType: "receipt",
+        rating: 5,
+        title: "실구매 기준 만족"
+      }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
     });
   });
 
