@@ -173,6 +173,14 @@ export function SearchWorkspace() {
           >
             제보하기
           </Link>
+          {authSession.status === "authenticated" ? (
+            <Link
+              className="rounded border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold transition hover:border-signal hover:text-signal"
+              href="/me"
+            >
+              내 활동
+            </Link>
+          ) : null}
           {authSession.session?.user.role === "ADMIN" ? (
             <>
               <Link

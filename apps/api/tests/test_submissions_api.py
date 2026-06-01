@@ -10,6 +10,7 @@ from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.products.models import Product
+from app.modules.submissions.models import Submission
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -85,6 +86,14 @@ def seed_users(session_factory: sessionmaker[Session]) -> None:
                     created_at=NOW,
                     updated_at=NOW,
                 ),
+                User(
+                    id="user-2",
+                    email="other@example.com",
+                    nickname="Other",
+                    role="USER",
+                    created_at=NOW,
+                    updated_at=NOW,
+                ),
             ]
         )
         session.commit()
@@ -137,6 +146,7 @@ def test_create_submission_rejects_non_http_source_url() -> None:
 def test_user_can_create_and_list_own_submissions() -> None:
     client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
+    seed_other_user_submission(session_factory)
 
     create_response = client.post(
         "/api/v1/submissions",
@@ -155,7 +165,9 @@ def test_user_can_create_and_list_own_submissions() -> None:
     assert created["aiDecision"] == "needs_admin_review"
     assert created["publishedOfferId"] is None
     assert list_response.status_code == 200
-    assert list_response.json()["items"][0]["id"] == created["id"]
+    list_body = list_response.json()
+    assert [item["id"] for item in list_body["items"]] == [created["id"]]
+    assert list_body["items"][0]["userId"] == "user-1"
 
 
 def test_duplicate_source_url_returns_existing_submission() -> None:
@@ -273,6 +285,39 @@ def seed_product(session_factory: sessionmaker[Session]) -> None:
                 model_name="SM-S260",
                 category="smartphone",
                 specs=None,
+                created_at=NOW,
+                updated_at=NOW,
+            )
+        )
+        session.commit()
+    finally:
+        session.close()
+
+
+def seed_other_user_submission(session_factory: sessionmaker[Session]) -> None:
+    session = session_factory()
+    try:
+        session.add(
+            Submission(
+                id="submission-other",
+                user_id="user-2",
+                offer_type="deal",
+                source_url="https://example.com/deals/other",
+                product_name="Other Product",
+                brand=None,
+                model_name=None,
+                category=None,
+                title="Other user deal",
+                seller=None,
+                original_price=None,
+                sale_price=10000,
+                current_price=None,
+                currency="KRW",
+                description=None,
+                status="pending_review",
+                ai_decision="needs_admin_review",
+                ai_reason="mock review passed: admin approval required",
+                ai_reviewed_at=NOW,
                 created_at=NOW,
                 updated_at=NOW,
             )

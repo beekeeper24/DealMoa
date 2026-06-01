@@ -136,9 +136,13 @@ ranking signals.
 ## Web Entry Points
 
 - `/submit`: authenticated user submission form.
+- `/me`: authenticated user contribution history for own submissions.
 - `/admin/submissions`: admin submission review queue.
 - Search header always links to `/submit`.
+- Authenticated search sessions also link to `/me`.
 - Admin sessions see both report review and submission review links.
+- The My Page history uses only `GET /me/submissions` and shows status, review notes,
+  source links, and published Product/Deal/Auction links when available.
 - The admin submission queue shows product match candidates and lets admins approve into
   an existing Product or publish as a new Product.
 
@@ -150,4 +154,4 @@ ranking signals.
   scheme check.
 - Product merge UI and background duplicate cleanup.
 - Real crawler integration and source-specific parsing.
-- Dedicated user "my submissions" page.
+- Edit/resubmit flow for rejected submissions.
