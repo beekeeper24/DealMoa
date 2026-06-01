@@ -72,8 +72,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after My Page contribution history: real AI provider/OCR hardening
-   or real crawler source parsing.
+2. Next PR sequence after AI review provider boundary: real crawler source parsing,
+   provider cost/rate-limit hardening, or receipt upload/OCR.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -336,8 +336,9 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   plus public-safe evidence.
 - Search UI AI button opens an AI result panel.
 - Product detail exposes an AI purchase-check button and report panel.
-- Real OpenAI/Spring AI provider calls, vector embeddings, prompt persistence, streaming,
-  personalization, and community sentiment summarization remain deferred.
+- AI search and purchase-check provider conversion, vector embeddings, prompt
+  persistence, streaming, personalization, and community sentiment summarization remain
+  deferred.
 
 ## Completed Product Discussion Foundation Scope
 
@@ -401,6 +402,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   submissions.
 - Favorites, notifications history, verified review history, connected accounts,
   edit/resubmit, and richer account settings remain deferred.
+
+## Completed AI Review Provider Boundary Scope
+
+- Added a shared AI first-pass review provider port for submissions and verified reviews.
+- The default provider remains deterministic mock, preserving local and CI behavior.
+- Added an OpenAI provider adapter that calls the Responses API with strict JSON schema
+  output and validates the result with Pydantic.
+- Allowed AI review decisions are `needs_admin_review` and `reject_candidate`; both are
+  evidence only and never publish content.
+- Provider failures, invalid JSON, or invalid schema output fall back to
+  `needs_admin_review`.
+- Verified-review `proofReference` is not sent to the model in this slice.
+- Added `AI_REVIEW_PROVIDER`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`,
+  `OPENAI_REVIEW_MODEL`, and `OPENAI_TIMEOUT_SECONDS` settings.
+- Receipt image upload, OCR engine integration, async background review migration,
+  provider cost controls, rate limits, abuse logging, and monitoring remain deferred.
 
 ## Cautions
 

@@ -70,7 +70,8 @@ Request:
 }
 ```
 
-The MVP records a deterministic mock AI review result:
+Verified-review intake uses the shared AI review provider boundary. The local and CI
+default records a deterministic mock AI review result:
 
 ```text
 decision = needs_admin_review
@@ -79,6 +80,11 @@ reason = mock review passed: receipt proof requires admin approval
 
 The review always starts as `pending_review`. AI output is evidence for the
 admin queue only; it never publishes the review by itself.
+
+When `AI_REVIEW_PROVIDER=openai`, the adapter sends review text and proof metadata shape
+to the provider, but not the raw `proofReference`. Provider output can only populate
+`aiDecision` and `aiReason`; invalid/provider-failure responses fall back to
+`needs_admin_review`. Receipt image upload and OCR remain deferred.
 
 ## Admin Review
 

@@ -62,7 +62,8 @@ approval.
 
 ## AI First Pass
 
-The current AI review is a mock boundary:
+Submission intake uses the shared AI review provider boundary. The local and CI default
+is deterministic mock review:
 
 ```json
 {
@@ -73,6 +74,11 @@ The current AI review is a mock boundary:
 
 The mock result is stored on the submission row. It does not approve publishing and does
 not create Product, Deal, or Auction rows.
+
+When `AI_REVIEW_PROVIDER=openai`, the API calls the OpenAI review adapter through the
+same port. Provider output can only populate `aiDecision` and `aiReason`; the submission
+status remains `pending_review`, and invalid/provider-failure responses fall back to
+`needs_admin_review`.
 
 ## Admin Queue API
 

@@ -7,11 +7,17 @@ from typing import cast
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
+from app.modules.ai_review.provider import AIReviewResult
 from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.evidence import models as evidence_models  # noqa: F401
+from app.modules.evidence.repository import EvidenceRepository
+from app.modules.evidence.schemas import VerifiedReviewCreateRequest
+from app.modules.evidence.use_cases import EvidenceUseCases
 from app.modules.products import models as product_models  # noqa: F401
+from app.modules.products.repository import ProductRepository
+from app.modules.submissions.schemas import SubmissionCreateRequest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -220,6 +226,47 @@ def test_verified_review_requires_auth_and_admin_approval() -> None:
     assert "proofReference" not in public_review
     assert "aiReason" not in public_review
     assert "resolutionNote" not in public_review
+
+
+def test_verified_review_stores_provider_review_but_stays_pending() -> None:
+    class FixedReviewProvider:
+        def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
+            raise AssertionError("submission provider should not be called")
+
+        def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+            return AIReviewResult(
+                decision="reject_candidate",
+                reason="provider flagged suspicious proof",
+            )
+
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(client)
+    session = session_factory()
+    try:
+        use_cases = EvidenceUseCases(
+            evidence_repository=EvidenceRepository(session),
+            product_repository=ProductRepository(session),
+            ai_review_provider=FixedReviewProvider(),
+            now=lambda: NOW,
+        )
+
+        review = use_cases.create_verified_review(
+            actor=AuthenticatedUser(
+                id="user-1",
+                email="user@example.com",
+                nickname="User",
+                role="USER",
+            ),
+            product_id=str(product["id"]),
+            request=VerifiedReviewCreateRequest.model_validate(verified_review_payload()),
+        )
+    finally:
+        session.close()
+
+    assert review.status == "pending_review"
+    assert review.ai_decision == "reject_candidate"
+    assert review.ai_reason == "provider flagged suspicious proof"
 
 
 def test_admin_verified_review_queue_requires_admin_role() -> None:

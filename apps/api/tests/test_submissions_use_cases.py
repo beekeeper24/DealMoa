@@ -6,11 +6,13 @@ from app.core.exceptions import ForbiddenException, ProductNotFoundException
 from app.core.pagination import CursorPage
 from app.db.base import Base
 from app.modules.admin.models import AdminAuditLog
+from app.modules.ai_review.provider import AIReviewResult
 from app.modules.auth.models import User
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.models import DomainEvent
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
+from app.modules.evidence.schemas import VerifiedReviewCreateRequest
 from app.modules.products.models import Auction, Deal, Product
 from app.modules.products.repository import ProductRepository
 from app.modules.submissions.models import Submission
@@ -141,6 +143,39 @@ def test_create_submission_runs_mock_ai_review_and_is_duplicate_url_idempotent()
     assert first.submission.ai_decision == "needs_admin_review"
     assert first.submission.ai_reason == "mock review passed: admin approval required"
     assert first.submission.ai_reviewed_at == NOW
+
+
+def test_create_submission_stores_provider_review_but_stays_pending() -> None:
+    class FixedReviewProvider:
+        def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
+            return AIReviewResult(
+                decision="reject_candidate",
+                reason="provider flagged suspicious source",
+            )
+
+        def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+            raise AssertionError("verified review provider should not be called")
+
+    session = next(make_session())
+    seed_users(session)
+    use_cases = SubmissionsUseCases(
+        submissions_repository=SubmissionsRepository(session),
+        product_repository=ProductRepository(session),
+        domain_events=DomainEventsUseCases(
+            repository=DomainEventsRepository(session),
+            now=lambda: NOW,
+        ),
+        ai_review_provider=FixedReviewProvider(),
+        now=lambda: NOW,
+    )
+
+    result = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    assert result.submission.status == "pending_review"
+    assert result.submission.ai_decision == "reject_candidate"
+    assert result.submission.ai_reason == "provider flagged suspicious source"
+    assert session.scalar(select(Product)) is None
+    assert session.scalar(select(Deal)) is None
 
 
 def test_user_lists_own_submissions_only_with_cursor_pagination() -> None:

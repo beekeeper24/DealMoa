@@ -24,6 +24,23 @@ class Settings(BaseSettings):
         default="http://localhost:9200",
         validation_alias="ELASTICSEARCH_URL",
     )
+    ai_review_provider: Literal["mock", "openai"] = Field(
+        default="mock",
+        validation_alias="AI_REVIEW_PROVIDER",
+    )
+    openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias="OPENAI_BASE_URL",
+    )
+    openai_review_model: str = Field(
+        default="gpt-4o-mini",
+        validation_alias="OPENAI_REVIEW_MODEL",
+    )
+    openai_timeout_seconds: float = Field(
+        default=8.0,
+        validation_alias="OPENAI_TIMEOUT_SECONDS",
+    )
     jwt_secret_key: str = Field(
         default="replace-with-local-jwt-secret-minimum-32-bytes",
         validation_alias="JWT_SECRET_KEY",

@@ -19,3 +19,21 @@ def test_settings_reads_oauth2_env_aliases() -> None:
     assert settings.oauth_kakao_client_secret == "kakao-client-secret"
     assert settings.oauth_naver_client_id == "naver-client-id"
     assert settings.oauth_naver_client_secret == "naver-client-secret"
+
+
+def test_settings_reads_ai_review_provider_env() -> None:
+    settings = Settings.model_validate(
+        {
+            "AI_REVIEW_PROVIDER": "openai",
+            "OPENAI_API_KEY": "sk-test",
+            "OPENAI_BASE_URL": "https://api.openai.test/v1",
+            "OPENAI_REVIEW_MODEL": "gpt-4o-mini",
+            "OPENAI_TIMEOUT_SECONDS": "5.5",
+        }
+    )
+
+    assert settings.ai_review_provider == "openai"
+    assert settings.openai_api_key == "sk-test"
+    assert settings.openai_base_url == "https://api.openai.test/v1"
+    assert settings.openai_review_model == "gpt-4o-mini"
+    assert settings.openai_timeout_seconds == 5.5
