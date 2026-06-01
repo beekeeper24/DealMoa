@@ -62,6 +62,11 @@ API_CORS_ORIGINS=https://<vercel-domain>
 DATABASE_URL=postgresql+psycopg://...
 REDIS_URL=redis://...
 ELASTICSEARCH_URL=https://...
+AI_REVIEW_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_REVIEW_MODEL=gpt-4o-mini
+OPENAI_TIMEOUT_SECONDS=8
 JWT_SECRET_KEY=<at-least-32-random-bytes>
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=14
@@ -77,6 +82,10 @@ OAUTH_NAVER_CLIENT_SECRET=...
 ```
 
 Use `AUTH_REFRESH_COOKIE_SAMESITE=none` with `AUTH_REFRESH_COOKIE_SECURE=true` when the Vercel web domain and Railway API domain are different sites. Local development can use `lax` and `false`.
+
+Keep `AI_REVIEW_PROVIDER=mock` until provider cost controls, rate limits, and monitoring
+are ready. When switching to `openai`, set `OPENAI_API_KEY` only in Railway secrets, not
+in committed files.
 
 ## OAuth Redirect URLs
 

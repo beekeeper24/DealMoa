@@ -95,6 +95,11 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      AI_REVIEW_PROVIDER: ${AI_REVIEW_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_REVIEW_MODEL: ${OPENAI_REVIEW_MODEL:-gpt-4o-mini}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-8}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       KAFKA_DOMAIN_EVENTS_TOPIC: ${KAFKA_DOMAIN_EVENTS_TOPIC:-dealmoa.domain-events}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-replace-with-local-jwt-secret-minimum-32-bytes}

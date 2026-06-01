@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.exceptions import UnauthorizedException
 from app.db.session import get_session
+from app.modules.ai_review.factory import create_ai_review_provider
 from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
 from app.modules.events.repository import DomainEventsRepository
@@ -35,6 +37,7 @@ def get_submissions_use_cases(
         submissions_repository=SubmissionsRepository(session),
         product_repository=ProductRepository(session),
         domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
+        ai_review_provider=create_ai_review_provider(get_settings()),
     )
 
 

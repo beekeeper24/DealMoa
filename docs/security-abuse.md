@@ -18,7 +18,7 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Login required.
 - Duplicate `sourceUrl` checks in the MVP return the existing submission row.
 - Submission `sourceUrl` accepts only `http` and `https` URLs at intake.
-- Mock AI first-pass review records `needs_admin_review`; it never publishes content.
+- AI first-pass review records reviewer-facing evidence only; it never publishes content.
 - Mock crawler ingestion writes `pending_review` submissions only; it does not fetch live
   external pages or publish Product/Deal/Auction rows.
 - The crawler system user is non-admin.
@@ -34,7 +34,7 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 
 - Login required.
 - MVP proof data is a text receipt/order reference; receipt image upload and OCR are deferred.
-- Mock AI first-pass review records `needs_admin_review`; it never publishes content.
+- AI first-pass review records reviewer-facing evidence only; it never publishes content.
 - Admin approval is required before a review is publicly visible.
 - Admin approval/rejection writes `admin_audit_logs`.
 - Public approved-review responses exclude internal user ids, proof references, AI review
@@ -92,9 +92,15 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   text must never become query DSL.
 - Purchase-check evidence uses approved verified reviews only and does not expose proof
   references, AI review reasoning, or admin moderation notes.
-- The first AI assistant implementation is deterministic mock logic. Real provider
-  integration must add cost controls, prompt/output validation, and abuse logging before
-  production use.
+- AI first-pass review supports mock and OpenAI providers. OpenAI output must use
+  Structured Outputs, is validated with Pydantic, and can only produce allowlisted
+  `aiDecision` values.
+- Provider failures or invalid output fall back to `needs_admin_review`; AI output never
+  changes publish status.
+- Verified-review `proofReference` is internal proof metadata and is not sent to the AI
+  review provider in the current slice. Receipt image OCR remains deferred.
+- Real provider production use still needs cost controls, rate limits, abuse logging, and
+  provider-level monitoring before launch.
 
 ## Admin
 

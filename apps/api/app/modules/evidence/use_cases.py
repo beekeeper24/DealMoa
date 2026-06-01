@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from app.core.exceptions import (
@@ -10,6 +9,7 @@ from app.core.exceptions import (
 )
 from app.core.pagination import CursorPage
 from app.modules.admin.models import AdminAuditLog
+from app.modules.ai_review.provider import AiReviewProvider, AIReviewResult, MockAiReviewProvider
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.evidence.models import PriceHistorySnapshot, VerifiedReview
@@ -25,12 +25,6 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-@dataclass(frozen=True)
-class MockReviewAiResult:
-    decision: str
-    reason: str
-
-
 class EvidenceUseCases:
     def __init__(
         self,
@@ -38,11 +32,13 @@ class EvidenceUseCases:
         evidence_repository: EvidenceRepository,
         product_repository: ProductRepository,
         domain_events: DomainEventsUseCases | None = None,
+        ai_review_provider: AiReviewProvider | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.evidence_repository = evidence_repository
         self.product_repository = product_repository
         self.domain_events = domain_events
+        self.ai_review_provider = ai_review_provider or MockAiReviewProvider()
         self.now = now or utc_now
 
     def record_price_snapshot(
@@ -92,7 +88,7 @@ class EvidenceUseCases:
     ) -> VerifiedReview:
         self._ensure_product_exists(product_id)
         now = self.now()
-        ai_review = self.run_mock_ai_review(request)
+        ai_review = self.ai_review_provider.review_verified_review(request)
         return self.evidence_repository.create_verified_review(
             VerifiedReview(
                 product_id=product_id,
@@ -184,11 +180,8 @@ class EvidenceUseCases:
             self.domain_events.record_review_verified(review)
         return review
 
-    def run_mock_ai_review(self, request: VerifiedReviewCreateRequest) -> MockReviewAiResult:
-        return MockReviewAiResult(
-            decision="needs_admin_review",
-            reason="mock review passed: receipt proof requires admin approval",
-        )
+    def run_mock_ai_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+        return MockAiReviewProvider().review_verified_review(request)
 
     def _ensure_product_exists(self, product_id: str) -> None:
         if self.product_repository.get_product(product_id) is None:

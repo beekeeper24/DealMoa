@@ -11,6 +11,7 @@ from app.core.exceptions import (
 )
 from app.core.pagination import CursorPage
 from app.modules.admin.models import AdminAuditLog
+from app.modules.ai_review.provider import AiReviewProvider, AIReviewResult, MockAiReviewProvider
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.products.models import Auction, Deal, Product
@@ -31,12 +32,6 @@ class SubmissionCreateResult:
 
 
 @dataclass(frozen=True)
-class MockAiReviewResult:
-    decision: str
-    reason: str
-
-
-@dataclass(frozen=True)
 class ProductMatch:
     product: Product
     score: int
@@ -50,11 +45,13 @@ class SubmissionsUseCases:
         submissions_repository: SubmissionsRepository,
         product_repository: ProductRepository,
         domain_events: DomainEventsUseCases,
+        ai_review_provider: AiReviewProvider | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.submissions_repository = submissions_repository
         self.product_repository = product_repository
         self.domain_events = domain_events
+        self.ai_review_provider = ai_review_provider or MockAiReviewProvider()
         self.now = now or utc_now
 
     def create_submission(
@@ -68,7 +65,7 @@ class SubmissionsUseCases:
             return SubmissionCreateResult(submission=existing, created=False)
 
         now = self.now()
-        ai_review = self.run_mock_ai_review(request)
+        ai_review = self.ai_review_provider.review_submission(request)
         submission = self.submissions_repository.create_submission(
             Submission(
                 user_id=actor.id,
@@ -185,11 +182,8 @@ class SubmissionsUseCases:
         )
         return submission
 
-    def run_mock_ai_review(self, request: SubmissionCreateRequest) -> MockAiReviewResult:
-        return MockAiReviewResult(
-            decision="needs_admin_review",
-            reason="mock review passed: admin approval required",
-        )
+    def run_mock_ai_review(self, request: SubmissionCreateRequest) -> AIReviewResult:
+        return MockAiReviewProvider().review_submission(request)
 
     def _approve_submission(
         self,
