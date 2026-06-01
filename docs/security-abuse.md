@@ -70,6 +70,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - The web app keeps access tokens in React memory only and restores sessions through `POST /auth/token/refresh` with the HttpOnly refresh cookie.
 - The web app root owns auth state through `AuthSessionProvider`; child components must consume that shared context instead of independently refreshing sessions.
 - Browser-readable storage may hold OAuth `state` only; refresh tokens and bearer access tokens must not be exposed there.
+- My Page contribution history uses only `/me/submissions`; it must not call admin
+  submission APIs or expose another user's submissions.
 
 ## External URLs
 

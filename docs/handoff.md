@@ -72,8 +72,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after crawler ingestion foundation: real AI provider/OCR hardening,
-   My Page contribution history, or real crawler source parsing.
+2. Next PR sequence after My Page contribution history: real AI provider/OCR hardening
+   or real crawler source parsing.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -386,6 +386,21 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   only Product/Deal/Auction publishing path.
 - Live HTTP crawling, source allowlists, parser plugins, crawl scheduling changes, and
   real source reputation checks remain deferred.
+
+## Completed My Page Contribution History Scope
+
+- Added `/me` as an authenticated My Page contribution history.
+- The page reads only `GET /api/v1/me/submissions`; it does not call admin submission
+  APIs.
+- Users can see their own submission status, source link, AI first-pass reason,
+  resolution note, and published Product/Deal/Auction links when available.
+- The page supports cursor pagination through the existing `nextCursor` contract.
+- Search header links authenticated sessions to `/me`, and successful submission flow
+  links to the new history page.
+- Backend API tests now assert that `/me/submissions` does not expose another user's
+  submissions.
+- Favorites, notifications history, verified review history, connected accounts,
+  edit/resubmit, and richer account settings remain deferred.
 
 ## Cautions
 

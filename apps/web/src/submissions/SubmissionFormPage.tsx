@@ -131,7 +131,14 @@ export function SubmissionFormPage() {
               value={input.description}
             />
           </label>
-          {message ? <p className="text-sm font-semibold text-signal">{message}</p> : null}
+          {message ? (
+            <p className="text-sm font-semibold text-signal">
+              {message}{" "}
+              <Link className="underline-offset-4 hover:underline" href="/me">
+                내 활동에서 보기
+              </Link>
+            </p>
+          ) : null}
           {errorMessage ? <p className="text-sm font-semibold text-deal">{errorMessage}</p> : null}
           <button
             className="w-fit rounded bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-black/40"
