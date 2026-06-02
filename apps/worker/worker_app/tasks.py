@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 from app.db.session import create_session_factory
@@ -19,6 +20,8 @@ from sqlalchemy.orm import Session
 
 from worker_app.celery_app import celery_app
 from worker_app.config import WorkerSettings
+from worker_app.crawler_http import CrawlFetchResult, SafeCrawlerHttpClient
+from worker_app.crawler_parsers import parse_live_deal_html
 from worker_app.crawler_sources import CrawlerRawItem, CrawlerSourceRegistry, parse_source_profiles
 
 CRAWLER_RAW_ITEMS: list[CrawlerRawItem] = [
@@ -55,6 +58,10 @@ CRAWLER_RAW_ITEMS: list[CrawlerRawItem] = [
         }
     ),
 ]
+
+
+FetchText = Callable[[str], CrawlFetchResult]
+
 
 @celery_app.task(name="dealmoa.crawl_hot_deals_mock")  # type: ignore[untyped-decorator]
 def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
@@ -108,6 +115,95 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
         session.close()
 
 
+@celery_app.task(name="dealmoa.crawl_live_urls")  # type: ignore[untyped-decorator]
+def crawl_live_urls(now_iso: str | None = None) -> dict[str, object]:
+    settings = WorkerSettings()
+    urls = parse_csv(settings.crawler_live_urls)
+    if not urls:
+        return live_crawler_summary(scanned=0)
+    client = SafeCrawlerHttpClient(
+        timeout_seconds=settings.crawler_http_timeout_seconds,
+        max_bytes=settings.crawler_http_max_bytes,
+        user_agent=settings.crawler_user_agent,
+    )
+    return execute_live_crawler(now_iso=now_iso, urls=urls, fetcher=client.fetch_text)
+
+
+def execute_live_crawler(
+    *,
+    now_iso: str | None,
+    urls: list[str],
+    fetcher: FetchText,
+) -> dict[str, object]:
+    settings = WorkerSettings()
+    now = parse_task_datetime(now_iso)
+    source_registry = CrawlerSourceRegistry(parse_source_profiles(settings.crawler_source_profiles))
+    session_factory = create_session_factory(settings.database_url)
+    session: Session = session_factory()
+    fetched_count = 0
+    accepted_count = 0
+    created_count = 0
+    duplicate_count = 0
+    skipped_count = 0
+    skip_reasons: dict[str, int] = {}
+    try:
+        actor = ensure_crawler_user(session=session, settings=settings, now=now)
+        use_cases = SubmissionsUseCases(
+            submissions_repository=SubmissionsRepository(session),
+            product_repository=ProductRepository(session),
+            domain_events=DomainEventsUseCases(
+                repository=DomainEventsRepository(session),
+                now=lambda: now,
+            ),
+            now=lambda: now,
+        )
+        for url in urls:
+            if not source_registry.allows_url(url):
+                skipped_count += 1
+                increment_skip_reason(skip_reasons, "source_not_allowed")
+                continue
+            fetched = fetcher(url)
+            if fetched.status != "fetched" or fetched.text is None:
+                skipped_count += 1
+                increment_skip_reason(skip_reasons, fetched.reason or "fetch_failed")
+                continue
+            fetched_count += 1
+            raw_item = parse_live_deal_html(source_url=url, html=fetched.text)
+            if raw_item is None:
+                skipped_count += 1
+                increment_skip_reason(skip_reasons, "parse_failed")
+                continue
+            item = source_registry.parse(raw_item)
+            if item is None:
+                skipped_count += 1
+                increment_skip_reason(skip_reasons, "source_not_allowed")
+                continue
+            accepted_count += 1
+            result = use_cases.create_submission(
+                actor=actor,
+                request=SubmissionCreateRequest.model_validate(item),
+            )
+            if result.created:
+                created_count += 1
+            else:
+                duplicate_count += 1
+        session.commit()
+        return live_crawler_summary(
+            scanned=len(urls),
+            fetched=fetched_count,
+            accepted=accepted_count,
+            created=created_count,
+            duplicates=duplicate_count,
+            skipped=skipped_count,
+            skip_reasons=skip_reasons,
+        )
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @celery_app.task(name="dealmoa.ai_review_submission_mock")  # type: ignore[untyped-decorator]
 def ai_review_submission_mock(submission_id: str) -> dict[str, object]:
     return {
@@ -135,6 +231,36 @@ def parse_task_datetime(value: str | None) -> datetime:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC)
+
+
+def parse_csv(value: str) -> list[str]:
+    return [entry.strip() for entry in value.split(",") if entry.strip()]
+
+
+def increment_skip_reason(skip_reasons: dict[str, int], reason: str) -> None:
+    skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
+
+
+def live_crawler_summary(
+    *,
+    scanned: int,
+    fetched: int = 0,
+    accepted: int = 0,
+    created: int = 0,
+    duplicates: int = 0,
+    skipped: int = 0,
+    skip_reasons: dict[str, int] | None = None,
+) -> dict[str, object]:
+    return {
+        "task": "crawl_live_urls",
+        "scanned": scanned,
+        "fetched": fetched,
+        "accepted": accepted,
+        "created": created,
+        "duplicates": duplicates,
+        "skipped": skipped,
+        "skipReasons": skip_reasons or {},
+    }
 
 
 def ensure_crawler_user(

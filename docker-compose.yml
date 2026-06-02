@@ -173,6 +173,10 @@ services:
       CRAWLER_SYSTEM_USER_EMAIL: ${CRAWLER_SYSTEM_USER_EMAIL:-crawler@dealmoa.local}
       CRAWLER_SYSTEM_USER_NICKNAME: ${CRAWLER_SYSTEM_USER_NICKNAME:-DealMoa Crawler}
       CRAWLER_SOURCE_PROFILES: ${CRAWLER_SOURCE_PROFILES:-mock.example.com:trusted:allow}
+      CRAWLER_LIVE_URLS: ${CRAWLER_LIVE_URLS:-}
+      CRAWLER_HTTP_TIMEOUT_SECONDS: ${CRAWLER_HTTP_TIMEOUT_SECONDS:-5}
+      CRAWLER_HTTP_MAX_BYTES: ${CRAWLER_HTTP_MAX_BYTES:-1048576}
+      CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-DealMoaBot/0.1 (+https://dealmoa.local/crawler)}
     depends_on:
       postgres:
         condition: service_healthy
@@ -195,6 +199,10 @@ services:
       CRAWLER_SYSTEM_USER_EMAIL: ${CRAWLER_SYSTEM_USER_EMAIL:-crawler@dealmoa.local}
       CRAWLER_SYSTEM_USER_NICKNAME: ${CRAWLER_SYSTEM_USER_NICKNAME:-DealMoa Crawler}
       CRAWLER_SOURCE_PROFILES: ${CRAWLER_SOURCE_PROFILES:-mock.example.com:trusted:allow}
+      CRAWLER_LIVE_URLS: ${CRAWLER_LIVE_URLS:-}
+      CRAWLER_HTTP_TIMEOUT_SECONDS: ${CRAWLER_HTTP_TIMEOUT_SECONDS:-5}
+      CRAWLER_HTTP_MAX_BYTES: ${CRAWLER_HTTP_MAX_BYTES:-1048576}
+      CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-DealMoaBot/0.1 (+https://dealmoa.local/crawler)}
     command:
       ["uv", "run", "celery", "-A", "worker_app.celery_app:celery_app", "beat", "--loglevel=INFO"]
     depends_on:

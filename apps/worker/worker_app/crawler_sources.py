@@ -34,6 +34,11 @@ class CrawlerSourceRegistry:
     def __init__(self, profiles: list[CrawlerSourceProfile]) -> None:
         self.profiles_by_host = {profile.host.casefold(): profile for profile in profiles}
 
+    def allows_url(self, source_url: str) -> bool:
+        host = urlparse(source_url).netloc.casefold()
+        profile = self.profiles_by_host.get(host)
+        return profile is not None and profile.action == "allow"
+
     def parse(self, item: CrawlerRawItem) -> dict[str, object] | None:
         host = urlparse(item.source_url).netloc.casefold()
         profile = self.profiles_by_host.get(host)

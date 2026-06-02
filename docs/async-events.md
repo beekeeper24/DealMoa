@@ -116,6 +116,7 @@ Duplicate delivery is deduplicated by the notification unique target index:
 `apps/worker` currently registers these tasks:
 
 - `dealmoa.crawl_hot_deals_mock`
+- `dealmoa.crawl_live_urls`
 - `dealmoa.ai_review_submission_mock`
 - `dealmoa.rebuild_search_index`
 - `dealmoa.generate_auction_ending_soon_notifications`
@@ -133,6 +134,10 @@ CRAWLER_SYSTEM_USER_ID=system-crawler
 CRAWLER_SYSTEM_USER_EMAIL=crawler@dealmoa.local
 CRAWLER_SYSTEM_USER_NICKNAME=DealMoa Crawler
 CRAWLER_SOURCE_PROFILES=mock.example.com:trusted:allow
+CRAWLER_LIVE_URLS=
+CRAWLER_HTTP_TIMEOUT_SECONDS=5
+CRAWLER_HTTP_MAX_BYTES=1048576
+CRAWLER_USER_AGENT=DealMoaBot/0.1 (+https://dealmoa.local/crawler)
 ```
 
 Local runtime:
@@ -154,6 +159,17 @@ notifications. Unknown or blocked source hosts are skipped before DB writes. Dup
 `CRAWLER_SOURCE_PROFILES` is a comma-separated list of `host:reputation:action` entries.
 Supported reputation labels are `trusted`, `standard`, and `low`; supported actions are
 `allow` and `block`.
+
+`dealmoa.crawl_live_urls` is the first live HTTP crawler boundary. It is disabled by
+default because `CRAWLER_LIVE_URLS` defaults to an empty string. When URLs are configured,
+each URL must pass `CRAWLER_SOURCE_PROFILES` before network access. The worker then uses a
+bounded HTTP client that rejects non-HTTP schemes, userinfo URLs, private/reserved DNS
+results, robots.txt disallowed paths, non-HTML responses, and responses larger than
+`CRAWLER_HTTP_MAX_BYTES`. The runtime connection uses the already validated resolved IP
+with the original host retained for Host/SNI, reducing DNS-rebinding exposure. Redirects
+are not followed in this first live crawler pass. Fetched HTML is parsed through the
+minimal crawler parser boundary and accepted items are still written only as
+`pending_review` submissions.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API
