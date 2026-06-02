@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AdminReportApiError, listAdminReports, reviewAdminReport } from "../api";
+import {
+  AdminReportApiError,
+  listAdminCrawlerRunLogs,
+  listAdminReports,
+  reviewAdminReport
+} from "../api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -37,6 +42,47 @@ const reportFixture = {
 };
 
 describe("admin reports api", () => {
+  it("lists admin crawler run logs with limit, cursor, and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        items: [
+          {
+            id: "run-1",
+            taskName: "crawl_live_urls",
+            status: "succeeded",
+            scanned: 2,
+            fetched: 1,
+            accepted: 1,
+            created: 1,
+            duplicates: 0,
+            skipped: 1,
+            skipReasons: { host_rate_limited: 1 },
+            startedAt: "2026-06-03T01:00:00Z",
+            finishedAt: "2026-06-03T01:00:01Z",
+            createdAt: "2026-06-03T01:00:01Z"
+          }
+        ],
+        nextCursor: "run-2"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const page = await listAdminCrawlerRunLogs({
+      accessToken: "access-1",
+      cursor: "cursor-1"
+    });
+
+    expect(page.items[0].taskName).toBe("crawl_live_urls");
+    expect(page.items[0].skipReasons.host_rate_limited).toBe(1);
+    expect(page.nextCursor).toBe("run-2");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/admin/crawler-runs?limit=20&cursor=cursor-1",
+      {
+        headers: { Accept: "application/json", Authorization: "Bearer access-1" }
+      }
+    );
+  });
+
   it("lists admin reports with status, limit, cursor, and bearer token", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({

@@ -30,14 +30,17 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   mappings are skipped before submission validation or database writes.
 - `CRAWLER_MAX_URLS_PER_HOST` limits same-host fetches within one live crawler task run;
   over-limit URLs are skipped before network fetch.
+- Completed crawler task summaries are visible only through the admin-only crawler run
+  log API and web page. These logs expose counts and skip reasons, not fetched HTML.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
 - Admin approval may attach an offer to an existing Product with `targetProductId`; missing
   product IDs fail with `PRODUCT_NOT_FOUND`.
 - Admin approval/rejection writes `admin_audit_logs`.
-- Distributed Redis-backed rate windows, production crawl scheduling, and automated
-  duplicate cleanup are deferred security hardening items.
+- Distributed Redis-backed rate windows, production crawl scheduling, failed-run logging,
+  manual crawler controls, and automated duplicate cleanup are deferred security
+  hardening items.
 
 ## Verified Reviews
 

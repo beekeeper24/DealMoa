@@ -49,3 +49,24 @@ export type AdminReportErrorResponse = {
     traceId: string;
   };
 };
+
+export type AdminCrawlerRunLog = {
+  id: string;
+  taskName: string;
+  status: string;
+  scanned: number;
+  fetched: number;
+  accepted: number;
+  created: number;
+  duplicates: number;
+  skipped: number;
+  skipReasons: Record<string, number>;
+  startedAt: string;
+  finishedAt: string;
+  createdAt: string;
+};
+
+export type AdminCrawlerRunLogListResponse = {
+  items: AdminCrawlerRunLog[];
+  nextCursor: string | null;
+};

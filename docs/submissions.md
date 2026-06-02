@@ -70,10 +70,12 @@ Crawler tasks:
 - stores deal/auction candidates as `pending_review`;
 - records the same mock AI first-pass result used by user submissions;
 - relies on `sourceUrl` idempotency so repeated runs do not create duplicates;
+- records completed task summaries in `crawler_run_logs` for admin-only review;
 - returns scanned, fetched, accepted, created, duplicate, skipped, and skip-reason counts
   where applicable.
 
 Crawler ingestion does not publish Product/Deal/Auction rows or bypass admin approval.
+Crawler run logs are operational summaries only; they do not store fetched HTML.
 
 ## AI First Pass
 
@@ -174,5 +176,6 @@ ranking signals.
 - URL allowlist/blocklist and suspicious-link scoring beyond the current `http/https`
   scheme check.
 - Product merge UI and background duplicate cleanup.
-- Real crawler integration and source-specific parsing.
+- Real source-specific parser implementations beyond the current bounded test parser.
+- Failed crawler run logging, retry metadata, production scheduling, and manual crawler controls.
 - Edit/resubmit flow for rejected submissions.

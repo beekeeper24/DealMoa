@@ -41,6 +41,7 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "price_history_snapshots",
         "verified_reviews",
         "product_discussion_comments",
+        "crawler_run_logs",
     }
 
     deal_foreign_keys = inspector.get_foreign_keys("deals")
@@ -67,6 +68,9 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     }
     discussion_indexes = {
         index["name"] for index in inspector.get_indexes("product_discussion_comments")
+    }
+    crawler_run_log_indexes = {
+        index["name"] for index in inspector.get_indexes("crawler_run_logs")
     }
 
     assert deal_foreign_keys[0]["referred_table"] == "products"
@@ -134,6 +138,11 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "ix_product_discussion_comments_status_created_at",
         "ix_product_discussion_comments_user_id_created_at",
     } <= discussion_indexes
+    assert {
+        "ix_crawler_run_logs_created_at",
+        "ix_crawler_run_logs_task_name_created_at",
+        "ix_crawler_run_logs_status_created_at",
+    } <= crawler_run_log_indexes
     assert {"ix_products_name", "ix_deals_product_id", "ix_auctions_product_id"} <= {
         index["name"]
         for table_name in ("products", "deals", "auctions")

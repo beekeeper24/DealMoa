@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from app.db.session import create_session_factory
 from app.modules.auth.models import User
 from app.modules.auth.use_cases import AuthenticatedUser
+from app.modules.crawlers.models import CrawlerRunLog
+from app.modules.crawlers.repository import CrawlerRunLogsRepository
 from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.favorites.repository import FavoritesRepository
@@ -100,8 +102,7 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
                 created_count += 1
             else:
                 duplicate_count += 1
-        session.commit()
-        return {
+        summary = {
             "task": "crawl_hot_deals_mock",
             "scanned": len(CRAWLER_RAW_ITEMS),
             "accepted": accepted_count,
@@ -109,6 +110,9 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
             "duplicates": duplicate_count,
             "skipped": skipped_count,
         }
+        record_crawler_run_log(session=session, summary=summary, started_at=now, finished_at=now)
+        session.commit()
+        return summary
     except Exception:
         session.rollback()
         raise
@@ -119,9 +123,26 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
 @celery_app.task(name="dealmoa.crawl_live_urls")  # type: ignore[untyped-decorator]
 def crawl_live_urls(now_iso: str | None = None) -> dict[str, object]:
     settings = WorkerSettings()
+    now = parse_task_datetime(now_iso)
     urls = parse_csv(settings.crawler_live_urls)
     if not urls:
-        return live_crawler_summary(scanned=0)
+        summary = live_crawler_summary(scanned=0)
+        session_factory = create_session_factory(settings.database_url)
+        session: Session = session_factory()
+        try:
+            record_crawler_run_log(
+                session=session,
+                summary=summary,
+                started_at=now,
+                finished_at=now,
+            )
+            session.commit()
+            return summary
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
     client = SafeCrawlerHttpClient(
         timeout_seconds=settings.crawler_http_timeout_seconds,
         max_bytes=settings.crawler_http_max_bytes,
@@ -194,8 +215,7 @@ def execute_live_crawler(
                 created_count += 1
             else:
                 duplicate_count += 1
-        session.commit()
-        return live_crawler_summary(
+        summary = live_crawler_summary(
             scanned=len(urls),
             fetched=fetched_count,
             accepted=accepted_count,
@@ -204,6 +224,9 @@ def execute_live_crawler(
             skipped=skipped_count,
             skip_reasons=skip_reasons,
         )
+        record_crawler_run_log(session=session, summary=summary, started_at=now, finished_at=now)
+        session.commit()
+        return summary
     except Exception:
         session.rollback()
         raise
@@ -246,6 +269,45 @@ def parse_csv(value: str) -> list[str]:
 
 def increment_skip_reason(skip_reasons: dict[str, int], reason: str) -> None:
     skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
+
+
+def record_crawler_run_log(
+    *,
+    session: Session,
+    summary: dict[str, object],
+    started_at: datetime,
+    finished_at: datetime,
+) -> CrawlerRunLog:
+    task_name = summary.get("task")
+    skip_reasons = summary.get("skipReasons", {})
+    return CrawlerRunLogsRepository(session).create(
+        CrawlerRunLog(
+            task_name=task_name if isinstance(task_name, str) else "unknown",
+            status="succeeded",
+            scanned_count=summary_count(summary, "scanned"),
+            fetched_count=summary_count(summary, "fetched"),
+            accepted_count=summary_count(summary, "accepted"),
+            created_count=summary_count(summary, "created"),
+            duplicate_count=summary_count(summary, "duplicates"),
+            skipped_count=summary_count(summary, "skipped"),
+            skip_reasons_json=skip_reasons if is_skip_reasons(skip_reasons) else {},
+            started_at=started_at,
+            finished_at=finished_at,
+            created_at=finished_at,
+            updated_at=finished_at,
+        )
+    )
+
+
+def summary_count(summary: dict[str, object], key: str) -> int:
+    value = summary.get(key, 0)
+    return value if isinstance(value, int) else 0
+
+
+def is_skip_reasons(value: object) -> bool:
+    if not isinstance(value, dict):
+        return False
+    return all(isinstance(key, str) and isinstance(count, int) for key, count in value.items())
 
 
 def live_crawler_summary(
