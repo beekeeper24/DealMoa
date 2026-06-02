@@ -432,7 +432,19 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Unsupported parser IDs are skipped with `unsupported_source_parser`.
 - Parser skips happen before `SubmissionCreateRequest` validation or database writes.
 - Real source-specific parser implementations, persistent parser/source metadata, crawler
-  logs/admin UI, and per-host crawl rate limiting remain deferred.
+  logs/admin UI, and distributed rate windows remain deferred.
+
+## Completed Crawler Host Rate Limit Scope
+
+- Added `CRAWLER_MAX_URLS_PER_HOST` as a per-task-run cap for live crawler URLs.
+- Default cap is `20` URLs per host per `crawl_live_urls` run.
+- Source-denied URLs are still skipped by source policy before the host cap is checked.
+- Same-host URLs over the cap are skipped with `host_rate_limited`.
+- Over-limit URLs are skipped before HTTP fetch, parser selection, submission validation,
+  or database writes.
+- Different hosts have independent counters inside the task run.
+- Redis-backed distributed rate windows, crawl delay policies, production scheduling, and
+  crawler logs/admin UI remain deferred.
 
 ## Completed My Page Contribution History Scope
 

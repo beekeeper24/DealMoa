@@ -22,6 +22,7 @@ from worker_app.celery_app import celery_app
 from worker_app.config import WorkerSettings
 from worker_app.crawler_http import CrawlFetchResult, SafeCrawlerHttpClient
 from worker_app.crawler_parsers import CrawlerParserRegistry, parse_source_parsers
+from worker_app.crawler_rate_limits import CrawlerHostRunLimiter
 from worker_app.crawler_sources import CrawlerRawItem, CrawlerSourceRegistry, parse_source_profiles
 
 CRAWLER_RAW_ITEMS: list[CrawlerRawItem] = [
@@ -139,6 +140,7 @@ def execute_live_crawler(
     now = parse_task_datetime(now_iso)
     source_registry = CrawlerSourceRegistry(parse_source_profiles(settings.crawler_source_profiles))
     parser_registry = CrawlerParserRegistry(parse_source_parsers(settings.crawler_source_parsers))
+    host_limiter = CrawlerHostRunLimiter(max_urls_per_host=settings.crawler_max_urls_per_host)
     session_factory = create_session_factory(settings.database_url)
     session: Session = session_factory()
     fetched_count = 0
@@ -162,6 +164,10 @@ def execute_live_crawler(
             if not source_registry.allows_url(url):
                 skipped_count += 1
                 increment_skip_reason(skip_reasons, "source_not_allowed")
+                continue
+            if not host_limiter.allow(url):
+                skipped_count += 1
+                increment_skip_reason(skip_reasons, "host_rate_limited")
                 continue
             fetched = fetcher(url)
             if fetched.status != "fetched" or fetched.text is None:

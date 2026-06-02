@@ -28,14 +28,16 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   DNS/IP checks, robots.txt policy, content-type checks, and response-size limits.
 - Live fetched HTML must also pass `CRAWLER_SOURCE_PARSERS`; missing or unsupported parser
   mappings are skipped before submission validation or database writes.
+- `CRAWLER_MAX_URLS_PER_HOST` limits same-host fetches within one live crawler task run;
+  over-limit URLs are skipped before network fetch.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
 - Admin approval may attach an offer to an existing Product with `targetProductId`; missing
   product IDs fail with `PRODUCT_NOT_FOUND`.
 - Admin approval/rejection writes `admin_audit_logs`.
-- Real rate limits, URL allowlist/blocklist, and automated duplicate cleanup are deferred
-  security hardening items.
+- Distributed Redis-backed rate windows, production crawl scheduling, and automated
+  duplicate cleanup are deferred security hardening items.
 
 ## Verified Reviews
 

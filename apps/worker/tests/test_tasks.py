@@ -154,6 +154,71 @@ def test_execute_live_crawler_skips_when_source_parser_is_not_configured(  # typ
     assert submission_count == 0
 
 
+def test_execute_live_crawler_skips_over_host_run_limit_before_fetch(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-live-crawler-rate-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv("CRAWLER_SOURCE_PROFILES", "mock.example.com:trusted:allow")
+    monkeypatch.setenv("CRAWLER_SOURCE_PARSERS", "mock.example.com:dealmoa_article")
+    monkeypatch.setenv("CRAWLER_MAX_URLS_PER_HOST", "1")
+
+    from app.db.base import Base
+    from app.modules.submissions.models import Submission
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import sessionmaker
+    from worker_app.crawler_http import CrawlFetchResult
+
+    fetched_urls: list[str] = []
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    def fetcher(url: str) -> CrawlFetchResult:
+        fetched_urls.append(url)
+        return CrawlFetchResult(
+            status="fetched",
+            text="""
+            <article
+              data-dealmoa-offer-type="deal"
+              data-dealmoa-product-name="Galaxy S26"
+              data-dealmoa-title="Galaxy S26 launch deal"
+              data-dealmoa-sale-price="1090000"
+              data-dealmoa-currency="KRW"
+            ></article>
+            """,
+        )
+
+    summary = execute_live_crawler(
+        now_iso="2026-06-02T00:00:00+00:00",
+        urls=[
+            "https://mock.example.com/deals/1",
+            "https://mock.example.com/deals/2",
+        ],
+        fetcher=fetcher,
+    )
+
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        submission_count = len(list(session.scalars(select(Submission))))
+    finally:
+        session.close()
+
+    assert fetched_urls == ["https://mock.example.com/deals/1"]
+    assert summary == {
+        "task": "crawl_live_urls",
+        "scanned": 2,
+        "fetched": 1,
+        "accepted": 1,
+        "created": 1,
+        "duplicates": 0,
+        "skipped": 1,
+        "skipReasons": {"host_rate_limited": 1},
+    }
+    assert submission_count == 1
+
+
 def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ignore[no-untyped-def]
     tmp_path,
     monkeypatch,
