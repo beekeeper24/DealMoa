@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from worker_app.celery_app import celery_app
 from worker_app.config import WorkerSettings
 from worker_app.crawler_http import CrawlFetchResult, SafeCrawlerHttpClient
-from worker_app.crawler_parsers import parse_live_deal_html
+from worker_app.crawler_parsers import CrawlerParserRegistry, parse_source_parsers
 from worker_app.crawler_sources import CrawlerRawItem, CrawlerSourceRegistry, parse_source_profiles
 
 CRAWLER_RAW_ITEMS: list[CrawlerRawItem] = [
@@ -138,6 +138,7 @@ def execute_live_crawler(
     settings = WorkerSettings()
     now = parse_task_datetime(now_iso)
     source_registry = CrawlerSourceRegistry(parse_source_profiles(settings.crawler_source_profiles))
+    parser_registry = CrawlerParserRegistry(parse_source_parsers(settings.crawler_source_parsers))
     session_factory = create_session_factory(settings.database_url)
     session: Session = session_factory()
     fetched_count = 0
@@ -168,10 +169,10 @@ def execute_live_crawler(
                 increment_skip_reason(skip_reasons, fetched.reason or "fetch_failed")
                 continue
             fetched_count += 1
-            raw_item = parse_live_deal_html(source_url=url, html=fetched.text)
+            raw_item, parser_skip_reason = parser_registry.parse(source_url=url, html=fetched.text)
             if raw_item is None:
                 skipped_count += 1
-                increment_skip_reason(skip_reasons, "parse_failed")
+                increment_skip_reason(skip_reasons, parser_skip_reason or "parse_failed")
                 continue
             item = source_registry.parse(raw_item)
             if item is None:

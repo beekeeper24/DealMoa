@@ -45,6 +45,10 @@ class WorkerSettings(BaseSettings):
         default="mock.example.com:trusted:allow",
         validation_alias="CRAWLER_SOURCE_PROFILES",
     )
+    crawler_source_parsers: str = Field(
+        default="mock.example.com:dealmoa_article",
+        validation_alias="CRAWLER_SOURCE_PARSERS",
+    )
     crawler_live_urls: str = Field(
         default="",
         validation_alias="CRAWLER_LIVE_URLS",

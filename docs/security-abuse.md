@@ -26,6 +26,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Live crawler URL fetching is disabled by default with an empty `CRAWLER_LIVE_URLS`.
 - Live crawler URLs must pass source profiles before network access, then pass SSRF-safe
   DNS/IP checks, robots.txt policy, content-type checks, and response-size limits.
+- Live fetched HTML must also pass `CRAWLER_SOURCE_PARSERS`; missing or unsupported parser
+  mappings are skipped before submission validation or database writes.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
@@ -95,6 +97,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   followed in the first live crawler pass.
 - Parsed crawler content is still untrusted candidate data and remains subject to AI
   first-pass review plus admin approval.
+- Source parser mappings do not make a source trusted; they only select which bounded
+  parser may interpret a host's fetched HTML.
 
 ## AI
 

@@ -54,13 +54,17 @@ the existing submission intake use case.
 default because `CRAWLER_LIVE_URLS` is empty. When URLs are configured, the worker checks
 the URL host against `CRAWLER_SOURCE_PROFILES` before HTTP access, applies SSRF-safe
 DNS/IP checks, respects robots.txt, rejects non-HTML or over-limit responses, and parses
-only bounded HTML into candidate submissions.
+only bounded HTML through the source parser configured by `CRAWLER_SOURCE_PARSERS`.
+The current supported parser ID is `dealmoa_article`.
 
 Crawler tasks:
 
 - creates or reuses a non-admin crawler system user;
 - accepts only source hosts allowed by `CRAWLER_SOURCE_PROFILES`;
+- parses live HTML only with a parser configured for the source host;
 - skips unknown or blocked source hosts before network fetch or database writes;
+- skips live fetched pages with missing or unsupported source parser configuration before
+  submission validation or database writes;
 - stores deal/auction candidates as `pending_review`;
 - records the same mock AI first-pass result used by user submissions;
 - relies on `sourceUrl` idempotency so repeated runs do not create duplicates;
