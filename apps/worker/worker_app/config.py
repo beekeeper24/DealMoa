@@ -61,6 +61,10 @@ class WorkerSettings(BaseSettings):
         default=1_048_576,
         validation_alias="CRAWLER_HTTP_MAX_BYTES",
     )
+    crawler_max_urls_per_host: int = Field(
+        default=20,
+        validation_alias="CRAWLER_MAX_URLS_PER_HOST",
+    )
     crawler_user_agent: str = Field(
         default="DealMoaBot/0.1 (+https://dealmoa.local/crawler)",
         validation_alias="CRAWLER_USER_AGENT",

@@ -138,6 +138,7 @@ CRAWLER_SOURCE_PARSERS=mock.example.com:dealmoa_article
 CRAWLER_LIVE_URLS=
 CRAWLER_HTTP_TIMEOUT_SECONDS=5
 CRAWLER_HTTP_MAX_BYTES=1048576
+CRAWLER_MAX_URLS_PER_HOST=20
 CRAWLER_USER_AGENT=DealMoaBot/0.1 (+https://dealmoa.local/crawler)
 ```
 
@@ -177,6 +178,11 @@ with the original host retained for Host/SNI, reducing DNS-rebinding exposure. R
 are not followed in this first live crawler pass. Fetched HTML is parsed through the
 configured `CRAWLER_SOURCE_PARSERS` boundary and accepted items are still written only as
 `pending_review` submissions.
+
+`CRAWLER_MAX_URLS_PER_HOST` caps how many allowed URLs from the same host one
+`crawl_live_urls` task run may fetch. Over-limit URLs are skipped with
+`host_rate_limited` before HTTP fetch. This is a per-run safety cap, not a distributed
+Redis-backed rate window.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API
