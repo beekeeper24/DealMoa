@@ -184,6 +184,14 @@ configured `CRAWLER_SOURCE_PARSERS` boundary and accepted items are still writte
 `host_rate_limited` before HTTP fetch. This is a per-run safety cap, not a distributed
 Redis-backed rate window.
 
+Both `dealmoa.crawl_hot_deals_mock` and `dealmoa.crawl_live_urls` write completed run
+summaries to `crawler_run_logs`. The admin API exposes these logs through
+`GET /api/v1/admin/crawler-runs`, and the web admin console renders them at
+`/admin/crawler-runs`. The log currently records successful task summaries only:
+task name, status, scanned/fetched/accepted/created/duplicate/skipped counts, skip
+reasons, and run timestamps. Failed-run logging, retry metadata, scheduler controls, and
+manual crawler trigger buttons remain deferred.
+
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API
 currently records the same mock review synchronously during submission intake so the

@@ -431,8 +431,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Missing parser mappings are skipped with `parser_not_configured`.
 - Unsupported parser IDs are skipped with `unsupported_source_parser`.
 - Parser skips happen before `SubmissionCreateRequest` validation or database writes.
-- Real source-specific parser implementations, persistent parser/source metadata, crawler
-  logs/admin UI, and distributed rate windows remain deferred.
+- Real source-specific parser implementations, persistent parser/source metadata, and
+  distributed rate windows remain deferred.
 
 ## Completed Crawler Host Rate Limit Scope
 
@@ -443,8 +443,23 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Over-limit URLs are skipped before HTTP fetch, parser selection, submission validation,
   or database writes.
 - Different hosts have independent counters inside the task run.
-- Redis-backed distributed rate windows, crawl delay policies, production scheduling, and
-  crawler logs/admin UI remain deferred.
+- Redis-backed distributed rate windows, crawl delay policies, and production scheduling
+  remain deferred.
+
+## Completed Crawler Run Logs Scope
+
+- Added `crawler_run_logs` for completed crawler task summaries.
+- `crawl_hot_deals_mock` and `crawl_live_urls` write one successful run log per completed
+  run.
+- Empty `crawl_live_urls` runs are logged so admins can see that the task ran with no
+  configured URLs.
+- Run logs include task name, `succeeded` status, scanned/fetched/accepted/created,
+  duplicate/skipped counts, skip reasons, and timestamps.
+- Added admin-only `GET /api/v1/admin/crawler-runs` with cursor pagination.
+- Added `/admin/crawler-runs` web page and links from existing admin review pages.
+- Run logs do not store fetched HTML and do not expose crawler control buttons.
+- Failed-run logging, retry metadata, Redis-backed distributed rate windows, crawl delay
+  policies, production scheduling, and manual crawler controls remain deferred.
 
 ## Completed My Page Contribution History Scope
 

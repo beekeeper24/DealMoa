@@ -34,8 +34,19 @@ def test_mock_tasks_return_stable_summary_payloads() -> None:
     }
 
 
-def test_live_crawler_task_defaults_to_no_external_fetch(monkeypatch: MonkeyPatch) -> None:
+def test_live_crawler_task_defaults_to_no_external_fetch(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-live-crawler-default-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
     monkeypatch.setenv("CRAWLER_LIVE_URLS", "")
+
+    from app.db.base import Base
+    from sqlalchemy import create_engine
+
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
 
     assert crawl_live_urls(now_iso="2026-06-02T00:00:00+00:00") == {
         "task": "crawl_live_urls",
@@ -47,6 +58,38 @@ def test_live_crawler_task_defaults_to_no_external_fetch(monkeypatch: MonkeyPatc
         "skipped": 0,
         "skipReasons": {},
     }
+
+
+def test_live_crawler_task_logs_empty_runs(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-live-crawler-empty-log-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv("CRAWLER_LIVE_URLS", "")
+
+    from app.db.base import Base
+    from app.modules.crawlers.models import CrawlerRunLog
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    summary = crawl_live_urls(now_iso="2026-06-02T00:00:00+00:00")
+
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        run_logs = list(session.scalars(select(CrawlerRunLog)))
+    finally:
+        session.close()
+
+    assert summary["scanned"] == 0
+    assert len(run_logs) == 1
+    assert run_logs[0].task_name == "crawl_live_urls"
+    assert run_logs[0].status == "succeeded"
+    assert run_logs[0].scanned_count == 0
 
 
 def test_execute_live_crawler_ingests_allowed_fetched_html(  # type: ignore[no-untyped-def]
@@ -230,6 +273,7 @@ def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ig
 
     from app.db.base import Base
     from app.modules.auth.models import User
+    from app.modules.crawlers.models import CrawlerRunLog
     from app.modules.submissions.models import Submission
     from sqlalchemy import create_engine, select
     from sqlalchemy.orm import sessionmaker
@@ -245,6 +289,7 @@ def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ig
     try:
         submissions = list(session.scalars(select(Submission).order_by(Submission.source_url)))
         crawler_user = session.get(User, "crawler-user")
+        run_logs = list(session.scalars(select(CrawlerRunLog).order_by(CrawlerRunLog.created_at)))
     finally:
         session.close()
 
@@ -266,6 +311,12 @@ def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ig
     }
     assert crawler_user is not None
     assert crawler_user.role == "USER"
+    assert [run_log.task_name for run_log in run_logs] == [
+        "crawl_hot_deals_mock",
+        "crawl_hot_deals_mock",
+    ]
+    assert [run_log.created_count for run_log in run_logs] == [2, 0]
+    assert [run_log.duplicate_count for run_log in run_logs] == [0, 2]
     assert [submission.status for submission in submissions] == ["pending_review", "pending_review"]
     assert {submission.offer_type for submission in submissions} == {"auction", "deal"}
     assert {submission.user_id for submission in submissions} == {"crawler-user"}

@@ -1,4 +1,5 @@
 import type {
+  AdminCrawlerRunLogListResponse,
   AdminReport,
   AdminReportErrorResponse,
   AdminReportListResponse,
@@ -40,6 +41,24 @@ export async function listAdminReports(request: {
     throwAdminReportError(body);
   }
   return body as AdminReportListResponse;
+}
+
+export async function listAdminCrawlerRunLogs(request: {
+  accessToken: string;
+  cursor?: string | null;
+}): Promise<AdminCrawlerRunLogListResponse> {
+  const params = new URLSearchParams({ limit: "20" });
+  if (request.cursor) {
+    params.set("cursor", request.cursor);
+  }
+  const response = await fetch(`${getApiBaseUrl()}/admin/crawler-runs?${params.toString()}`, {
+    headers: authHeaders(request.accessToken)
+  });
+  const body = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(body);
+  }
+  return body as AdminCrawlerRunLogListResponse;
 }
 
 export async function reviewAdminReport(

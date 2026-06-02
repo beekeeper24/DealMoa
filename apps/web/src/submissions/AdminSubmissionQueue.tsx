@@ -104,12 +104,20 @@ export function AdminSubmissionQueue() {
               AI mock 검토 결과를 확인하고 승인할 때만 상품과 딜/경매로 발행합니다.
             </p>
           </div>
-          <Link
-            className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
-            href="/admin"
-          >
-            신고 검토
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
+              href="/admin"
+            >
+              신고 검토
+            </Link>
+            <Link
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
+              href="/admin/crawler-runs"
+            >
+              크롤러 로그
+            </Link>
+          </div>
         </div>
 
         <div aria-label="제보 상태" className="mt-6 flex gap-2" role="tablist">
