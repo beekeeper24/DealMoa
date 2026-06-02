@@ -5,6 +5,7 @@ description = "DealMoa Celery worker service"
 requires-python = ">=3.12"
 dependencies = [
     "celery[redis]>=5.5.3",
+    "httpx>=0.28.1",
     "pydantic-settings>=2.11.0",
     "psycopg[binary]>=3.2.10",
     "sqlalchemy>=2.0.44",

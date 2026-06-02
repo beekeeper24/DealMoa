@@ -23,6 +23,9 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   external pages or publish Product/Deal/Auction rows.
 - Crawler source profiles must explicitly allow source hosts; unknown and blocked hosts
   are skipped before database writes.
+- Live crawler URL fetching is disabled by default with an empty `CRAWLER_LIVE_URLS`.
+- Live crawler URLs must pass source profiles before network access, then pass SSRF-safe
+  DNS/IP checks, robots.txt policy, content-type checks, and response-size limits.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
@@ -83,8 +86,15 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - User-submitted source URLs remain review-queue data until admin approval. The first
   web admin queue opens source URLs in a new tab with `rel="noreferrer"`.
 - Crawler source allowlists are host based in the worker. They are not a substitute for
-  later live crawling controls such as robots.txt, SSRF-safe fetch clients, response size
-  limits, and parser sandboxing.
+  SSRF checks; both must pass before live crawler ingestion.
+- The live crawler blocks non-HTTP schemes, URL userinfo, private/reserved DNS results,
+  robots.txt disallowed paths, non-HTML responses, and over-limit response bodies.
+- The live crawler connects to the validated resolved IP while retaining the original
+  host for Host/SNI, instead of allowing the HTTP client to resolve the host again.
+- Robots.txt fetch failures are treated conservatively as skips. Redirects are not
+  followed in the first live crawler pass.
+- Parsed crawler content is still untrusted candidate data and remains subject to AI
+  first-pass review plus admin approval.
 
 ## AI
 

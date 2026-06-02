@@ -40,8 +40,9 @@ Duplicate `sourceUrl` submissions return the existing row instead of creating a 
 queue item. This keeps the first MVP idempotent by source URL. Later duplicate detection
 can add normalized URL and product-matching rules.
 
-`sourceUrl` must be an `http` or `https` URL. Allowlist/blocklist and source reputation
-checks are deferred, but non-web schemes are rejected at intake.
+`sourceUrl` must be an `http` or `https` URL. API intake rejects non-web schemes. Worker
+crawler ingestion also applies configured source profile checks before network fetches or
+database writes.
 
 ## Crawler Ingestion
 
@@ -49,18 +50,24 @@ checks are deferred, but non-web schemes are rejected at intake.
 deterministic mock crawled items and writes them into the same `submissions` table through
 the existing submission intake use case.
 
-The task:
+`dealmoa.crawl_live_urls` is the first live HTTP crawler boundary. It is disabled by
+default because `CRAWLER_LIVE_URLS` is empty. When URLs are configured, the worker checks
+the URL host against `CRAWLER_SOURCE_PROFILES` before HTTP access, applies SSRF-safe
+DNS/IP checks, respects robots.txt, rejects non-HTML or over-limit responses, and parses
+only bounded HTML into candidate submissions.
+
+Crawler tasks:
 
 - creates or reuses a non-admin crawler system user;
 - accepts only source hosts allowed by `CRAWLER_SOURCE_PROFILES`;
-- skips unknown or blocked source hosts before writing to the database;
+- skips unknown or blocked source hosts before network fetch or database writes;
 - stores deal/auction candidates as `pending_review`;
 - records the same mock AI first-pass result used by user submissions;
 - relies on `sourceUrl` idempotency so repeated runs do not create duplicates;
-- returns scanned, accepted, created, duplicate, and skipped counts.
+- returns scanned, fetched, accepted, created, duplicate, skipped, and skip-reason counts
+  where applicable.
 
-It does not fetch live external pages, publish Product/Deal/Auction rows, or bypass admin
-approval.
+Crawler ingestion does not publish Product/Deal/Auction rows or bypass admin approval.
 
 ## AI First Pass
 

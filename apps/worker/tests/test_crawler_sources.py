@@ -36,6 +36,19 @@ def test_registry_skips_unknown_and_blocked_source_hosts() -> None:
     assert registry.parse(raw_item(source_url="https://blocked.example.com/deals/1")) is None
 
 
+def test_registry_allows_url_before_fetch_only_for_allowed_profiles() -> None:
+    registry = CrawlerSourceRegistry(
+        [
+            CrawlerSourceProfile(host="mock.example.com", reputation="trusted", action="allow"),
+            CrawlerSourceProfile(host="blocked.example.com", reputation="low", action="block"),
+        ]
+    )
+
+    assert registry.allows_url("https://mock.example.com/deals/1") is True
+    assert registry.allows_url("https://blocked.example.com/deals/1") is False
+    assert registry.allows_url("https://unknown.example.com/deals/1") is False
+
+
 def test_registry_parses_allowed_item_into_submission_payload() -> None:
     registry = CrawlerSourceRegistry(
         [CrawlerSourceProfile(host="mock.example.com", reputation="trusted", action="allow")]

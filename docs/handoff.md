@@ -72,8 +72,9 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after crawler source reputation: live HTTP crawler fetch hardening,
-   source-specific parsing, provider cost/rate-limit hardening, or receipt upload/OCR.
+2. Next PR sequence after live crawler fetch hardening: source-specific parsing,
+   provider cost/rate-limit hardening, receipt upload/OCR, crawler logs/admin UI, or
+   per-host crawl rate limiting.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -400,9 +401,25 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   scanned, created, and duplicates.
 - Accepted crawler items still create only `pending_review` submissions through the
   existing intake use case.
-- This slice still does not perform live HTTP fetching. SSRF-safe HTTP client behavior,
-  robots.txt policy, response size limits, parser plugins, and persistent source
-  reputation storage remain deferred.
+- This slice still does not perform live HTTP fetching. Persistent source reputation
+  storage remains deferred.
+
+## Completed Live Crawler Fetch Hardening Scope
+
+- Added `dealmoa.crawl_live_urls` as the first live HTTP crawler task.
+- The task is disabled by default because `CRAWLER_LIVE_URLS` defaults to an empty value.
+- Live URLs must pass `CRAWLER_SOURCE_PROFILES` before network access.
+- The worker HTTP client rejects non-HTTP schemes, URL userinfo, private/reserved DNS
+  results, robots.txt disallowed paths, non-HTML responses, and responses larger than
+  `CRAWLER_HTTP_MAX_BYTES`.
+- Runtime HTTP connections use the validated resolved IP with the original host retained
+  for Host/SNI.
+- Robots.txt fetch failures are conservative skips, and redirects are not followed.
+- Fetched HTML is parsed through a minimal `data-dealmoa-*` article parser boundary.
+- Accepted live crawler items still create only `pending_review` submissions through the
+  existing intake use case.
+- Source-specific parser plugins, persistent source reputation storage, production crawl
+  scheduling, crawler logs/admin UI, and per-host crawl rate limiting remain deferred.
 
 ## Completed My Page Contribution History Scope
 
