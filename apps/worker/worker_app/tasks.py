@@ -19,45 +19,48 @@ from sqlalchemy.orm import Session
 
 from worker_app.celery_app import celery_app
 from worker_app.config import WorkerSettings
+from worker_app.crawler_sources import CrawlerRawItem, CrawlerSourceRegistry, parse_source_profiles
 
-MOCK_CRAWLED_OFFERS: list[dict[str, object]] = [
-    {
-        "offerType": "deal",
-        "sourceUrl": "https://mock.example.com/deals/galaxy-s26-launch",
-        "productName": "Galaxy S26",
-        "brand": "Samsung",
-        "modelName": "SM-S260",
-        "category": "smartphone",
-        "title": "Galaxy S26 launch deal",
-        "seller": "Mock Hotdeal",
-        "originalPrice": 1400000,
-        "salePrice": 1090000,
-        "currentPrice": None,
-        "currency": "KRW",
-        "description": "Mock crawler seed deal",
-    },
-    {
-        "offerType": "auction",
-        "sourceUrl": "https://mock.example.com/auctions/galaxy-s26-sealed",
-        "productName": "Galaxy S26",
-        "brand": "Samsung",
-        "modelName": "SM-S260",
-        "category": "smartphone",
-        "title": "Galaxy S26 sealed auction",
-        "seller": "Mock Auction",
-        "originalPrice": None,
-        "salePrice": None,
-        "currentPrice": 720000,
-        "currency": "KRW",
-        "description": "Mock crawler seed auction",
-    },
+CRAWLER_RAW_ITEMS: list[CrawlerRawItem] = [
+    CrawlerRawItem.model_validate(
+        {
+            "offerType": "deal",
+            "sourceUrl": "https://mock.example.com/deals/galaxy-s26-launch",
+            "productName": "Galaxy S26",
+            "brand": "Samsung",
+            "modelName": "SM-S260",
+            "category": "smartphone",
+            "title": "Galaxy S26 launch deal",
+            "seller": "Mock Hotdeal",
+            "originalPrice": 1400000,
+            "salePrice": 1090000,
+            "currentPrice": None,
+            "currency": "KRW",
+        }
+    ),
+    CrawlerRawItem.model_validate(
+        {
+            "offerType": "auction",
+            "sourceUrl": "https://mock.example.com/auctions/galaxy-s26-sealed",
+            "productName": "Galaxy S26",
+            "brand": "Samsung",
+            "modelName": "SM-S260",
+            "category": "smartphone",
+            "title": "Galaxy S26 sealed auction",
+            "seller": "Mock Auction",
+            "originalPrice": None,
+            "salePrice": None,
+            "currentPrice": 720000,
+            "currency": "KRW",
+        }
+    ),
 ]
-
 
 @celery_app.task(name="dealmoa.crawl_hot_deals_mock")  # type: ignore[untyped-decorator]
 def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
     settings = WorkerSettings()
     now = parse_task_datetime(now_iso)
+    source_registry = CrawlerSourceRegistry(parse_source_profiles(settings.crawler_source_profiles))
     session_factory = create_session_factory(settings.database_url)
     session: Session = session_factory()
     try:
@@ -71,9 +74,16 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
             ),
             now=lambda: now,
         )
+        accepted_count = 0
         created_count = 0
         duplicate_count = 0
-        for item in MOCK_CRAWLED_OFFERS:
+        skipped_count = 0
+        for raw_item in CRAWLER_RAW_ITEMS:
+            item = source_registry.parse(raw_item)
+            if item is None:
+                skipped_count += 1
+                continue
+            accepted_count += 1
             result = use_cases.create_submission(
                 actor=actor,
                 request=SubmissionCreateRequest.model_validate(item),
@@ -85,9 +95,11 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
         session.commit()
         return {
             "task": "crawl_hot_deals_mock",
-            "scanned": len(MOCK_CRAWLED_OFFERS),
+            "scanned": len(CRAWLER_RAW_ITEMS),
+            "accepted": accepted_count,
             "created": created_count,
             "duplicates": duplicate_count,
+            "skipped": skipped_count,
         }
     except Exception:
         session.rollback()

@@ -41,3 +41,7 @@ class WorkerSettings(BaseSettings):
         default="DealMoa Crawler",
         validation_alias="CRAWLER_SYSTEM_USER_NICKNAME",
     )
+    crawler_source_profiles: str = Field(
+        default="mock.example.com:trusted:allow",
+        validation_alias="CRAWLER_SOURCE_PROFILES",
+    )

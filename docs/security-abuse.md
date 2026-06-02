@@ -21,6 +21,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - AI first-pass review records reviewer-facing evidence only; it never publishes content.
 - Mock crawler ingestion writes `pending_review` submissions only; it does not fetch live
   external pages or publish Product/Deal/Auction rows.
+- Crawler source profiles must explicitly allow source hosts; unknown and blocked hosts
+  are skipped before database writes.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
@@ -80,6 +82,9 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Do not expose unapproved suspicious links.
 - User-submitted source URLs remain review-queue data until admin approval. The first
   web admin queue opens source URLs in a new tab with `rel="noreferrer"`.
+- Crawler source allowlists are host based in the worker. They are not a substitute for
+  later live crawling controls such as robots.txt, SSRF-safe fetch clients, response size
+  limits, and parser sandboxing.
 
 ## AI
 

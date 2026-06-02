@@ -1,5 +1,6 @@
 from worker_app.celery_app import celery_app
 from worker_app.tasks import (
+    CRAWLER_RAW_ITEMS,
     ai_review_submission_mock,
     crawl_hot_deals_mock,
     generate_auction_ending_soon_notifications,
@@ -61,20 +62,63 @@ def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ig
     assert first == {
         "task": "crawl_hot_deals_mock",
         "scanned": 2,
+        "accepted": 2,
         "created": 2,
         "duplicates": 0,
+        "skipped": 0,
     }
     assert second == {
         "task": "crawl_hot_deals_mock",
         "scanned": 2,
+        "accepted": 2,
         "created": 0,
         "duplicates": 2,
+        "skipped": 0,
     }
     assert crawler_user is not None
     assert crawler_user.role == "USER"
     assert [submission.status for submission in submissions] == ["pending_review", "pending_review"]
     assert {submission.offer_type for submission in submissions} == {"auction", "deal"}
     assert {submission.user_id for submission in submissions} == {"crawler-user"}
+
+
+def test_mock_crawler_task_skips_blocked_sources(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-crawler-skip-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv(
+        "CRAWLER_SOURCE_PROFILES",
+        "mock.example.com:trusted:block",
+    )
+
+    from app.db.base import Base
+    from app.modules.submissions.models import Submission
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    summary = crawl_hot_deals_mock(now_iso="2026-06-01T02:00:00+00:00")
+
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        submission_count = len(list(session.scalars(select(Submission))))
+    finally:
+        session.close()
+
+    assert summary == {
+        "task": "crawl_hot_deals_mock",
+        "scanned": len(CRAWLER_RAW_ITEMS),
+        "accepted": 0,
+        "created": 0,
+        "duplicates": 0,
+        "skipped": len(CRAWLER_RAW_ITEMS),
+    }
+    assert submission_count == 0
 
 
 def test_auction_ending_soon_task_returns_stable_summary_for_empty_database(  # type: ignore[no-untyped-def]

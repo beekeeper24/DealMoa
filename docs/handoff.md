@@ -72,8 +72,8 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 ## Next Activation Steps
 
 1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after AI review provider boundary: real crawler source parsing,
-   provider cost/rate-limit hardening, or receipt upload/OCR.
+2. Next PR sequence after crawler source reputation: live HTTP crawler fetch hardening,
+   source-specific parsing, provider cost/rate-limit hardening, or receipt upload/OCR.
 3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
 
 ## Completed Foundation Scope
@@ -387,6 +387,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   only Product/Deal/Auction publishing path.
 - Live HTTP crawling, source allowlists, parser plugins, crawl scheduling changes, and
   real source reputation checks remain deferred.
+
+## Completed Crawler Source Reputation Scope
+
+- Added worker-side crawler source profiles configured by `CRAWLER_SOURCE_PROFILES`.
+- Source profile format is `host:reputation:action`; supported reputations are
+  `trusted`, `standard`, and `low`, and supported actions are `allow` and `block`.
+- Added a crawler parser boundary that maps allowlisted raw items into
+  `SubmissionCreateRequest` payloads.
+- Unknown and blocked source hosts are skipped before database writes.
+- Crawler task summary now includes `accepted` and `skipped` counts in addition to
+  scanned, created, and duplicates.
+- Accepted crawler items still create only `pending_review` submissions through the
+  existing intake use case.
+- This slice still does not perform live HTTP fetching. SSRF-safe HTTP client behavior,
+  robots.txt policy, response size limits, parser plugins, and persistent source
+  reputation storage remain deferred.
 
 ## Completed My Page Contribution History Scope
 

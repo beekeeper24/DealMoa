@@ -132,6 +132,7 @@ AUCTION_ENDING_SOON_SCHEDULE_SECONDS=300
 CRAWLER_SYSTEM_USER_ID=system-crawler
 CRAWLER_SYSTEM_USER_EMAIL=crawler@dealmoa.local
 CRAWLER_SYSTEM_USER_NICKNAME=DealMoa Crawler
+CRAWLER_SOURCE_PROFILES=mock.example.com:trusted:allow
 ```
 
 Local runtime:
@@ -143,11 +144,16 @@ docker compose --profile core --profile worker up --build
 `worker` runs Celery workers. `worker-beat` runs Celery beat and enqueues the auction-ending notification task every `AUCTION_ENDING_SOON_SCHEDULE_SECONDS` seconds.
 
 `dealmoa.crawl_hot_deals_mock` is a deterministic ingestion boundary. It creates or
-reuses a non-admin crawler system user and writes mock crawled deal/auction items into
+reuses a non-admin crawler system user, checks each raw item against
+`CRAWLER_SOURCE_PROFILES`, and writes accepted mock crawled deal/auction items into
 `submissions` through the same submission intake use case used by the API. Items remain
 `pending_review`; the task does not create Product, Deal, Auction, search documents, or
-notifications. Duplicate `sourceUrl` rows are counted as duplicates instead of creating
-extra queue rows.
+notifications. Unknown or blocked source hosts are skipped before DB writes. Duplicate
+`sourceUrl` rows are counted as duplicates instead of creating extra queue rows.
+
+`CRAWLER_SOURCE_PROFILES` is a comma-separated list of `host:reputation:action` entries.
+Supported reputation labels are `trusted`, `standard`, and `low`; supported actions are
+`allow` and `block`.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API

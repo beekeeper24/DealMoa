@@ -52,10 +52,12 @@ the existing submission intake use case.
 The task:
 
 - creates or reuses a non-admin crawler system user;
+- accepts only source hosts allowed by `CRAWLER_SOURCE_PROFILES`;
+- skips unknown or blocked source hosts before writing to the database;
 - stores deal/auction candidates as `pending_review`;
 - records the same mock AI first-pass result used by user submissions;
 - relies on `sourceUrl` idempotency so repeated runs do not create duplicates;
-- returns scanned, created, and duplicate counts.
+- returns scanned, accepted, created, duplicate, and skipped counts.
 
 It does not fetch live external pages, publish Product/Deal/Auction rows, or bypass admin
 approval.
