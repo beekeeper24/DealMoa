@@ -421,6 +421,19 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Source-specific parser plugins, persistent source reputation storage, production crawl
   scheduling, crawler logs/admin UI, and per-host crawl rate limiting remain deferred.
 
+## Completed Crawler Source Parser Boundary Scope
+
+- Added `CRAWLER_SOURCE_PARSERS` as a host-to-parser mapping configured by environment.
+- Parser mapping format is `host:parser_id`.
+- The current supported parser ID is `dealmoa_article`.
+- Live crawler fetch still requires `CRAWLER_SOURCE_PROFILES` before network access.
+- After safe fetch, the worker chooses the parser from `CRAWLER_SOURCE_PARSERS`.
+- Missing parser mappings are skipped with `parser_not_configured`.
+- Unsupported parser IDs are skipped with `unsupported_source_parser`.
+- Parser skips happen before `SubmissionCreateRequest` validation or database writes.
+- Real source-specific parser implementations, persistent parser/source metadata, crawler
+  logs/admin UI, and per-host crawl rate limiting remain deferred.
+
 ## Completed My Page Contribution History Scope
 
 - Added `/me` as an authenticated My Page contribution history.

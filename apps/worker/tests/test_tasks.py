@@ -107,6 +107,53 @@ def test_execute_live_crawler_ingests_allowed_fetched_html(  # type: ignore[no-u
     assert submissions[0].status == "pending_review"
 
 
+def test_execute_live_crawler_skips_when_source_parser_is_not_configured(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-live-crawler-parser-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv("CRAWLER_SOURCE_PROFILES", "mock.example.com:trusted:allow")
+    monkeypatch.setenv("CRAWLER_SOURCE_PARSERS", "other.example.com:dealmoa_article")
+
+    from app.db.base import Base
+    from app.modules.submissions.models import Submission
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import sessionmaker
+    from worker_app.crawler_http import CrawlFetchResult
+
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    def fetcher(url: str) -> CrawlFetchResult:
+        return CrawlFetchResult(status="fetched", text="<article></article>")
+
+    summary = execute_live_crawler(
+        now_iso="2026-06-02T00:00:00+00:00",
+        urls=["https://mock.example.com/deals/1"],
+        fetcher=fetcher,
+    )
+
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        submission_count = len(list(session.scalars(select(Submission))))
+    finally:
+        session.close()
+
+    assert summary == {
+        "task": "crawl_live_urls",
+        "scanned": 1,
+        "fetched": 1,
+        "accepted": 0,
+        "created": 0,
+        "duplicates": 0,
+        "skipped": 1,
+        "skipReasons": {"parser_not_configured": 1},
+    }
+    assert submission_count == 0
+
+
 def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ignore[no-untyped-def]
     tmp_path,
     monkeypatch,

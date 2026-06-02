@@ -134,6 +134,7 @@ CRAWLER_SYSTEM_USER_ID=system-crawler
 CRAWLER_SYSTEM_USER_EMAIL=crawler@dealmoa.local
 CRAWLER_SYSTEM_USER_NICKNAME=DealMoa Crawler
 CRAWLER_SOURCE_PROFILES=mock.example.com:trusted:allow
+CRAWLER_SOURCE_PARSERS=mock.example.com:dealmoa_article
 CRAWLER_LIVE_URLS=
 CRAWLER_HTTP_TIMEOUT_SECONDS=5
 CRAWLER_HTTP_MAX_BYTES=1048576
@@ -160,6 +161,12 @@ notifications. Unknown or blocked source hosts are skipped before DB writes. Dup
 Supported reputation labels are `trusted`, `standard`, and `low`; supported actions are
 `allow` and `block`.
 
+`CRAWLER_SOURCE_PARSERS` is a comma-separated list of `host:parser_id` entries. The
+current parser ID is `dealmoa_article`, which reads the bounded `data-dealmoa-*` article
+format used by local tests and fixtures. Missing parser mappings are skipped with
+`parser_not_configured`; unsupported parser IDs are skipped with
+`unsupported_source_parser`.
+
 `dealmoa.crawl_live_urls` is the first live HTTP crawler boundary. It is disabled by
 default because `CRAWLER_LIVE_URLS` defaults to an empty string. When URLs are configured,
 each URL must pass `CRAWLER_SOURCE_PROFILES` before network access. The worker then uses a
@@ -168,7 +175,7 @@ results, robots.txt disallowed paths, non-HTML responses, and responses larger t
 `CRAWLER_HTTP_MAX_BYTES`. The runtime connection uses the already validated resolved IP
 with the original host retained for Host/SNI, reducing DNS-rebinding exposure. Redirects
 are not followed in this first live crawler pass. Fetched HTML is parsed through the
-minimal crawler parser boundary and accepted items are still written only as
+configured `CRAWLER_SOURCE_PARSERS` boundary and accepted items are still written only as
 `pending_review` submissions.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
