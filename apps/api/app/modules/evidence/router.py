@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.core.exceptions import UnauthorizedException
 from app.db.session import get_session
 from app.modules.ai_review.factory import create_ai_review_provider
+from app.modules.ai_review.rate_limits import AIReviewRateLimiter, AIReviewUsageRepository
 from app.modules.auth.router import bearer_scheme, get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser, AuthUseCases
 from app.modules.events.repository import DomainEventsRepository
@@ -34,11 +35,17 @@ admin_router = APIRouter(prefix="/admin/verified-reviews", tags=["admin-verified
 def get_evidence_use_cases(
     session: Annotated[Session, Depends(get_session)],
 ) -> EvidenceUseCases:
+    settings = get_settings()
     return EvidenceUseCases(
         evidence_repository=EvidenceRepository(session),
         product_repository=ProductRepository(session),
         domain_events=DomainEventsUseCases(repository=DomainEventsRepository(session)),
-        ai_review_provider=create_ai_review_provider(get_settings()),
+        ai_review_provider=create_ai_review_provider(settings),
+        ai_review_rate_limiter=AIReviewRateLimiter(
+            repository=AIReviewUsageRepository(session),
+            window_limit=settings.ai_review_user_window_limit,
+            window_hours=settings.ai_review_user_window_hours,
+        ),
     )
 
 

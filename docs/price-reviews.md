@@ -86,6 +86,12 @@ to the provider, but not the raw `proofReference`. Provider output can only popu
 `aiDecision` and `aiReason`; invalid/provider-failure responses fall back to
 `needs_admin_review`. Receipt image upload and OCR remain deferred.
 
+Verified-review intake shares the same user-triggered AI review quota as submissions:
+`AI_REVIEW_USER_WINDOW_LIMIT` calls per `AI_REVIEW_USER_WINDOW_HOURS`. The default is
+20 calls per user per 24 hours, and exhaustion returns
+`AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429. The quota only limits first-pass review
+calls; it does not approve, reject, or publish reviews.
+
 ## Admin Review
 
 Admin routes:

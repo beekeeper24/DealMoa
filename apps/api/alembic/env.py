@@ -4,6 +4,7 @@ from os import environ
 from alembic import context
 from app.db.base import Base
 from app.modules.admin import models as admin_models  # noqa: F401
+from app.modules.ai_review import models as ai_review_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.crawlers import models as crawler_models  # noqa: F401
 from app.modules.discussions import models as discussion_models  # noqa: F401

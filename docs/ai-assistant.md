@@ -55,6 +55,8 @@ OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_REVIEW_MODEL=gpt-4o-mini
 OPENAI_TIMEOUT_SECONDS=8
+AI_REVIEW_USER_WINDOW_LIMIT=20
+AI_REVIEW_USER_WINDOW_HOURS=24
 ```
 
 `AI_REVIEW_PROVIDER=mock` is the local and CI default. `AI_REVIEW_PROVIDER=openai`
@@ -74,6 +76,12 @@ and only an admin action can publish or reject them.
 Provider failures, invalid JSON, or schema validation failures fall back to
 `needs_admin_review`. Verified-review `proofReference` remains internal metadata and is
 not sent to the model in this slice. Receipt image upload and OCR remain deferred.
+
+User-triggered submission and verified-review first-pass review calls are bounded by
+`AI_REVIEW_USER_WINDOW_LIMIT` per `AI_REVIEW_USER_WINDOW_HOURS`. Usage is recorded in
+PostgreSQL through `ai_review_usage_events`, so the initial protection works across API
+process restarts and multiple API instances. Set the limit to `0` only for local
+debugging when quota protection must be disabled.
 
 ## Guardrails
 

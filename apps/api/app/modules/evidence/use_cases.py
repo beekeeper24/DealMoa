@@ -10,6 +10,7 @@ from app.core.exceptions import (
 from app.core.pagination import CursorPage
 from app.modules.admin.models import AdminAuditLog
 from app.modules.ai_review.provider import AiReviewProvider, AIReviewResult, MockAiReviewProvider
+from app.modules.ai_review.rate_limits import AIReviewRateLimiter
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.evidence.models import PriceHistorySnapshot, VerifiedReview
@@ -33,12 +34,14 @@ class EvidenceUseCases:
         product_repository: ProductRepository,
         domain_events: DomainEventsUseCases | None = None,
         ai_review_provider: AiReviewProvider | None = None,
+        ai_review_rate_limiter: AIReviewRateLimiter | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.evidence_repository = evidence_repository
         self.product_repository = product_repository
         self.domain_events = domain_events
         self.ai_review_provider = ai_review_provider or MockAiReviewProvider()
+        self.ai_review_rate_limiter = ai_review_rate_limiter
         self.now = now or utc_now
 
     def record_price_snapshot(
@@ -88,6 +91,12 @@ class EvidenceUseCases:
     ) -> VerifiedReview:
         self._ensure_product_exists(product_id)
         now = self.now()
+        if self.ai_review_rate_limiter is not None:
+            self.ai_review_rate_limiter.check_and_record(
+                user_id=actor.id,
+                target_type="verified_review",
+                now=now,
+            )
         ai_review = self.ai_review_provider.review_verified_review(request)
         return self.evidence_repository.create_verified_review(
             VerifiedReview(

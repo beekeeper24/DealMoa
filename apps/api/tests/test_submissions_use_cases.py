@@ -2,11 +2,17 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 
 import pytest
-from app.core.exceptions import ForbiddenException, ProductNotFoundException
+from app.core.exceptions import (
+    AIReviewRateLimitExceededException,
+    ForbiddenException,
+    ProductNotFoundException,
+)
 from app.core.pagination import CursorPage
 from app.db.base import Base
 from app.modules.admin.models import AdminAuditLog
+from app.modules.ai_review.models import AIReviewUsageEvent
 from app.modules.ai_review.provider import AIReviewResult
+from app.modules.ai_review.rate_limits import AIReviewRateLimiter, AIReviewUsageRepository
 from app.modules.auth.models import User
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.models import DomainEvent
@@ -176,6 +182,94 @@ def test_create_submission_stores_provider_review_but_stays_pending() -> None:
     assert result.submission.ai_reason == "provider flagged suspicious source"
     assert session.scalar(select(Product)) is None
     assert session.scalar(select(Deal)) is None
+
+
+def test_create_submission_records_ai_review_usage_and_duplicate_does_not_consume_quota() -> None:
+    class CountingReviewProvider:
+        calls = 0
+
+        def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
+            self.calls += 1
+            return AIReviewResult(
+                decision="needs_admin_review",
+                reason="provider called",
+            )
+
+        def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+            raise AssertionError("verified review provider should not be called")
+
+    session = next(make_session())
+    seed_users(session)
+    provider = CountingReviewProvider()
+    use_cases = SubmissionsUseCases(
+        submissions_repository=SubmissionsRepository(session),
+        product_repository=ProductRepository(session),
+        domain_events=DomainEventsUseCases(
+            repository=DomainEventsRepository(session),
+            now=lambda: NOW,
+        ),
+        ai_review_provider=provider,
+        ai_review_rate_limiter=AIReviewRateLimiter(
+            repository=AIReviewUsageRepository(session),
+            window_limit=1,
+            window_hours=24,
+        ),
+        now=lambda: NOW,
+    )
+
+    first = use_cases.create_submission(actor=actor(), request=deal_request())
+    duplicate = use_cases.create_submission(actor=actor(), request=deal_request())
+
+    usage_events = list(session.scalars(select(AIReviewUsageEvent)))
+    assert first.created is True
+    assert duplicate.created is False
+    assert provider.calls == 1
+    assert len(usage_events) == 1
+    assert usage_events[0].user_id == "user-1"
+    assert usage_events[0].target_type == "submission"
+
+
+def test_create_submission_rejects_ai_review_when_user_window_limit_is_exceeded() -> None:
+    class CountingReviewProvider:
+        calls = 0
+
+        def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
+            self.calls += 1
+            return AIReviewResult(
+                decision="needs_admin_review",
+                reason="provider called",
+            )
+
+        def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+            raise AssertionError("verified review provider should not be called")
+
+    session = next(make_session())
+    seed_users(session)
+    provider = CountingReviewProvider()
+    use_cases = SubmissionsUseCases(
+        submissions_repository=SubmissionsRepository(session),
+        product_repository=ProductRepository(session),
+        domain_events=DomainEventsUseCases(
+            repository=DomainEventsRepository(session),
+            now=lambda: NOW,
+        ),
+        ai_review_provider=provider,
+        ai_review_rate_limiter=AIReviewRateLimiter(
+            repository=AIReviewUsageRepository(session),
+            window_limit=1,
+            window_hours=24,
+        ),
+        now=lambda: NOW,
+    )
+
+    use_cases.create_submission(actor=actor(), request=deal_request("https://example.com/1"))
+    with pytest.raises(AIReviewRateLimitExceededException) as exc_info:
+        use_cases.create_submission(actor=actor(), request=deal_request("https://example.com/2"))
+
+    usage_events = list(session.scalars(select(AIReviewUsageEvent)))
+    assert provider.calls == 1
+    assert len(usage_events) == 1
+    assert exc_info.value.details == {"limit": 1, "windowHours": 24}
 
 
 def test_user_lists_own_submissions_only_with_cursor_pagination() -> None:

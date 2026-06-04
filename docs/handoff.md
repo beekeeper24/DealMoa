@@ -534,7 +534,23 @@ after local verification and required CI/review checks pass.
 - Added `AI_REVIEW_PROVIDER`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`,
   `OPENAI_REVIEW_MODEL`, and `OPENAI_TIMEOUT_SECONDS` settings.
 - Receipt image upload, OCR engine integration, async background review migration,
-  provider cost controls, rate limits, abuse logging, and monitoring remain deferred.
+  richer abuse logging, and provider-level monitoring remain deferred.
+
+## Completed AI Review Rate Limit Scope
+
+- Added `ai_review_usage_events` for PostgreSQL-backed user AI review usage tracking.
+- Added `AI_REVIEW_USER_WINDOW_LIMIT` and `AI_REVIEW_USER_WINDOW_HOURS`.
+- User-triggered submission and verified-review first-pass review calls share the same
+  per-user time-window quota.
+- Duplicate `sourceUrl` submissions return the existing submission before quota checks
+  and do not consume additional AI review quota.
+- Limit exhaustion raises `AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429.
+- The quota limits AI provider calls only; AI output still never publishes, approves, or
+  rejects content by itself.
+- Worker-created submission flows that construct use cases directly are not blocked by
+  API user quota injection.
+- Receipt image upload, OCR engine integration, async background review migration, richer
+  abuse logging, and provider-level monitoring remain deferred.
 
 ## Cautions
 
