@@ -18,7 +18,7 @@
 
 - [x] Add failing API tests that:
   - clean verified reviews store `riskLevel = low`, `riskScore = 0`, `riskReasons = []` in admin API responses;
-  - duplicate proof references and repeated user/product reviews produce risk reasons without auto-hiding;
+  - off-platform contact, repeated URL, and blocked spam text produce risk reasons without auto-hiding;
   - admin verified-review queue orders higher-risk reviews before clean reviews;
   - public product verified-review responses still exclude `riskLevel`, `riskScore`, and `riskReasons`.
 - [x] Add failing Alembic assertions for the new verified-review risk columns and status/risk index.
@@ -36,8 +36,6 @@
 
 - [x] Add `moderation_risk_score`, `moderation_risk_level`, and `moderation_risk_reasons_json` columns with defaults.
 - [x] Add deterministic risk analysis:
-  - `duplicate_proof_reference` for reused non-empty proof reference;
-  - `repeated_user_product_review` for another review by the same user on the same product;
   - `external_contact`, `repeated_url`, and `blocked_commercial_spam` for obvious review spam text.
 - [x] Keep all risky reviews `approved` on create; risk is an admin priority signal only.
 - [x] Sort admin list by `moderation_risk_score desc`, then `created_at desc`, then `id desc`.

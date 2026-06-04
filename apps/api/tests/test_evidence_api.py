@@ -247,11 +247,6 @@ def test_verified_review_risk_signals_do_not_auto_hide_reviews() -> None:
     user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
     product = create_product(user_client)
-    first_response = user_client.post(
-        f"/api/v1/products/{product['id']}/verified-reviews",
-        json=verified_review_payload(),
-        headers={"Authorization": "Bearer access-1"},
-    )
     risky_response = user_client.post(
         f"/api/v1/products/{product['id']}/verified-reviews",
         json={
@@ -276,11 +271,9 @@ def test_verified_review_risk_signals_do_not_auto_hide_reviews() -> None:
         headers={"Authorization": "Bearer access-1"},
     )
 
-    assert first_response.status_code == 201
     assert risky_response.status_code == 201
     assert risky_response.json()["status"] == "approved"
     assert {item["id"] for item in public_response.json()["items"]} == {
-        first_response.json()["id"],
         risky_response.json()["id"],
     }
     risky_admin_item = next(
@@ -290,8 +283,6 @@ def test_verified_review_risk_signals_do_not_auto_hide_reviews() -> None:
     assert risky_admin_item["riskLevel"] == "high"
     assert risky_admin_item["riskScore"] == 100
     assert set(risky_admin_item["riskReasons"]) == {
-        "duplicate_proof_reference",
-        "repeated_user_product_review",
         "external_contact",
         "repeated_url",
         "blocked_commercial_spam",
@@ -309,14 +300,23 @@ def test_verified_review_risk_signals_do_not_auto_hide_reviews() -> None:
 def test_admin_verified_review_queue_orders_risky_reviews_before_clean_reviews() -> None:
     user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
-    product = create_product(user_client)
+    clean_product = create_product(user_client)
+    risky_product = user_client.post(
+        "/api/v1/products",
+        json={
+            "name": "iPhone 18",
+            "brand": "Apple",
+            "modelName": "A-18",
+            "category": "smartphone",
+        },
+    ).json()
     clean_id = user_client.post(
-        f"/api/v1/products/{product['id']}/verified-reviews",
+        f"/api/v1/products/{clean_product['id']}/verified-reviews",
         json=verified_review_payload(),
         headers={"Authorization": "Bearer access-1"},
     ).json()["id"]
     risky_id = user_client.post(
-        f"/api/v1/products/{product['id']}/verified-reviews",
+        f"/api/v1/products/{risky_product['id']}/verified-reviews",
         json={
             **verified_review_payload(),
             "proofReference": "order-456",
@@ -395,6 +395,15 @@ def test_verified_review_auto_publish_does_not_consume_ai_review_quota() -> None
     client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
     product = create_product(client)
+    second_product = client.post(
+        "/api/v1/products",
+        json={
+            "name": "iPhone 18",
+            "brand": "Apple",
+            "modelName": "A-18",
+            "category": "smartphone",
+        },
+    ).json()
     session = session_factory()
     try:
         provider = CountingReviewProvider()
@@ -423,7 +432,7 @@ def test_verified_review_auto_publish_does_not_consume_ai_review_quota() -> None
         )
         second = use_cases.create_verified_review(
             actor=actor,
-            product_id=str(product["id"]),
+            product_id=str(second_product["id"]),
             request=VerifiedReviewCreateRequest.model_validate(
                 {
                     **verified_review_payload(),
@@ -455,6 +464,71 @@ def test_verified_review_requires_purchase_proof_reference() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_verified_review_rejects_same_user_product_duplicate() -> None:
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(client)
+    first_response = client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    duplicate_response = client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json={
+            **verified_review_payload(),
+            "proofReference": "order-456",
+            "title": "두 번째 실구매 후기",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert first_response.status_code == 201
+    assert duplicate_response.status_code == 409
+    assert duplicate_response.json()["error"]["code"] == "VERIFIED_REVIEW_ALREADY_EXISTS"
+    assert duplicate_response.json()["error"]["details"] == {
+        "productId": product["id"],
+        "userId": "user-1",
+    }
+
+
+def test_verified_review_rejects_reused_proof_reference() -> None:
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    first_product = create_product(client)
+    second_product = client.post(
+        "/api/v1/products",
+        json={
+            "name": "iPhone 18",
+            "brand": "Apple",
+            "modelName": "A-18",
+            "category": "smartphone",
+        },
+    ).json()
+    first_response = client.post(
+        f"/api/v1/products/{first_product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    duplicate_response = client.post(
+        f"/api/v1/products/{second_product['id']}/verified-reviews",
+        json={
+            **verified_review_payload(),
+            "title": "다른 상품 후기",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert first_response.status_code == 201
+    assert duplicate_response.status_code == 409
+    assert duplicate_response.json()["error"]["code"] == "VERIFIED_REVIEW_PROOF_ALREADY_USED"
+    assert duplicate_response.json()["error"]["details"] == {
+        "proofReference": "order-123",
+    }
 
 
 def test_admin_can_hide_and_restore_auto_published_verified_review() -> None:
@@ -504,6 +578,15 @@ def test_my_verified_reviews_list_only_current_user_reviews_with_cursor() -> Non
     client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
     product = create_product(client)
+    second_product = client.post(
+        "/api/v1/products",
+        json={
+            "name": "iPhone 18",
+            "brand": "Apple",
+            "modelName": "A-18",
+            "category": "smartphone",
+        },
+    ).json()
     session = session_factory()
     try:
         session.add(
@@ -539,7 +622,7 @@ def test_my_verified_reviews_list_only_current_user_reviews_with_cursor() -> Non
                 ),
                 VerifiedReview(
                     id="review-user-1-new",
-                    product_id=str(product["id"]),
+                    product_id=str(second_product["id"]),
                     user_id="user-1",
                     rating=5,
                     title="두 번째 실구매 후기",

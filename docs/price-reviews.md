@@ -94,12 +94,26 @@ submission does not consume that AI quota because it does not call the AI provid
 MVP auto-publish path. Separate user/content rate limits for reviews can be added when
 traffic requires them.
 
+## Submit Guards
+
+Verified-review submission rejects duplicates before auto-publishing:
+
+- the same user can create at most one verified review for the same product;
+- the same non-empty `proofReference` can be used only once.
+
+Duplicate submissions return HTTP 409:
+
+- `VERIFIED_REVIEW_ALREADY_EXISTS` for another review by the same user on the same
+  product;
+- `VERIFIED_REVIEW_PROOF_ALREADY_USED` for a reused proof reference.
+
+These guards are separate from moderation risk. They prevent obvious duplicate
+submissions instead of merely prioritizing them for admin review.
+
 ## Platform Risk Signals
 
 Verified reviews store deterministic moderation priority signals:
 
-- `duplicate_proof_reference`: the same proof reference was already used;
-- `repeated_user_product_review`: the same user already reviewed the same product;
 - `external_contact`: the review text includes off-platform contact language;
 - `repeated_url`: the review text includes two or more URLs;
 - `blocked_commercial_spam`: the review text includes obvious blocked spam terms.
@@ -143,6 +157,8 @@ Rules:
 
 - only `ADMIN` users can list or moderate verified reviews;
 - normal public reviews are `approved`;
+- duplicate same-user/product reviews and reused proof references are rejected before
+  publish;
 - admin lists include `riskScore`, `riskLevel`, and `riskReasons` and order higher-risk
   reviews first;
 - `hide` moves an approved review to `hidden`, removing it from public product detail;

@@ -70,6 +70,9 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     verified_review_columns = {
         column["name"] for column in inspector.get_columns("verified_reviews")
     }
+    verified_review_unique_constraints = {
+        constraint["name"] for constraint in inspector.get_unique_constraints("verified_reviews")
+    }
     discussion_indexes = {
         index["name"] for index in inspector.get_indexes("product_discussion_comments")
     }
@@ -152,6 +155,10 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "moderation_risk_level",
         "moderation_risk_reasons_json",
     } <= verified_review_columns
+    assert {
+        "uq_verified_reviews_user_product",
+        "uq_verified_reviews_proof_reference",
+    } <= verified_review_unique_constraints
     assert {
         "ix_product_discussion_comments_product_status_created_at",
         "ix_product_discussion_comments_status_created_at",

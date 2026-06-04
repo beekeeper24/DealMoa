@@ -55,14 +55,17 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Login required.
 - MVP proof data is a text receipt/order reference; receipt image upload and OCR are deferred.
 - A non-empty proof reference is required for purchase verified review submission.
+- A user can submit at most one verified review for the same product.
+- A proof reference can be used only once.
 - Normal MVP verified reviews publish immediately as `approved` after lightweight request
   validation. They do not call the AI review provider and do not consume AI review quota.
 - Platform-risk or admin-flagged reviews move through post-publication moderation.
 - Consumer report buttons for verified reviews are deferred in the MVP.
+- Verified-review duplicate submit guards reject same-user/product duplicates and reused
+  proof references before publish.
 - Verified-review risk signals are deterministic admin priority fields only:
-  duplicate proof references, repeated user/product reviews, off-platform contact
-  language, repeated URLs, and blocked commercial spam terms. They do not automatically
-  hide, reject, down-rank, or penalize reviews/users.
+  off-platform contact language, repeated URLs, and blocked commercial spam terms. They
+  do not automatically hide, reject, down-rank, or penalize reviews/users.
 - Admin hide/restore/reject actions write `admin_audit_logs`.
 - Public approved-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.
