@@ -8,7 +8,12 @@
 
 - Add Playwright as soon as the frontend app is introduced.
 - Use it first for smoke checks in CI: app loads, top search bar renders, API health state is visible.
-- Expand it later to cover search results, AI search entry point, favorites, notifications, and admin flows.
+- Current browser smoke coverage includes search results, AI search entry, favorites,
+  OAuth callback hydration, product detail, AI purchase check, verified-review submission
+  success and duplicate error handling, auction bidding, My Page, user submissions, and
+  admin queues.
+- Expand it later to cover mobile layout, visual regression, notification history page,
+  and real backend integration smoke checks.
 
 ## Scenarios
 
