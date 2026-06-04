@@ -7,7 +7,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        MVP 슬라이스나 운영 작업처럼 이미 방향이 정해진 일을 추적합니다. PR은 보통 이 Task 하나를 완료하는 단위로 만듭니다.
+        MVP 슬라이스나 운영 작업처럼 이미 방향이 정해진 일을 추적합니다.
+        Task는 PR-sized coherent slice로 작성합니다. 중간 구현 단계만 따로 Task로 만들지 말고, 작은 단계는 Acceptance criteria나 체크리스트에 넣습니다.
   - type: textarea
     id: goal
     attributes:
@@ -22,8 +23,8 @@ body:
       label: Scope
       description: What files, modules, or behaviors are expected to change?
       placeholder: |
-        - ...
-        - ...
+        - PR 하나로 리뷰해도 자연스러운 기능/운영 범위
+        - 작은 중간 단계는 별도 이슈가 아니라 이 이슈의 체크리스트로 정리
     validations:
       required: true
   - type: textarea

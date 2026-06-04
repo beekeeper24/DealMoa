@@ -15,7 +15,11 @@ Repository:
 https://github.com/beekeeper24/DealMoa.git
 ```
 
-Current integration branch is `develop`. Create each coherent feature/MVP slice from `develop` on a `feature/...` branch, keep checkpoint commits on that branch, and open a PR only when the slice is integration-ready or when the user explicitly asks for one.
+Current integration branch is `develop`. Create each PR-sized coherent feature/MVP
+slice from `develop` on a `feature/...` branch, keep checkpoint commits on that
+branch, and open a PR only when the slice is integration-ready or when the user
+explicitly asks for one. PRs target `develop`; merge them into `develop` only
+after local verification and required CI/review checks pass.
 
 ## Fixed Decisions
 
@@ -71,11 +75,12 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 
 ## Next Activation Steps
 
-1. Start the next coherent feature branch from `develop`.
-2. Next PR sequence after live crawler fetch hardening: source-specific parsing,
-   provider cost/rate-limit hardening, receipt upload/OCR, crawler logs/admin UI, or
-   per-host crawl rate limiting.
-3. Open PRs only when each feature/MVP slice is integration-ready or when the user explicitly asks.
+1. Define the next GitHub Task as a PR-sized coherent slice, not as a tiny
+   intermediate implementation step.
+2. Start the next coherent feature branch from `develop`.
+3. Keep small substeps inside the Task acceptance criteria/checklist.
+4. Open PRs only when each feature/MVP slice is integration-ready or when the
+   user explicitly asks.
 
 ## Completed Foundation Scope
 
