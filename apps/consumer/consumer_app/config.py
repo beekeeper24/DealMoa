@@ -34,3 +34,11 @@ class ConsumerSettings(BaseSettings):
         validation_alias="CONSUMER_POLL_INTERVAL_SECONDS",
     )
     consumer_batch_size: int = Field(default=100, validation_alias="CONSUMER_BATCH_SIZE")
+    consumer_metrics_enabled: bool = Field(
+        default=True,
+        validation_alias="CONSUMER_METRICS_ENABLED",
+    )
+    consumer_metrics_port: int = Field(
+        default=9101,
+        validation_alias="CONSUMER_METRICS_PORT",
+    )

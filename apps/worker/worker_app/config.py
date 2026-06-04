@@ -69,3 +69,11 @@ class WorkerSettings(BaseSettings):
         default="DealMoaBot/0.1 (+https://dealmoa.local/crawler)",
         validation_alias="CRAWLER_USER_AGENT",
     )
+    worker_metrics_enabled: bool = Field(
+        default=True,
+        validation_alias="WORKER_METRICS_ENABLED",
+    )
+    worker_metrics_port: int = Field(
+        default=9102,
+        validation_alias="WORKER_METRICS_PORT",
+    )

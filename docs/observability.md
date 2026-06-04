@@ -13,9 +13,17 @@ Local observability runs through the `observability` Docker Compose profile:
 docker compose --profile core --profile observability up
 ```
 
+Background worker/consumer metrics need their runtimes too:
+
+```bash
+docker compose --profile core --profile event --profile worker --profile observability up
+```
+
 Local URLs:
 
 - API metrics: `http://localhost:8000/metrics`
+- Consumer metrics: `http://localhost:9101/metrics`
+- Worker metrics: `http://localhost:9102/metrics`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001`
 
@@ -26,21 +34,27 @@ PROMETHEUS_PORT=9090
 GRAFANA_PORT=3001
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=replace-with-local-grafana-password
+CONSUMER_METRICS_ENABLED=true
+CONSUMER_METRICS_PORT=9101
+WORKER_METRICS_ENABLED=true
+WORKER_METRICS_PORT=9102
 ```
 
 Prometheus scrapes:
 
 - `prometheus:9090`
 - `api:8000/metrics`
+- `consumer:9101`
+- `worker:9102`
 
 Grafana provisioning:
 
 - datasource: Prometheus at `http://prometheus:9090`
-- dashboard: `DealMoa API Overview`
+- dashboard: `DealMoa Runtime Overview`
 
-The first dashboard is intentionally small. It covers API request rate, 5xx ratio, and
-p95 latency from the API metrics MVP. It is a local skeleton for development and demo
-visibility, not a production monitoring setup.
+The first dashboard is intentionally small. It covers API request rate, 5xx ratio, p95
+latency, consumer event throughput, and worker task throughput. It is a local skeleton
+for development and demo visibility, not a production monitoring setup.
 
 ## API Metrics MVP
 
@@ -82,14 +96,53 @@ do not inflate API traffic numbers.
 Current non-goals:
 
 - alert rules;
-- worker, consumer, Kafka, Celery, Redis, PostgreSQL, and Elasticsearch metrics;
-- business metric counters beyond request traffic and latency.
+- Kafka lag exporters, Celery retry metrics, Redis/PostgreSQL/Elasticsearch exporters;
+- business metric counters beyond current API/background runtime visibility.
+
+## Background Runtime Metrics MVP
+
+`apps/consumer` starts a small Prometheus metrics server when:
+
+```env
+CONSUMER_METRICS_ENABLED=true
+```
+
+It records:
+
+- `dealmoa_consumer_events_total`
+  - type: counter
+  - labels: `consumer`, `event_type`, `status`
+  - statuses: `handled`, `skipped`, `failed`
+  - purpose: see whether event consumers are handling, skipping, or failing messages.
+
+`apps/worker` starts a small Prometheus metrics server when:
+
+```env
+WORKER_METRICS_ENABLED=true
+```
+
+It records:
+
+- `dealmoa_worker_tasks_total`
+  - type: counter
+  - labels: `status`, `task`
+  - statuses: `succeeded`, `failed`
+  - purpose: see Celery task completion/failure volume.
+- `dealmoa_worker_task_duration_seconds`
+  - type: histogram
+  - labels: `task`
+  - purpose: see task duration distribution.
+
+The local Docker Compose worker uses Celery `--pool=solo` so task execution and metrics
+collection run in the same process. Production Celery multiprocess metrics need a
+dedicated Prometheus multiprocess setup or a separate exporter before enabling the same
+approach outside local development.
 
 ## Dashboards
 
 - API overview: RPS, p95/p99 latency, error rate, endpoint latency.
 - Search and ranking: search latency, Elasticsearch query latency, zero-result rate, popular queries.
-- Events and workers: Kafka consumer lag, event throughput, Celery task duration/failure/retry, indexing failures.
+- Events and workers: event throughput, Celery task duration/failure, Kafka consumer lag, retry rate, indexing failures.
 
 ## Business Metrics
 

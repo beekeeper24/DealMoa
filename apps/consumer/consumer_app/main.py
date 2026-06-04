@@ -14,6 +14,7 @@ from consumer_app.kafka import (
     KafkaEventProducer,
     create_domain_event_consumer,
 )
+from consumer_app.metrics import consumer_metrics, start_consumer_metrics_server
 from consumer_app.notification_events import DomainEventNotificationGenerator
 from consumer_app.outbox_publisher import OutboxPublisher
 
@@ -64,7 +65,12 @@ async def consume_search_index_forever(settings: ConsumerSettings) -> None:
         finally:
             session.close()
 
-    await DomainEventSubscriber(consumer=consumer, handler=handle_event).consume_forever()
+    await DomainEventSubscriber(
+        consumer=consumer,
+        handler=handle_event,
+        consumer_name="search-index",
+        metrics=consumer_metrics,
+    ).consume_forever()
 
 
 async def consume_notifications_forever(settings: ConsumerSettings) -> None:
@@ -87,11 +93,20 @@ async def consume_notifications_forever(settings: ConsumerSettings) -> None:
         finally:
             session.close()
 
-    await DomainEventSubscriber(consumer=consumer, handler=handle_event).consume_forever()
+    await DomainEventSubscriber(
+        consumer=consumer,
+        handler=handle_event,
+        consumer_name="notifications",
+        metrics=consumer_metrics,
+    ).consume_forever()
 
 
 def main() -> None:
     settings = ConsumerSettings()
+    start_consumer_metrics_server(
+        enabled=settings.consumer_metrics_enabled,
+        port=settings.consumer_metrics_port,
+    )
     command = sys.argv[1] if len(sys.argv) > 1 else "publish-outbox"
     if command == "publish-outbox":
         asyncio.run(publish_forever(settings))

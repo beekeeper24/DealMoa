@@ -1,6 +1,7 @@
 from celery import Celery  # type: ignore[import-untyped]
 
 from worker_app.config import WorkerSettings
+from worker_app.metrics import configure_worker_metrics
 
 settings = WorkerSettings()
 
@@ -23,4 +24,9 @@ celery_app.conf.update(
             "schedule": settings.auction_ending_soon_schedule_seconds,
         },
     },
+)
+
+configure_worker_metrics(
+    enabled=settings.worker_metrics_enabled,
+    port=settings.worker_metrics_port,
 )

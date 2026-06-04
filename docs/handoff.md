@@ -112,7 +112,7 @@ after local verification and required CI/review checks pass.
 - `API_METRICS_ENABLED=false` disables `/metrics`; public deployments should protect the
   metrics path with platform/network access controls before enabling external scraping.
 - Production Grafana dashboards, production Prometheus scrape config, alert rules,
-  worker/consumer metrics, and business metrics remain deferred.
+  backing-service exporters, and business metrics remain deferred.
 
 ## Completed Local Observability Profile Scope
 
@@ -120,13 +120,38 @@ after local verification and required CI/review checks pass.
 - Prometheus uses `infra/prometheus/prometheus.yml` and scrapes `api:8000/metrics`.
 - Grafana provisions the Prometheus datasource from
   `infra/grafana/provisioning/datasources/prometheus.yml`.
-- Grafana provisions the `DealMoa API Overview` dashboard from
+- Grafana provisions the runtime overview dashboard from
   `infra/grafana/dashboards/api-overview.json`.
-- The initial dashboard includes API request rate, 5xx ratio, and p95 latency panels.
+- The dashboard is now titled `DealMoa Runtime Overview` and includes API request rate,
+  5xx ratio, p95 latency, consumer event throughput, and worker task throughput panels.
 - Local ports are configurable through `PROMETHEUS_PORT` and `GRAFANA_PORT`; Grafana local
   admin credentials are configured by `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`.
-- Production Railway/Vercel observability, alert rules, worker/consumer metrics,
-  exporters for backing services, and real SLO tuning remain deferred.
+- Prometheus also scrapes local `consumer:9101` and `worker:9102` targets when those
+  profiles are running.
+- `CONSUMER_METRICS_ENABLED` / `CONSUMER_METRICS_PORT` control consumer metrics.
+- `WORKER_METRICS_ENABLED` / `WORKER_METRICS_PORT` control worker metrics.
+- Local Compose runs the worker with Celery `--pool=solo` so the worker metrics server
+  and task signal counters share one process.
+- Production Railway/Vercel observability, alert rules, Kafka lag exporters, Celery
+  multiprocess metrics, exporters for backing services, and real SLO tuning remain
+  deferred.
+
+## Completed Worker/Consumer Metrics MVP Scope
+
+- Added `prometheus-client` to the consumer and worker packages.
+- `apps/consumer` exposes local Prometheus metrics on port `9101` when enabled.
+- Consumer subscribers record `dealmoa_consumer_events_total` with `consumer`,
+  `event_type`, and `status` labels.
+- Invalid or non-object Kafka messages are counted as `status="skipped"` and valid
+  handler failures are counted as `status="failed"` before the original exception is
+  re-raised.
+- `apps/worker` exposes local Prometheus metrics on port `9102` when enabled.
+- Worker Celery signals record `dealmoa_worker_tasks_total` with `status` and `task`
+  labels plus `dealmoa_worker_task_duration_seconds` with a `task` label.
+- Docker Compose exposes `CONSUMER_METRICS_PORT` and `WORKER_METRICS_PORT`, and the
+  local Prometheus config scrapes both targets.
+- The current worker metrics path is local-MVP oriented; production multiprocess Celery
+  metrics need a dedicated setup before enabling externally.
 
 ## Completed Product API MVP Scope
 

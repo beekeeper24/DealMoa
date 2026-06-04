@@ -17,3 +17,13 @@ def test_live_crawler_settings_default_to_no_external_fetch(monkeypatch: MonkeyP
     assert settings.crawler_http_max_bytes == 1_048_576
     assert settings.crawler_max_urls_per_host == 20
     assert settings.crawler_user_agent == "DealMoaBot/0.1 (+https://dealmoa.local/crawler)"
+
+
+def test_worker_metrics_settings_default_to_enabled_port(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.delenv("WORKER_METRICS_ENABLED", raising=False)
+    monkeypatch.delenv("WORKER_METRICS_PORT", raising=False)
+
+    settings = WorkerSettings()
+
+    assert settings.worker_metrics_enabled is True
+    assert settings.worker_metrics_port == 9102
