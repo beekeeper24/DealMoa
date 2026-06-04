@@ -67,6 +67,29 @@ function submissionFixture(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function verifiedReviewFixture(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "review-1",
+    productId: "product-1",
+    userId: "user-1",
+    rating: 5,
+    title: "실구매 기준 만족",
+    body: "배송과 제품 상태 모두 좋았습니다.",
+    proofType: "receipt",
+    proofReference: "order-123",
+    status: "approved",
+    aiDecision: "needs_admin_review",
+    aiReason: "mock review passed: receipt proof requires admin approval",
+    aiReviewedAt: "2026-06-01T00:00:00Z",
+    reviewedByUserId: "admin-1",
+    resolutionNote: "영수증 확인",
+    resolvedAt: "2026-06-01T00:05:00Z",
+    createdAt: "2026-06-01T00:00:00Z",
+    updatedAt: "2026-06-01T00:05:00Z",
+    ...overrides
+  };
+}
+
 function installFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>
 ) {
@@ -112,9 +135,13 @@ describe("MyPage", () => {
       expect.stringContaining("/api/v1/me/submissions"),
       expect.anything()
     );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/me/verified-reviews"),
+      expect.anything()
+    );
   });
 
-  it("loads contribution history and paginates through my submissions only", async () => {
+  it("loads contribution history and paginates through my submissions and reviews only", async () => {
     const user = userEvent.setup();
     const fetchMock = installFetch((url, init) => {
       if (url === "/api/v1/auth/token/refresh") {
@@ -139,6 +166,21 @@ describe("MyPage", () => {
           nextCursor: "submission-2"
         });
       }
+      if (url === "/api/v1/me/verified-reviews?limit=20") {
+        expect(init?.headers).toMatchObject({
+          Accept: "application/json",
+          Authorization: "Bearer access-1"
+        });
+        return jsonResponse({
+          items: [
+            verifiedReviewFixture({
+              status: "approved",
+              resolutionNote: "영수증 확인"
+            })
+          ],
+          nextCursor: "review-2"
+        });
+      }
       if (url === "/api/v1/me/submissions?limit=20&cursor=submission-2") {
         return jsonResponse({
           items: [
@@ -150,6 +192,20 @@ describe("MyPage", () => {
               currentPrice: 720000,
               status: "rejected",
               resolutionNote: "중복 제보"
+            })
+          ],
+          nextCursor: null
+        });
+      }
+      if (url === "/api/v1/me/verified-reviews?limit=20&cursor=review-2") {
+        return jsonResponse({
+          items: [
+            verifiedReviewFixture({
+              id: "review-2",
+              rating: 3,
+              title: "검토 대기 후기",
+              status: "pending_review",
+              resolutionNote: null
             })
           ],
           nextCursor: null
@@ -183,8 +239,30 @@ describe("MyPage", () => {
     expect(within(auctionCard).getByText("거절됨")).toBeInTheDocument();
     expect(within(auctionCard).getByText("₩720,000")).toBeInTheDocument();
     expect(within(auctionCard).getByText("중복 제보")).toBeInTheDocument();
+
+    const reviewCard = await screen.findByRole("article", {
+      name: "실구매 기준 만족 인증 후기 이력"
+    });
+    expect(within(reviewCard).getByText("승인됨")).toBeInTheDocument();
+    expect(within(reviewCard).getByText("★★★★★")).toBeInTheDocument();
+    expect(
+      within(reviewCard).getByText("mock review passed: receipt proof requires admin approval")
+    ).toBeInTheDocument();
+    expect(within(reviewCard).getByText("영수증 확인")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "인증 후기 더보기" }));
+
+    const pendingReviewCard = await screen.findByRole("article", {
+      name: "검토 대기 후기 인증 후기 이력"
+    });
+    expect(within(pendingReviewCard).getByText("검토 대기")).toBeInTheDocument();
+    expect(within(pendingReviewCard).getByText("★★★☆☆")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/admin/submissions"),
+      expect.anything()
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/admin/verified-reviews"),
       expect.anything()
     );
   });

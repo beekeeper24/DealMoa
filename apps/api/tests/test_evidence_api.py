@@ -16,6 +16,7 @@ from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.evidence import models as evidence_models  # noqa: F401
+from app.modules.evidence.models import VerifiedReview
 from app.modules.evidence.repository import EvidenceRepository
 from app.modules.evidence.schemas import VerifiedReviewCreateRequest
 from app.modules.evidence.use_cases import EvidenceUseCases
@@ -336,6 +337,111 @@ def test_verified_review_rejects_ai_review_when_user_window_limit_is_exceeded() 
     assert len(usage_events) == 1
     assert usage_events[0].target_type == "verified_review"
     assert exc_info.value.details == {"limit": 1, "windowHours": 24}
+
+
+def test_my_verified_reviews_list_only_current_user_reviews_with_cursor() -> None:
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(client)
+    session = session_factory()
+    try:
+        session.add(
+            User(
+                id="user-2",
+                email="other@example.com",
+                nickname="Other",
+                role="USER",
+                created_at=NOW,
+                updated_at=NOW,
+            )
+        )
+        session.add_all(
+            [
+                VerifiedReview(
+                    id="review-user-1-old",
+                    product_id=str(product["id"]),
+                    user_id="user-1",
+                    rating=4,
+                    title="첫 번째 실구매 후기",
+                    body="첫 번째 후기입니다.",
+                    proof_type="receipt",
+                    proof_reference="order-old",
+                    status="rejected",
+                    ai_decision="needs_admin_review",
+                    ai_reason="mock review passed",
+                    ai_reviewed_at=NOW,
+                    reviewed_by_user_id="admin-1",
+                    resolution_note="영수증 식별 불가",
+                    resolved_at=NOW,
+                    created_at=datetime(2026, 6, 1, 0, 10, tzinfo=UTC),
+                    updated_at=datetime(2026, 6, 1, 0, 20, tzinfo=UTC),
+                ),
+                VerifiedReview(
+                    id="review-user-1-new",
+                    product_id=str(product["id"]),
+                    user_id="user-1",
+                    rating=5,
+                    title="두 번째 실구매 후기",
+                    body="두 번째 후기입니다.",
+                    proof_type="receipt",
+                    proof_reference="order-new",
+                    status="approved",
+                    ai_decision="needs_admin_review",
+                    ai_reason="mock review passed",
+                    ai_reviewed_at=NOW,
+                    reviewed_by_user_id="admin-1",
+                    resolution_note="영수증 확인",
+                    resolved_at=NOW,
+                    created_at=datetime(2026, 6, 1, 0, 30, tzinfo=UTC),
+                    updated_at=datetime(2026, 6, 1, 0, 40, tzinfo=UTC),
+                ),
+                VerifiedReview(
+                    id="review-user-2-newer",
+                    product_id=str(product["id"]),
+                    user_id="user-2",
+                    rating=1,
+                    title="다른 사용자 후기",
+                    body="다른 사용자 후기입니다.",
+                    proof_type="receipt",
+                    proof_reference="other-order",
+                    status="pending_review",
+                    ai_decision="needs_admin_review",
+                    ai_reason="other review",
+                    ai_reviewed_at=NOW,
+                    reviewed_by_user_id=None,
+                    resolution_note=None,
+                    resolved_at=None,
+                    created_at=datetime(2026, 6, 1, 0, 50, tzinfo=UTC),
+                    updated_at=datetime(2026, 6, 1, 0, 50, tzinfo=UTC),
+                ),
+            ]
+        )
+        session.commit()
+    finally:
+        session.close()
+
+    first_page = client.get(
+        "/api/v1/me/verified-reviews?limit=1",
+        headers={"Authorization": "Bearer access-1"},
+    )
+    assert first_page.status_code == 200
+    first_body = first_page.json()
+    assert [item["id"] for item in first_body["items"]] == ["review-user-1-new"]
+    assert first_body["items"][0]["proofReference"] == "order-new"
+    assert first_body["items"][0]["aiReason"] == "mock review passed"
+    assert first_body["items"][0]["resolutionNote"] == "영수증 확인"
+    assert first_body["items"][0]["status"] == "approved"
+    assert first_body["nextCursor"] == "review-user-1-new"
+
+    second_page = client.get(
+        f"/api/v1/me/verified-reviews?limit=1&cursor={first_body['nextCursor']}",
+        headers={"Authorization": "Bearer access-1"},
+    )
+    assert second_page.status_code == 200
+    second_body = second_page.json()
+    assert [item["id"] for item in second_body["items"]] == ["review-user-1-old"]
+    assert second_body["items"][0]["proofReference"] == "order-old"
+    assert second_body["nextCursor"] is None
 
 
 def test_admin_verified_review_queue_requires_admin_role() -> None:

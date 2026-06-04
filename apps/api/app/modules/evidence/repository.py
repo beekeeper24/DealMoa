@@ -94,6 +94,25 @@ class EvidenceRepository:
             statement = self._apply_review_cursor(statement, cursor_item)
         return self._page(statement, limit)
 
+    def list_user_verified_reviews(
+        self,
+        *,
+        user_id: str,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[VerifiedReview]:
+        statement = (
+            select(VerifiedReview)
+            .where(VerifiedReview.user_id == user_id)
+            .order_by(VerifiedReview.created_at.desc(), VerifiedReview.id.desc())
+        )
+        if cursor is not None:
+            cursor_item = self.session.get(VerifiedReview, cursor)
+            if cursor_item is None or cursor_item.user_id != user_id:
+                raise InvalidSearchCursorException(cursor)
+            statement = self._apply_review_cursor(statement, cursor_item)
+        return self._page(statement, limit)
+
     def _page(
         self,
         statement: Select[tuple[EvidenceT]],

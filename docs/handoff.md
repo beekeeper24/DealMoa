@@ -512,13 +512,20 @@ after local verification and required CI/review checks pass.
   APIs.
 - Users can see their own submission status, source link, AI first-pass reason,
   resolution note, and published Product/Deal/Auction links when available.
-- The page supports cursor pagination through the existing `nextCursor` contract.
+- Added `GET /api/v1/me/verified-reviews` for authenticated users to list only their
+  own verified-review submissions.
+- Users can see their own verified-review status, rating, AI first-pass reason, proof
+  metadata, resolution note, and linked Product.
+- The page supports independent cursor pagination for submissions and verified reviews
+  through the existing `nextCursor` contract.
 - Search header links authenticated sessions to `/me`, and successful submission flow
   links to the new history page.
 - Backend API tests now assert that `/me/submissions` does not expose another user's
   submissions.
-- Favorites, notifications history, verified review history, connected accounts,
-  edit/resubmit, and richer account settings remain deferred.
+- Backend API tests now assert that `/me/verified-reviews` does not expose another
+  user's verified reviews.
+- Favorites, notifications history, connected accounts, edit/resubmit, and richer
+  account settings remain deferred.
 
 ## Completed AI Review Provider Boundary Scope
 

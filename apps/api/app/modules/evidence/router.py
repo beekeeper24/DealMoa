@@ -29,6 +29,7 @@ from app.modules.evidence.use_cases import EvidenceUseCases
 from app.modules.products.repository import ProductRepository
 
 router = APIRouter(prefix="/products", tags=["evidence"])
+me_router = APIRouter(prefix="/me/verified-reviews", tags=["verified-reviews"])
 admin_router = APIRouter(prefix="/admin/verified-reviews", tags=["admin-verified-reviews"])
 
 
@@ -106,6 +107,24 @@ def list_product_verified_reviews(
     )
     return PublicVerifiedReviewListResponse(
         items=[PublicVerifiedReviewResponse.model_validate(item) for item in page.items],
+        nextCursor=page.next_cursor,
+    )
+
+
+@me_router.get("", response_model=VerifiedReviewListResponse)
+def list_my_verified_reviews(
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    use_cases: Annotated[EvidenceUseCases, Depends(get_evidence_use_cases)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    cursor: str | None = None,
+) -> VerifiedReviewListResponse:
+    page = use_cases.list_my_verified_reviews(
+        actor=current_user,
+        limit=limit,
+        cursor=cursor,
+    )
+    return VerifiedReviewListResponse(
+        items=[VerifiedReviewResponse.model_validate(item) for item in page.items],
         nextCursor=page.next_cursor,
     )
 
