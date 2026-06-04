@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_session
+from app.modules.ai_assistant.factory import create_ai_assistant_provider
 from app.modules.ai_assistant.schemas import (
     AiSearchRequest,
     AiSearchResponse,
@@ -31,6 +32,7 @@ def get_ai_assistant_use_cases(
         ),
         product_repository=product_repository,
         evidence_repository=EvidenceRepository(session),
+        ai_assistant_provider=create_ai_assistant_provider(settings),
     )
 
 

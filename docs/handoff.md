@@ -350,9 +350,19 @@ after local verification and required CI/review checks pass.
   plus public-safe evidence.
 - Search UI AI button opens an AI result panel.
 - Product detail exposes an AI purchase-check button and report panel.
-- AI search and purchase-check provider conversion, vector embeddings, prompt
-  persistence, streaming, personalization, and community sentiment summarization remain
-  deferred.
+- Added an AI assistant provider boundary for AI search intent parsing and purchase-check
+  recommendation text.
+- The default `AI_ASSISTANT_PROVIDER=mock` preserves deterministic local/CI behavior.
+- `AI_ASSISTANT_PROVIDER=openai` uses the OpenAI Responses API with strict JSON schema
+  output and Pydantic validation for `SearchIntent` and purchase-check explanation.
+- Provider failures, invalid JSON/schema, timeouts, or missing API keys fall back to the
+  mock provider.
+- AI search still executes only server-built search use cases from validated
+  `SearchIntent`; raw model output is never executed as Elasticsearch DSL.
+- Purchase-check evidence is still built by server code and excludes proof references,
+  admin notes, AI review reasoning, hidden reviews, discussion text, and private user ids.
+- Vector embeddings, prompt persistence, streaming, personalization, and community
+  sentiment summarization remain deferred.
 
 ## Completed Product Discussion Foundation Scope
 

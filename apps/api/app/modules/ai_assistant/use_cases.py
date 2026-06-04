@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import re
 from typing import Any, Protocol
 
 from app.core.exceptions import ProductNotFoundException
 from app.core.pagination import CursorPage
+from app.modules.ai_assistant.provider import AiAssistantProvider, MockAiAssistantProvider
 from app.modules.ai_assistant.schemas import (
     AiSearchRequest,
     AiSearchResponse,
     AiSearchTargetType,
     ProductPurchaseCheckResponse,
     PurchaseCheckEvidence,
-    PurchaseRecommendation,
     SearchIntent,
-    SearchIntentFilters,
 )
 from app.modules.evidence.models import PriceHistorySnapshot, VerifiedReview
 from app.modules.evidence.repository import EvidenceRepository
@@ -65,13 +63,15 @@ class AiAssistantUseCases:
         search_use_cases: SearchUseCasesProtocol,
         product_repository: ProductRepository,
         evidence_repository: EvidenceRepository,
+        ai_assistant_provider: AiAssistantProvider | None = None,
     ) -> None:
         self.search_use_cases = search_use_cases
         self.product_repository = product_repository
         self.evidence_repository = evidence_repository
+        self.ai_assistant_provider = ai_assistant_provider or MockAiAssistantProvider()
 
     def search(self, request: AiSearchRequest) -> AiSearchResponse:
-        intent = self.parse_search_intent(request.query)
+        intent = self.ai_assistant_provider.parse_search_intent(request.query)
         products = ProductSearchResponse(items=[], nextCursor=None)
         deals = DealSearchResponse(items=[], nextCursor=None)
         auctions = AuctionSearchResponse(items=[], nextCursor=None)
@@ -116,16 +116,7 @@ class AiAssistantUseCases:
         )
 
     def parse_search_intent(self, query: str) -> SearchIntent:
-        normalized_query = " ".join(query.strip().lower().split())
-        return SearchIntent(
-            query=query,
-            normalizedQuery=normalized_query,
-            targetTypes=self._extract_target_types(normalized_query),
-            filters=SearchIntentFilters(
-                category=self._extract_category(normalized_query),
-                maxPrice=self._extract_max_price(normalized_query),
-            ),
-        )
+        return self.ai_assistant_provider.parse_search_intent(query)
 
     def purchase_check(self, product_id: str) -> ProductPurchaseCheckResponse:
         product = self.product_repository.get_product(product_id)
@@ -161,7 +152,8 @@ class AiAssistantUseCases:
             cursor=None,
         ).items
 
-        recommendation, confidence, summary = self._recommend(
+        explanation = self.ai_assistant_provider.explain_purchase_check(
+            product=product,
             deals=deals,
             auctions=auctions,
             price_history=price_history,
@@ -169,9 +161,9 @@ class AiAssistantUseCases:
         )
         return ProductPurchaseCheckResponse(
             productId=product.id,
-            recommendation=recommendation,
-            confidence=confidence,
-            summary=summary,
+            recommendation=explanation.recommendation,
+            confidence=explanation.confidence,
+            summary=explanation.summary,
             evidence=self._build_evidence(
                 product=product,
                 deals=deals,
@@ -180,33 +172,6 @@ class AiAssistantUseCases:
                 verified_reviews=verified_reviews,
             ),
         )
-
-    def _extract_target_types(self, normalized_query: str) -> list[AiSearchTargetType]:
-        targets: list[AiSearchTargetType] = []
-        if any(keyword in normalized_query for keyword in ("상품", "제품", "스펙")):
-            targets.append("products")
-        if any(keyword in normalized_query for keyword in ("핫딜", "딜", "할인", "특가")):
-            targets.append("deals")
-        if any(keyword in normalized_query for keyword in ("경매", "입찰")):
-            targets.append("auctions")
-        return targets or ["products", "deals", "auctions"]
-
-    def _extract_category(self, normalized_query: str) -> str | None:
-        if any(keyword in normalized_query for keyword in ("스마트폰", "휴대폰", "핸드폰", "폰")):
-            return "smartphone"
-        if any(keyword in normalized_query for keyword in ("노트북", "랩탑")):
-            return "laptop"
-        return None
-
-    def _extract_max_price(self, normalized_query: str) -> int | None:
-        manwon_match = re.search(r"(\d[\d,]*)\s*만\s*원", normalized_query)
-        if manwon_match:
-            return int(manwon_match.group(1).replace(",", "")) * 10000
-
-        won_match = re.search(r"(\d[\d,]*)\s*원", normalized_query)
-        if won_match:
-            return int(won_match.group(1).replace(",", ""))
-        return None
 
     def _search_summary(
         self,
@@ -227,40 +192,6 @@ class AiAssistantUseCases:
         if target_types == ["auctions"]:
             return "경매"
         return "상품/핫딜/경매"
-
-    def _recommend(
-        self,
-        *,
-        deals: list[Deal],
-        auctions: list[Auction],
-        price_history: list[PriceHistorySnapshot],
-        verified_reviews: list[VerifiedReview],
-    ) -> tuple[PurchaseRecommendation, float, str]:
-        current_prices = [deal.sale_price for deal in deals] + [
-            auction.current_price for auction in auctions
-        ]
-        if not current_prices:
-            return "watch", 0.45, "현재 활성 핫딜이나 경매가 없어 지켜보는 편이 낫습니다."
-
-        best_current_price = min(current_prices)
-        historical_prices = [snapshot.price for snapshot in price_history]
-        if not historical_prices:
-            return "watch", 0.55, "현재 구매 후보는 있지만 비교할 가격 이력이 부족합니다."
-
-        lowest_history_price = min(historical_prices)
-        average_history_price = sum(historical_prices) / len(historical_prices)
-        if best_current_price <= lowest_history_price and verified_reviews:
-            return (
-                "buy",
-                0.78,
-                "현재 가격이 가격 이력 최저가 수준이고 "
-                "승인된 구매 인증 후기가 있어 구매 후보입니다.",
-            )
-        if best_current_price <= average_history_price:
-            return "buy", 0.7, "현재 가격이 가격 이력 평균보다 낮아 구매 후보입니다."
-        if best_current_price > average_history_price * 1.1:
-            return "avoid", 0.65, "현재 가격이 가격 이력 평균보다 높아 매수 보류가 좋습니다."
-        return "watch", 0.58, "현재 가격이 가격 이력과 비슷해 추가 가격 변화를 지켜볼 만합니다."
 
     def _build_evidence(
         self,

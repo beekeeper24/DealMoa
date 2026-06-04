@@ -39,6 +39,22 @@ def test_settings_reads_ai_review_provider_env() -> None:
     assert settings.openai_timeout_seconds == 5.5
 
 
+def test_settings_reads_ai_assistant_provider_env() -> None:
+    settings = Settings.model_validate(
+        {
+            "AI_ASSISTANT_PROVIDER": "openai",
+            "OPENAI_ASSISTANT_MODEL": "gpt-4o-mini",
+            "OPENAI_BASE_URL": "https://api.openai.test/v1",
+            "OPENAI_TIMEOUT_SECONDS": "5.5",
+        }
+    )
+
+    assert settings.ai_assistant_provider == "openai"
+    assert settings.openai_assistant_model == "gpt-4o-mini"
+    assert settings.openai_base_url == "https://api.openai.test/v1"
+    assert settings.openai_timeout_seconds == 5.5
+
+
 def test_settings_reads_ai_review_rate_limit_env() -> None:
     settings = Settings.model_validate(
         {
