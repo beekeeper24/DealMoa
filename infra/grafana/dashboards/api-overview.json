@@ -104,11 +104,67 @@
       ],
       "title": "API p95 latency",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (consumer, event_type, status) (rate(dealmoa_consumer_events_total[5m]))",
+          "legendFormat": "{{consumer}} {{event_type}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Consumer event throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum by (task, status) (rate(dealmoa_worker_tasks_total[5m]))",
+          "legendFormat": "{{task}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Worker task throughput",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 41,
-  "tags": ["dealmoa", "api", "observability"],
+  "tags": ["dealmoa", "api", "worker", "consumer", "observability"],
   "templating": {
     "list": []
   },
@@ -118,7 +174,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "DealMoa API Overview",
+  "title": "DealMoa Runtime Overview",
   "uid": "dealmoa-api-overview",
   "version": 1,
   "weekStart": ""

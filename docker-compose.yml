@@ -152,6 +152,10 @@ services:
       KAFKA_NOTIFICATION_GROUP_ID: ${KAFKA_NOTIFICATION_GROUP_ID:-dealmoa-notification-generator}
       CONSUMER_POLL_INTERVAL_SECONDS: ${CONSUMER_POLL_INTERVAL_SECONDS:-1}
       CONSUMER_BATCH_SIZE: ${CONSUMER_BATCH_SIZE:-100}
+      CONSUMER_METRICS_ENABLED: ${CONSUMER_METRICS_ENABLED:-true}
+      CONSUMER_METRICS_PORT: ${CONSUMER_METRICS_PORT:-9101}
+    ports:
+      - "${CONSUMER_METRICS_PORT:-9101}:9101"
     command: ["uv", "run", "python", "-m", "consumer_app.main", "publish-outbox"]
     depends_on:
       postgres:
@@ -181,6 +185,21 @@ services:
       CRAWLER_HTTP_MAX_BYTES: ${CRAWLER_HTTP_MAX_BYTES:-1048576}
       CRAWLER_MAX_URLS_PER_HOST: ${CRAWLER_MAX_URLS_PER_HOST:-20}
       CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-DealMoaBot/0.1 (+https://dealmoa.local/crawler)}
+      WORKER_METRICS_ENABLED: ${WORKER_METRICS_ENABLED:-true}
+      WORKER_METRICS_PORT: ${WORKER_METRICS_PORT:-9102}
+    ports:
+      - "${WORKER_METRICS_PORT:-9102}:9102"
+    command:
+      [
+        "uv",
+        "run",
+        "celery",
+        "-A",
+        "worker_app.celery_app:celery_app",
+        "worker",
+        "--loglevel=INFO",
+        "--pool=solo",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
