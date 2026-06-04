@@ -15,6 +15,8 @@ from app.modules.events.repository import DomainEventsRepository
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.evidence.repository import EvidenceRepository
 from app.modules.evidence.schemas import (
+    AdminVerifiedReviewListResponse,
+    AdminVerifiedReviewResponse,
     PriceHistoryListResponse,
     PriceHistorySnapshotResponse,
     PublicVerifiedReviewListResponse,
@@ -129,34 +131,34 @@ def list_my_verified_reviews(
     )
 
 
-@admin_router.get("", response_model=VerifiedReviewListResponse)
+@admin_router.get("", response_model=AdminVerifiedReviewListResponse)
 def list_admin_verified_reviews(
     current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     use_cases: Annotated[EvidenceUseCases, Depends(get_evidence_use_cases)],
     review_status: Annotated[ReviewStatus, Query(alias="status")] = "pending_review",
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
     cursor: str | None = None,
-) -> VerifiedReviewListResponse:
+) -> AdminVerifiedReviewListResponse:
     page = use_cases.list_admin_verified_reviews(
         actor=current_user,
         status=review_status,
         limit=limit,
         cursor=cursor,
     )
-    return VerifiedReviewListResponse(
-        items=[VerifiedReviewResponse.model_validate(item) for item in page.items],
+    return AdminVerifiedReviewListResponse(
+        items=[AdminVerifiedReviewResponse.model_validate(item) for item in page.items],
         nextCursor=page.next_cursor,
     )
 
 
-@admin_router.patch("/{review_id}", response_model=VerifiedReviewResponse)
+@admin_router.patch("/{review_id}", response_model=AdminVerifiedReviewResponse)
 def review_verified_review(
     review_id: str,
     request: VerifiedReviewReviewRequest,
     current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     use_cases: Annotated[EvidenceUseCases, Depends(get_evidence_use_cases)],
-) -> VerifiedReviewResponse:
-    return VerifiedReviewResponse.model_validate(
+) -> AdminVerifiedReviewResponse:
+    return AdminVerifiedReviewResponse.model_validate(
         use_cases.review_verified_review(
             actor=current_user,
             review_id=review_id,

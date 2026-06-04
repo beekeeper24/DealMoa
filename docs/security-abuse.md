@@ -59,6 +59,10 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   validation. They do not call the AI review provider and do not consume AI review quota.
 - Platform-risk or admin-flagged reviews move through post-publication moderation.
 - Consumer report buttons for verified reviews are deferred in the MVP.
+- Verified-review risk signals are deterministic admin priority fields only:
+  duplicate proof references, repeated user/product reviews, off-platform contact
+  language, repeated URLs, and blocked commercial spam terms. They do not automatically
+  hide, reject, down-rank, or penalize reviews/users.
 - Admin hide/restore/reject actions write `admin_audit_logs`.
 - Public approved-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.

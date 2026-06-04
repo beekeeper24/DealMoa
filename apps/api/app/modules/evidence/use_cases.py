@@ -15,6 +15,7 @@ from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.events.use_cases import DomainEventsUseCases
 from app.modules.evidence.models import PriceHistorySnapshot, VerifiedReview
 from app.modules.evidence.repository import EvidenceRepository
+from app.modules.evidence.risk_analysis import analyze_verified_review_risk
 from app.modules.evidence.schemas import (
     VerifiedReviewCreateRequest,
     VerifiedReviewReviewRequest,
@@ -91,6 +92,21 @@ class EvidenceUseCases:
     ) -> VerifiedReview:
         self._ensure_product_exists(product_id)
         now = self.now()
+        risk_analysis = analyze_verified_review_risk(
+            body=request.body,
+            duplicate_proof_reference=(
+                self.evidence_repository.has_verified_review_with_proof_reference(
+                    request.proof_reference
+                )
+            ),
+            repeated_user_product_review=(
+                self.evidence_repository.has_user_verified_review_for_product(
+                    product_id=product_id,
+                    user_id=actor.id,
+                )
+            ),
+            title=request.title,
+        )
         review = self.evidence_repository.create_verified_review(
             VerifiedReview(
                 product_id=product_id,
@@ -104,6 +120,9 @@ class EvidenceUseCases:
                 ai_decision=None,
                 ai_reason=None,
                 ai_reviewed_at=None,
+                moderation_risk_score=risk_analysis.score,
+                moderation_risk_level=risk_analysis.level,
+                moderation_risk_reasons_json=risk_analysis.reasons,
                 created_at=now,
                 updated_at=now,
             )

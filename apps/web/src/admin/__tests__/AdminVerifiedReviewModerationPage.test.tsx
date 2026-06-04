@@ -48,6 +48,9 @@ function verifiedReviewFixture(overrides: Record<string, unknown> = {}) {
     aiDecision: null,
     aiReason: null,
     aiReviewedAt: null,
+    riskScore: 100,
+    riskLevel: "high",
+    riskReasons: ["duplicate_proof_reference", "external_contact"],
     reviewedByUserId: null,
     resolutionNote: null,
     resolvedAt: null,
@@ -147,6 +150,9 @@ describe("AdminVerifiedReviewModerationPage", () => {
     expect(within(card).getByText("배송과 제품 상태 모두 좋았습니다.")).toBeInTheDocument();
     expect(within(card).getByText("receipt")).toBeInTheDocument();
     expect(within(card).getByText("order-123")).toBeInTheDocument();
+    expect(within(card).getByText("high")).toBeInTheDocument();
+    expect(within(card).getByText("duplicate_proof_reference")).toBeInTheDocument();
+    expect(within(card).getByText("external_contact")).toBeInTheDocument();
 
     await user.type(within(card).getByLabelText("처리 메모"), "증빙 불일치");
     await user.click(within(card).getByRole("button", { name: "숨김 처리" }));

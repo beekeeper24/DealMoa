@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 ReviewStatus = Literal["pending_review", "approved", "rejected", "hidden"]
 ReviewAction = Literal["approve", "reject", "hide", "restore"]
+ReviewRiskLevel = Literal["low", "medium", "high"]
 
 
 def serialize_utc_datetime(value: datetime | None) -> str | None:
@@ -82,6 +83,17 @@ class VerifiedReviewResponse(BaseModel):
 
 class VerifiedReviewListResponse(BaseModel):
     items: list[VerifiedReviewResponse]
+    next_cursor: str | None = Field(alias="nextCursor")
+
+
+class AdminVerifiedReviewResponse(VerifiedReviewResponse):
+    moderation_risk_score: int = Field(alias="riskScore")
+    moderation_risk_level: ReviewRiskLevel = Field(alias="riskLevel")
+    moderation_risk_reasons_json: list[str] = Field(alias="riskReasons")
+
+
+class AdminVerifiedReviewListResponse(BaseModel):
+    items: list[AdminVerifiedReviewResponse]
     next_cursor: str | None = Field(alias="nextCursor")
 
 

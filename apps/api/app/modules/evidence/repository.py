@@ -85,14 +85,35 @@ class EvidenceRepository:
         statement = (
             select(VerifiedReview)
             .where(VerifiedReview.status == status)
-            .order_by(VerifiedReview.created_at.desc(), VerifiedReview.id.desc())
+            .order_by(
+                VerifiedReview.moderation_risk_score.desc(),
+                VerifiedReview.created_at.desc(),
+                VerifiedReview.id.desc(),
+            )
         )
         if cursor is not None:
             cursor_item = self.session.get(VerifiedReview, cursor)
             if cursor_item is None or cursor_item.status != status:
                 raise InvalidSearchCursorException(cursor)
-            statement = self._apply_review_cursor(statement, cursor_item)
+            statement = self._apply_admin_review_cursor(statement, cursor_item)
         return self._page(statement, limit)
+
+    def has_verified_review_with_proof_reference(self, proof_reference: str) -> bool:
+        return self.session.scalar(
+            select(VerifiedReview.id)
+            .where(VerifiedReview.proof_reference == proof_reference)
+            .limit(1)
+        ) is not None
+
+    def has_user_verified_review_for_product(self, *, product_id: str, user_id: str) -> bool:
+        return self.session.scalar(
+            select(VerifiedReview.id)
+            .where(
+                VerifiedReview.product_id == product_id,
+                VerifiedReview.user_id == user_id,
+            )
+            .limit(1)
+        ) is not None
 
     def list_user_verified_reviews(
         self,
@@ -147,6 +168,26 @@ class EvidenceRepository:
             or_(
                 VerifiedReview.created_at < cursor_item.created_at,
                 and_(
+                    VerifiedReview.created_at == cursor_item.created_at,
+                    VerifiedReview.id < cursor_item.id,
+                ),
+            )
+        )
+
+    def _apply_admin_review_cursor(
+        self,
+        statement: Select[tuple[VerifiedReview]],
+        cursor_item: VerifiedReview,
+    ) -> Select[tuple[VerifiedReview]]:
+        return statement.where(
+            or_(
+                VerifiedReview.moderation_risk_score < cursor_item.moderation_risk_score,
+                and_(
+                    VerifiedReview.moderation_risk_score == cursor_item.moderation_risk_score,
+                    VerifiedReview.created_at < cursor_item.created_at,
+                ),
+                and_(
+                    VerifiedReview.moderation_risk_score == cursor_item.moderation_risk_score,
                     VerifiedReview.created_at == cursor_item.created_at,
                     VerifiedReview.id < cursor_item.id,
                 ),

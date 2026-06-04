@@ -209,6 +209,134 @@ def test_verified_review_requires_auth_and_auto_publishes() -> None:
     assert "proofReference" not in public_review
     assert "aiReason" not in public_review
     assert "resolutionNote" not in public_review
+    assert "riskLevel" not in public_review
+    assert "riskScore" not in public_review
+    assert "riskReasons" not in public_review
+
+
+def test_verified_review_creation_stores_low_risk_for_clean_reviews() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(user_client)
+
+    create_response = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+    admin_response = admin_client.get(
+        "/api/v1/admin/verified-reviews?status=approved",
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert create_response.status_code == 201
+    assert create_response.json()["status"] == "approved"
+    assert "riskLevel" not in create_response.json()
+    assert admin_response.status_code == 200
+    admin_item = admin_response.json()["items"][0]
+    assert admin_item["riskLevel"] == "low"
+    assert admin_item["riskScore"] == 0
+    assert admin_item["riskReasons"] == []
+
+
+def test_verified_review_risk_signals_do_not_auto_hide_reviews() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(user_client)
+    first_response = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+    risky_response = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json={
+            **verified_review_payload(),
+            "title": "카톡 문의 가능한 후기",
+            "body": (
+                "카톡으로 문의 주세요. https://spam.example/a "
+                "https://spam.example/b 무료바카라"
+            ),
+        },
+        headers={"Authorization": "Bearer access-1"},
+    )
+    public_response = user_client.get(
+        f"/api/v1/products/{product['id']}/verified-reviews"
+    )
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+    admin_response = admin_client.get(
+        "/api/v1/admin/verified-reviews?status=approved",
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert first_response.status_code == 201
+    assert risky_response.status_code == 201
+    assert risky_response.json()["status"] == "approved"
+    assert {item["id"] for item in public_response.json()["items"]} == {
+        first_response.json()["id"],
+        risky_response.json()["id"],
+    }
+    risky_admin_item = next(
+        item for item in admin_response.json()["items"] if item["id"] == risky_response.json()["id"]
+    )
+    assert risky_admin_item["status"] == "approved"
+    assert risky_admin_item["riskLevel"] == "high"
+    assert risky_admin_item["riskScore"] == 100
+    assert set(risky_admin_item["riskReasons"]) == {
+        "duplicate_proof_reference",
+        "repeated_user_product_review",
+        "external_contact",
+        "repeated_url",
+        "blocked_commercial_spam",
+    }
+    public_risky_item = next(
+        item
+        for item in public_response.json()["items"]
+        if item["id"] == risky_response.json()["id"]
+    )
+    assert "riskLevel" not in public_risky_item
+    assert "riskScore" not in public_risky_item
+    assert "riskReasons" not in public_risky_item
+
+
+def test_admin_verified_review_queue_orders_risky_reviews_before_clean_reviews() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(user_client)
+    clean_id = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    ).json()["id"]
+    risky_id = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json={
+            **verified_review_payload(),
+            "proofReference": "order-456",
+            "title": "텔레그램 문의 후기",
+            "body": "텔레그램으로 연락 주세요.",
+        },
+        headers={"Authorization": "Bearer access-1"},
+    ).json()["id"]
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory=session_factory,
+    )
+
+    response = admin_client.get(
+        "/api/v1/admin/verified-reviews?status=approved",
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["items"][:2]] == [risky_id, clean_id]
 
 
 def test_verified_review_does_not_call_ai_provider_for_auto_publish() -> None:
