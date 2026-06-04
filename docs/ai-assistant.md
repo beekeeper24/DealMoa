@@ -19,8 +19,13 @@
 
 ## Current MVP Contract
 
-AI search and purchase checks are still deterministic and do not call a real AI provider.
-First-pass submission/review checks use a provider boundary configured by
+AI search and purchase checks use an assistant provider boundary configured by
+`AI_ASSISTANT_PROVIDER`. The default remains deterministic `mock`, preserving local and
+CI behavior. `AI_ASSISTANT_PROVIDER=openai` can call the OpenAI Responses API, but model
+output is still constrained to validated response models before any search or purchase
+check response is built.
+
+First-pass submission/review checks use a separate provider boundary configured by
 `AI_REVIEW_PROVIDER`.
 
 Routes:
@@ -31,8 +36,9 @@ GET /api/v1/ai/products/{product_id}/purchase-check
 ```
 
 `POST /ai/search` parses a lightweight `SearchIntent` from the user query and calls the
-existing product/deal/auction search use cases. The current parser only emits allowlisted
-target types and filters, such as `targetTypes`, `category`, and `maxPrice`.
+existing product/deal/auction search use cases. The provider can emit only allowlisted
+target types and filters, such as `targetTypes`, `category`, and `maxPrice`. Raw model
+output is never used as Elasticsearch DSL.
 
 `GET /ai/products/{product_id}/purchase-check` reads trusted product evidence from
 PostgreSQL:
@@ -42,9 +48,57 @@ PostgreSQL:
 - price-history snapshots;
 - approved verified reviews only.
 
-The current recommendation is a deterministic `buy` / `watch` / `avoid` result based on
-current price, price history, and approved review presence. It is a stable contract for a
-future LLM-backed explanation layer, not a final scoring model.
+The current recommendation is a `buy` / `watch` / `avoid` result with confidence and
+summary. In mock mode this is deterministic. In OpenAI mode the provider can generate the
+recommendation, confidence, and summary, but the evidence list is still built by server
+code from trusted PostgreSQL rows.
+
+## AI Assistant Provider
+
+Provider settings:
+
+```env
+AI_ASSISTANT_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_ASSISTANT_MODEL=gpt-4o-mini
+OPENAI_TIMEOUT_SECONDS=8
+```
+
+`AI_ASSISTANT_PROVIDER=mock` is the local and CI default. `AI_ASSISTANT_PROVIDER=openai`
+uses the OpenAI Responses API with Structured Outputs.
+
+For AI search, the model must return only:
+
+```json
+{
+  "query": "original user query",
+  "normalizedQuery": "normalized query",
+  "targetTypes": ["products", "deals"],
+  "filters": {
+    "category": "smartphone",
+    "maxPrice": 1000000
+  }
+}
+```
+
+The server validates that response as `SearchIntent`. Invalid JSON, invalid schema, API
+errors, timeout, or missing API key fall back to the mock parser.
+
+For purchase checks, the model must return only:
+
+```json
+{
+  "recommendation": "watch",
+  "confidence": 0.63,
+  "summary": "short user-facing explanation"
+}
+```
+
+The model receives product metadata, active deals/auctions, price history, and approved
+verified review title/body/rating. It does not receive proof references, admin notes,
+AI review reasoning, hidden reviews, rejected reviews, pending reviews, discussion text,
+or private user identifiers.
 
 ## First-Pass Review Provider
 
@@ -55,6 +109,7 @@ AI_REVIEW_PROVIDER=mock
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_REVIEW_MODEL=gpt-4o-mini
+OPENAI_ASSISTANT_MODEL=gpt-4o-mini
 OPENAI_TIMEOUT_SECONDS=8
 AI_REVIEW_USER_WINDOW_LIMIT=20
 AI_REVIEW_USER_WINDOW_HOURS=24
@@ -94,6 +149,7 @@ debugging when quota protection must be disabled.
 - Validate LLM output with Pydantic.
 - Use Structured Outputs for provider JSON when the selected model supports it.
 - Use allowlisted filters and fields when building Elasticsearch queries.
+- Keep AI assistant provider failure non-fatal by falling back to the mock provider.
 - Do not expose proof references, AI review reasoning, or admin resolution notes in public
   purchase-check evidence.
 - Do not execute raw model output as Elasticsearch DSL. Convert model output into

@@ -32,6 +32,10 @@ class Settings(BaseSettings):
         default="mock",
         validation_alias="AI_REVIEW_PROVIDER",
     )
+    ai_assistant_provider: Literal["mock", "openai"] = Field(
+        default="mock",
+        validation_alias="AI_ASSISTANT_PROVIDER",
+    )
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     openai_base_url: str = Field(
         default="https://api.openai.com/v1",
@@ -40,6 +44,10 @@ class Settings(BaseSettings):
     openai_review_model: str = Field(
         default="gpt-4o-mini",
         validation_alias="OPENAI_REVIEW_MODEL",
+    )
+    openai_assistant_model: str = Field(
+        default="gpt-4o-mini",
+        validation_alias="OPENAI_ASSISTANT_MODEL",
     )
     openai_timeout_seconds: float = Field(
         default=8.0,

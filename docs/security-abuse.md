@@ -133,8 +133,13 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   before building Elasticsearch queries.
 - AI search may use only allowlisted target types and filters; raw user text or model
   text must never become query DSL.
+- AI assistant supports mock and OpenAI providers. OpenAI assistant output must use
+  Structured Outputs and Pydantic validation. Invalid output, provider errors, timeouts,
+  or missing API keys fall back to the mock provider.
 - Purchase-check evidence uses approved verified reviews only and does not expose proof
   references, AI review reasoning, or admin moderation notes.
+- Purchase-check provider input excludes proof references, admin notes, AI review
+  reasoning, hidden/rejected/pending reviews, discussion text, and private user ids.
 - AI first-pass review supports mock and OpenAI providers. OpenAI output must use
   Structured Outputs, is validated with Pydantic, and can only produce allowlisted
   `aiDecision` values.

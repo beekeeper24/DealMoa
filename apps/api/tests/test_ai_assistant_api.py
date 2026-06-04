@@ -8,11 +8,15 @@ from app.core.pagination import CursorPage
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
+from app.modules.ai_assistant.provider import PurchaseCheckExplanation
 from app.modules.ai_assistant.router import get_ai_assistant_use_cases
+from app.modules.ai_assistant.schemas import SearchIntent, SearchIntentFilters
 from app.modules.ai_assistant.use_cases import AiAssistantUseCases
 from app.modules.auth.models import User
 from app.modules.evidence.models import PriceHistorySnapshot, VerifiedReview
+from app.modules.evidence.repository import EvidenceRepository
 from app.modules.products.models import Deal, Product
+from app.modules.products.repository import ProductRepository
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -93,6 +97,48 @@ class FakeSearchUseCases:
         return CursorPage(items=[], next_cursor=None)
 
 
+class ProductsOnlyAssistantProvider:
+    def parse_search_intent(self, query: str) -> SearchIntent:
+        return SearchIntent(
+            query=query,
+            normalizedQuery="provider parsed products only",
+            targetTypes=["products"],
+            filters=SearchIntentFilters(category="smartphone", maxPrice=900000),
+        )
+
+    def explain_purchase_check(
+        self,
+        *,
+        product: Product,
+        deals: list[Deal],
+        auctions: list[Any],
+        price_history: list[PriceHistorySnapshot],
+        verified_reviews: list[VerifiedReview],
+    ) -> PurchaseCheckExplanation:
+        return PurchaseCheckExplanation(
+            recommendation="watch",
+            confidence=0.51,
+            summary="provider purchase explanation",
+        )
+
+
+class FixedPurchaseAssistantProvider(ProductsOnlyAssistantProvider):
+    def explain_purchase_check(
+        self,
+        *,
+        product: Product,
+        deals: list[Deal],
+        auctions: list[Any],
+        price_history: list[PriceHistorySnapshot],
+        verified_reviews: list[VerifiedReview],
+    ) -> PurchaseCheckExplanation:
+        return PurchaseCheckExplanation(
+            recommendation="avoid",
+            confidence=0.82,
+            summary="AI provider says the current price is too high.",
+        )
+
+
 def make_sqlite_client() -> tuple[TestClient, sessionmaker[Session]]:
     engine = create_engine(
         "sqlite://",
@@ -144,6 +190,35 @@ def test_ai_search_extracts_intent_and_uses_allowed_targets() -> None:
     assert search_use_cases.calls == [("deals", "갤럭시 100만원 이하 핫딜 찾아줘", 3, None)]
 
 
+def test_ai_search_uses_injected_provider_intent_for_allowed_targets() -> None:
+    search_use_cases = FakeSearchUseCases()
+    use_cases = AiAssistantUseCases(
+        search_use_cases=search_use_cases,
+        product_repository=cast(Any, None),
+        evidence_repository=cast(Any, None),
+        ai_assistant_provider=ProductsOnlyAssistantProvider(),
+    )
+    app = create_app()
+    app.dependency_overrides[get_ai_assistant_use_cases] = lambda: use_cases
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/ai/search",
+        json={"query": "갤럭시랑 경매랑 핫딜 다 찾아줘", "limit": 3},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"]["normalizedQuery"] == "provider parsed products only"
+    assert body["intent"]["targetTypes"] == ["products"]
+    assert body["products"]["items"][0]["id"] == "product-1"
+    assert body["deals"]["items"] == []
+    assert body["auctions"]["items"] == []
+    assert search_use_cases.calls == [
+        ("products", "갤럭시랑 경매랑 핫딜 다 찾아줘", 3, None)
+    ]
+
+
 def test_purchase_check_uses_price_history_and_public_verified_reviews() -> None:
     client, session_factory = make_sqlite_client()
     seed_purchase_check_data(session_factory)
@@ -160,6 +235,33 @@ def test_purchase_check_uses_price_history_and_public_verified_reviews() -> None
     assert any(item["type"] == "verified_review" for item in body["evidence"])
     assert "proofReference" not in str(body)
     assert "aiReason" not in str(body)
+    assert "resolutionNote" not in str(body)
+
+
+def test_purchase_check_uses_provider_explanation_but_server_built_evidence() -> None:
+    client, session_factory = make_sqlite_client()
+    seed_purchase_check_data(session_factory)
+
+    def override_use_cases() -> AiAssistantUseCases:
+        session = session_factory()
+        return AiAssistantUseCases(
+            search_use_cases=FakeSearchUseCases(),
+            product_repository=ProductRepository(session),
+            evidence_repository=EvidenceRepository(session),
+            ai_assistant_provider=FixedPurchaseAssistantProvider(),
+        )
+
+    cast(Any, client.app).dependency_overrides[get_ai_assistant_use_cases] = override_use_cases
+
+    response = client.get("/api/v1/ai/products/product-1/purchase-check")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["recommendation"] == "avoid"
+    assert body["confidence"] == 0.82
+    assert body["summary"] == "AI provider says the current price is too high."
+    assert any(item["type"] == "verified_review" for item in body["evidence"])
+    assert "proofReference" not in str(body)
     assert "resolutionNote" not in str(body)
 
 
