@@ -9,6 +9,7 @@ from app.main import create_app
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.crawlers.models import CrawlerRunLog
+from app.modules.crawlers.router import get_crawler_task_queue
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -32,8 +33,18 @@ class FakeAuthUseCases:
         )
 
 
+class FakeCrawlerTaskQueue:
+    def __init__(self) -> None:
+        self.enqueued: list[str] = []
+
+    def enqueue(self, task_name: str) -> str:
+        self.enqueued.append(task_name)
+        return f"celery-{task_name}"
+
+
 def make_test_client(
     auth_use_cases: FakeAuthUseCases | None = None,
+    crawler_task_queue: FakeCrawlerTaskQueue | None = None,
 ) -> tuple[TestClient, sessionmaker[Session]]:
     engine = create_engine(
         "sqlite://",
@@ -45,6 +56,8 @@ def make_test_client(
     app = create_app()
     if auth_use_cases is not None:
         app.dependency_overrides[get_auth_use_cases] = lambda: auth_use_cases
+    if crawler_task_queue is not None:
+        app.dependency_overrides[get_crawler_task_queue] = lambda: crawler_task_queue
 
     def override_session() -> Iterator[Session]:
         session = session_factory()
@@ -207,3 +220,64 @@ def test_admin_can_list_failed_crawler_run_log_failure_fields() -> None:
     assert response.json()["items"][0]["status"] == "failed"
     assert response.json()["items"][0]["errorType"] == "RuntimeError"
     assert response.json()["items"][0]["errorMessage"] == "crawler fetch failed"
+
+
+def test_admin_crawler_run_trigger_requires_bearer_token() -> None:
+    queue = FakeCrawlerTaskQueue()
+    client, _ = make_test_client(FakeAuthUseCases(), crawler_task_queue=queue)
+
+    response = client.post(
+        "/api/v1/admin/crawler-runs/trigger",
+        json={"taskName": "crawl_live_urls"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHORIZED"
+    assert queue.enqueued == []
+
+
+def test_admin_crawler_run_trigger_requires_admin_role() -> None:
+    queue = FakeCrawlerTaskQueue()
+    client, _ = make_test_client(FakeAuthUseCases(role="USER"), crawler_task_queue=queue)
+
+    response = client.post(
+        "/api/v1/admin/crawler-runs/trigger",
+        headers={"Authorization": "Bearer access-1"},
+        json={"taskName": "crawl_live_urls"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "FORBIDDEN"
+    assert queue.enqueued == []
+
+
+def test_admin_can_trigger_allowlisted_crawler_task() -> None:
+    queue = FakeCrawlerTaskQueue()
+    client, _ = make_test_client(FakeAuthUseCases(), crawler_task_queue=queue)
+
+    response = client.post(
+        "/api/v1/admin/crawler-runs/trigger",
+        headers={"Authorization": "Bearer access-1"},
+        json={"taskName": "crawl_live_urls"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "taskName": "crawl_live_urls",
+        "celeryTaskId": "celery-crawl_live_urls",
+    }
+    assert queue.enqueued == ["crawl_live_urls"]
+
+
+def test_admin_crawler_run_trigger_rejects_unknown_task_name() -> None:
+    queue = FakeCrawlerTaskQueue()
+    client, _ = make_test_client(FakeAuthUseCases(), crawler_task_queue=queue)
+
+    response = client.post(
+        "/api/v1/admin/crawler-runs/trigger",
+        headers={"Authorization": "Bearer access-1"},
+        json={"taskName": "delete_everything"},
+    )
+
+    assert response.status_code == 422
+    assert queue.enqueued == []

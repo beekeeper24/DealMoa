@@ -191,8 +191,16 @@ summaries to `crawler_run_logs`. The admin API exposes these logs through
 status, scanned/fetched/accepted/created/duplicate/skipped counts, skip reasons, run
 timestamps, and bounded failure fields when an exception occurs. Failed crawler tasks
 rollback the main submission transaction, then write a failed run log in a separate
-short transaction and re-raise the original exception. Retry metadata, scheduler
-controls, and manual crawler trigger buttons remain deferred.
+short transaction and re-raise the original exception.
+
+Admins can manually enqueue crawler jobs through
+`POST /api/v1/admin/crawler-runs/trigger` or the `/admin/crawler-runs` web page. The API
+accepts only `crawl_hot_deals_mock` and `crawl_live_urls`, then dispatches the matching
+`dealmoa.<task>` Celery task through `CELERY_BROKER_URL`. It does not accept arbitrary
+task names or per-request URLs. Live crawler URLs still come only from
+`CRAWLER_LIVE_URLS` and must pass the worker's source profile, parser, SSRF, robots,
+content-type, size, and same-host limit checks. Retry metadata, scheduler controls, and
+distributed rate windows remain deferred.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API

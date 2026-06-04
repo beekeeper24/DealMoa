@@ -188,6 +188,51 @@ describe("AdminCrawlerRunLogPage", () => {
     expect(within(card).getByText("crawler fetch failed with raw html [redacted]")).toBeInTheDocument();
   });
 
+  it("triggers a live crawler run and refreshes run logs", async () => {
+    const user = userEvent.setup();
+    let listRequestCount = 0;
+    const fetchMock = installFetch((url, init) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return jsonResponse(authSession("ADMIN"));
+      }
+      if (url === "/api/v1/admin/crawler-runs?limit=20") {
+        listRequestCount += 1;
+        return jsonResponse({
+          items: [
+            crawlerRunFixture({
+              id: `run-${listRequestCount}`,
+              taskName: listRequestCount === 1 ? "crawl_hot_deals_mock" : "crawl_live_urls"
+            })
+          ],
+          nextCursor: null
+        });
+      }
+      if (url === "/api/v1/admin/crawler-runs/trigger") {
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBe(JSON.stringify({ taskName: "crawl_live_urls" }));
+        return jsonResponse({
+          taskName: "crawl_live_urls",
+          celeryTaskId: "celery-1"
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderWithAuthProvider();
+
+    expect(await screen.findByRole("article", { name: "crawl_hot_deals_mock 실행 로그" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Live 크롤러 실행" }));
+
+    expect(await screen.findByText("요청됨 celery-1")).toBeInTheDocument();
+    expect(await screen.findByRole("article", { name: "crawl_live_urls 실행 로그" })).toBeInTheDocument();
+    expect(listRequestCount).toBe(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/admin/crawler-runs/trigger",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
   it("shows admin api errors", async () => {
     installFetch((url) => {
       if (url === "/api/v1/auth/token/refresh") {

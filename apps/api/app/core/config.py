@@ -20,6 +20,10 @@ class Settings(BaseSettings):
         validation_alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379/0", validation_alias="REDIS_URL")
+    celery_broker_url: str = Field(
+        default="redis://localhost:6379/1",
+        validation_alias="CELERY_BROKER_URL",
+    )
     elasticsearch_url: str = Field(
         default="http://localhost:9200",
         validation_alias="ELASTICSEARCH_URL",

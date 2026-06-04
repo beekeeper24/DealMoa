@@ -4,7 +4,8 @@ import {
   AdminReportApiError,
   listAdminCrawlerRunLogs,
   listAdminReports,
-  reviewAdminReport
+  reviewAdminReport,
+  triggerAdminCrawlerRun
 } from "../api";
 
 afterEach(() => {
@@ -84,6 +85,32 @@ describe("admin reports api", () => {
         headers: { Accept: "application/json", Authorization: "Bearer access-1" }
       }
     );
+  });
+
+  it("triggers an admin crawler run with task name and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        taskName: "crawl_live_urls",
+        celeryTaskId: "celery-1"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await triggerAdminCrawlerRun({
+      accessToken: "access-1",
+      taskName: "crawl_live_urls"
+    });
+
+    expect(result.celeryTaskId).toBe("celery-1");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/crawler-runs/trigger", {
+      body: JSON.stringify({ taskName: "crawl_live_urls" }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
   });
 
   it("lists admin reports with status, limit, cursor, and bearer token", async () => {

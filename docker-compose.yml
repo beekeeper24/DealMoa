@@ -94,6 +94,7 @@ services:
       API_CORS_ORIGINS: ${API_CORS_ORIGINS:-http://localhost:3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dealmoa:dealmoa-local-password@postgres:5432/dealmoa}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       AI_REVIEW_PROVIDER: ${AI_REVIEW_PROVIDER:-mock}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}

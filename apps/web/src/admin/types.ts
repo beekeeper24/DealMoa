@@ -72,3 +72,10 @@ export type AdminCrawlerRunLogListResponse = {
   items: AdminCrawlerRunLog[];
   nextCursor: string | null;
 };
+
+export type AdminCrawlerTaskName = "crawl_hot_deals_mock" | "crawl_live_urls";
+
+export type AdminCrawlerRunTriggerResponse = {
+  taskName: AdminCrawlerTaskName;
+  celeryTaskId: string;
+};

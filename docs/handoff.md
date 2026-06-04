@@ -476,6 +476,22 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Retry metadata, Redis-backed distributed rate windows, crawl delay policies,
   production scheduling, and manual crawler controls remain deferred.
 
+## Completed Admin Crawler Manual Trigger Scope
+
+- Added admin-only `POST /api/v1/admin/crawler-runs/trigger`.
+- The trigger accepts only `crawl_hot_deals_mock` and `crawl_live_urls`.
+- The API dispatches `dealmoa.<task>` through Celery using `CELERY_BROKER_URL`.
+- The API does not import worker task code, accept arbitrary task names, or accept
+  per-request crawler URLs.
+- Added `CELERY_BROKER_URL` to API settings and docker-compose API environment.
+- Added `/admin/crawler-runs` buttons for Mock and Live crawler execution.
+- The web page shows the returned Celery task id and refreshes the first page of run
+  logs after a successful trigger request.
+- Live crawler source profiles, parser mappings, SSRF-safe fetch checks, robots policy,
+  response-size limits, and per-host run caps remain enforced by the worker.
+- Scheduler controls, retry metadata, per-request URL input, and distributed rate windows
+  remain deferred.
+
 ## Completed My Page Contribution History Scope
 
 - Added `/me` as an authenticated My Page contribution history.
