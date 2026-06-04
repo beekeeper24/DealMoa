@@ -1,0 +1,57 @@
+name: Task
+description: Track a planned implementation, documentation, infrastructure, or cleanup slice.
+title: "[Task] "
+labels:
+  - task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        MVP 슬라이스나 운영 작업처럼 이미 방향이 정해진 일을 추적합니다. PR은 보통 이 Task 하나를 완료하는 단위로 만듭니다.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true after this task?
+      placeholder: 이 작업이 끝났을 때 달라지는 점을 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What files, modules, or behaviors are expected to change?
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What confirms that this task is complete?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Which tests, builds, checks, or manual QA should run?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Constraints, non-goals, related docs, or implementation hints.
+      placeholder: 관련 문서, 제외 범위, 주의할 점을 적어 주세요.
+    validations:
+      required: false

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: DealMoa docs
+    url: https://github.com/beekeeper24/DealMoa/tree/develop/docs
+    about: Check project planning, architecture, and handoff documents.
