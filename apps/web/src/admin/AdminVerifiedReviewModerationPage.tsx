@@ -271,6 +271,9 @@ function VerifiedReviewModerationCard({
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
               {review.rating}점
             </span>
+            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold text-deal">
+              {review.riskLevel}
+            </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
               {review.productId}
             </span>
@@ -300,6 +303,15 @@ function VerifiedReviewModerationCard({
               </span>
             ) : null}
           </div>
+          {review.riskReasons.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {review.riskReasons.map((reason) => (
+                <span className="rounded bg-paper px-2 py-1 text-xs font-semibold" key={reason}>
+                  {reason}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {review.aiReason ? (
             <p className="mt-3 rounded border border-black/10 bg-paper px-3 py-2 text-sm text-black/70">
               {review.aiReason}

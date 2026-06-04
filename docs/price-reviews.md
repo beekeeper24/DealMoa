@@ -94,6 +94,20 @@ submission does not consume that AI quota because it does not call the AI provid
 MVP auto-publish path. Separate user/content rate limits for reviews can be added when
 traffic requires them.
 
+## Platform Risk Signals
+
+Verified reviews store deterministic moderation priority signals:
+
+- `duplicate_proof_reference`: the same proof reference was already used;
+- `repeated_user_product_review`: the same user already reviewed the same product;
+- `external_contact`: the review text includes off-platform contact language;
+- `repeated_url`: the review text includes two or more URLs;
+- `blocked_commercial_spam`: the review text includes obvious blocked spam terms.
+
+These signals produce `riskScore`, `riskLevel`, and `riskReasons` for admin review
+priority. They do not automatically hide, reject, down-rank, or penalize the user.
+Normal reviews still publish as `approved` unless an admin later hides them.
+
 ## My Review History
 
 Authenticated users can list only their own verified-review submissions:
@@ -129,6 +143,8 @@ Rules:
 
 - only `ADMIN` users can list or moderate verified reviews;
 - normal public reviews are `approved`;
+- admin lists include `riskScore`, `riskLevel`, and `riskReasons` and order higher-risk
+  reviews first;
 - `hide` moves an approved review to `hidden`, removing it from public product detail;
 - `restore` moves a hidden review back to `approved`;
 - `approve` and `reject` remain for future suspicious-review `pending_review` rows;

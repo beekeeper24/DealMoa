@@ -73,6 +73,9 @@ const verifiedReviewFixture = {
   aiDecision: null,
   aiReason: null,
   aiReviewedAt: null,
+  riskScore: 100,
+  riskLevel: "high",
+  riskReasons: ["duplicate_proof_reference", "external_contact"],
   reviewedByUserId: null,
   resolutionNote: null,
   resolvedAt: null,
@@ -224,6 +227,12 @@ describe("admin reports api", () => {
     });
 
     expect(page.items[0].proofReference).toBe("order-123");
+    expect(page.items[0].riskLevel).toBe("high");
+    expect(page.items[0].riskScore).toBe(100);
+    expect(page.items[0].riskReasons).toEqual([
+      "duplicate_proof_reference",
+      "external_contact"
+    ]);
     expect(page.nextCursor).toBe("review-2");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/admin/verified-reviews?status=approved&limit=20&cursor=cursor-1",

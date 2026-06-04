@@ -548,6 +548,10 @@ after local verification and required CI/review checks pass.
 - Added `/admin/verified-reviews` web UI for admin-only post-publication review
   moderation with approved/hidden filters, cursor pagination, hide/restore actions, and
   resolution notes.
+- Verified reviews now store deterministic platform-risk signals for admin priority:
+  duplicate proof reference, repeated user/product review, off-platform contact,
+  repeated URL, and blocked commercial spam. Admin lists sort higher-risk reviews first.
+  Risk signals do not automatically hide, reject, down-rank, or penalize reviews/users.
 - Consumer report buttons for verified reviews are not part of the MVP; the current
   operating model is platform-risk/admin-flagged post-publication moderation.
 - Product detail now shows successful verified-review submission as immediately public.

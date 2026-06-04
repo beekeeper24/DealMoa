@@ -115,6 +115,7 @@ export type AdminDiscussionModerationRequest = {
 
 export type AdminVerifiedReviewStatus = "pending_review" | "approved" | "rejected" | "hidden";
 export type AdminVerifiedReviewModerationAction = "approve" | "reject" | "hide" | "restore";
+export type AdminVerifiedReviewRiskLevel = "low" | "medium" | "high";
 
 export type AdminVerifiedReview = {
   id: string;
@@ -129,6 +130,9 @@ export type AdminVerifiedReview = {
   aiDecision: string | null;
   aiReason: string | null;
   aiReviewedAt: string | null;
+  riskScore: number;
+  riskLevel: AdminVerifiedReviewRiskLevel;
+  riskReasons: string[];
   reviewedByUserId: string | null;
   resolutionNote: string | null;
   resolvedAt: string | null;
