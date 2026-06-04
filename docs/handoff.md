@@ -93,9 +93,26 @@ after local verification and required CI/review checks pass.
 - Root `.env.example`.
 - Docker Compose `core` profile.
 - FastAPI app with health endpoint.
+- FastAPI app with Prometheus-compatible `GET /metrics`.
 - Next.js app shell.
 - PostgreSQL, Redis, Elasticsearch + Nori in local infra.
 - GitHub Actions CI with backend/frontend lightweight checks.
+
+## Completed API Observability MVP Scope
+
+- Added `prometheus-client` to the API package.
+- Added root-level `GET /metrics` returning Prometheus text output.
+- Added request count metric `dealmoa_api_http_requests_total` with `method`, `path`,
+  and `status_code` labels.
+- Added request latency metric `dealmoa_api_http_request_duration_seconds` with `method`
+  and `path` labels.
+- Metrics path labels use FastAPI route templates for matched routes, such as
+  `/api/v1/products/{product_id}`, to avoid dynamic-id label cardinality.
+- `/metrics` scrape requests are excluded from API request metrics.
+- `API_METRICS_ENABLED=false` disables `/metrics`; public deployments should protect the
+  metrics path with platform/network access controls before enabling external scraping.
+- Grafana dashboards, Prometheus scrape config, alert rules, worker/consumer metrics, and
+  business metrics remain deferred.
 
 ## Completed Product API MVP Scope
 

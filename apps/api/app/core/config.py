@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:3100",
         validation_alias="API_CORS_ORIGINS",
     )
+    api_metrics_enabled: bool = Field(default=True, validation_alias="API_METRICS_ENABLED")
     database_url: str = Field(
         default="postgresql+psycopg://dealmoa:dealmoa-local-password@localhost:5432/dealmoa",
         validation_alias="DATABASE_URL",
