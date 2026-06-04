@@ -61,6 +61,8 @@ export type AdminCrawlerRunLog = {
   duplicates: number;
   skipped: number;
   skipReasons: Record<string, number>;
+  errorType: string | null;
+  errorMessage: string | null;
   startedAt: string;
   finishedAt: string;
   createdAt: string;

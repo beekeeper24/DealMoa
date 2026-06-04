@@ -1,3 +1,4 @@
+import pytest
 from pytest import MonkeyPatch
 from worker_app.celery_app import celery_app
 from worker_app.tasks import (
@@ -260,6 +261,52 @@ def test_execute_live_crawler_skips_over_host_run_limit_before_fetch(  # type: i
         "skipReasons": {"host_rate_limited": 1},
     }
     assert submission_count == 1
+
+
+def test_execute_live_crawler_logs_failed_run_and_reraises(  # type: ignore[no-untyped-def]
+    tmp_path,
+    monkeypatch,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'dealmoa-live-crawler-failed-log-test.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv("CRAWLER_SOURCE_PROFILES", "mock.example.com:trusted:allow")
+    monkeypatch.setenv("CRAWLER_SOURCE_PARSERS", "mock.example.com:dealmoa_article")
+
+    from app.db.base import Base
+    from app.modules.crawlers.models import CrawlerRunLog
+    from app.modules.submissions.models import Submission
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    def fetcher(url: str):  # type: ignore[no-untyped-def]
+        raise RuntimeError("crawler fetch failed with raw html <article>secret</article>")
+
+    with pytest.raises(RuntimeError):
+        execute_live_crawler(
+            now_iso="2026-06-02T00:00:00+00:00",
+            urls=["https://mock.example.com/deals/1"],
+            fetcher=fetcher,
+        )
+
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        run_logs = list(session.scalars(select(CrawlerRunLog)))
+        submission_count = len(list(session.scalars(select(Submission))))
+    finally:
+        session.close()
+
+    assert submission_count == 0
+    assert len(run_logs) == 1
+    assert run_logs[0].task_name == "crawl_live_urls"
+    assert run_logs[0].status == "failed"
+    assert run_logs[0].scanned_count == 1
+    assert run_logs[0].fetched_count == 0
+    assert run_logs[0].error_type == "RuntimeError"
+    assert run_logs[0].error_message == "crawler fetch failed with raw html [redacted]"
 
 
 def test_mock_crawler_task_ingests_pending_submissions_idempotently(  # type: ignore[no-untyped-def]

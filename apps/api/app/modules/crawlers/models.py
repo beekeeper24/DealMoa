@@ -34,5 +34,7 @@ class CrawlerRunLog(TimestampMixin, Base):
     duplicate_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     skipped_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     skip_reasons_json: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False, default=dict)
+    error_type: Mapped[str | None] = mapped_column(String(120))
+    error_message: Mapped[str | None] = mapped_column(String(500))
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

@@ -458,8 +458,23 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Added admin-only `GET /api/v1/admin/crawler-runs` with cursor pagination.
 - Added `/admin/crawler-runs` web page and links from existing admin review pages.
 - Run logs do not store fetched HTML and do not expose crawler control buttons.
-- Failed-run logging, retry metadata, Redis-backed distributed rate windows, crawl delay
-  policies, production scheduling, and manual crawler controls remain deferred.
+- Retry metadata, Redis-backed distributed rate windows, crawl delay policies, production
+  scheduling, and manual crawler controls remain deferred.
+
+## Completed Crawler Failed Run Logs Scope
+
+- Added nullable `error_type` and `error_message` fields to `crawler_run_logs`.
+- Successful run logs keep those fields empty.
+- Failed `crawl_hot_deals_mock` and `crawl_live_urls` runs rollback the main transaction,
+  then write a `failed` run log in a separate short transaction.
+- Failed run logs include task name, status, count fields collected before failure,
+  skip reasons, exception type, bounded redacted error message, and timestamps.
+- The worker re-raises the original exception after attempting to write the failed run
+  log, so Celery still sees the task as failed.
+- Admin crawler run API and `/admin/crawler-runs` display the failure fields.
+- Failed run logs still do not store fetched HTML.
+- Retry metadata, Redis-backed distributed rate windows, crawl delay policies,
+  production scheduling, and manual crawler controls remain deferred.
 
 ## Completed My Page Contribution History Scope
 

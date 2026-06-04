@@ -75,6 +75,8 @@ def seed_crawler_run_logs(session_factory: sessionmaker[Session]) -> None:
             duplicate_count=0,
             skipped_count=0,
             skip_reasons_json={},
+            error_type=None,
+            error_message=None,
             started_at=NOW,
             finished_at=NOW,
             created_at=NOW,
@@ -91,6 +93,8 @@ def seed_crawler_run_logs(session_factory: sessionmaker[Session]) -> None:
             duplicate_count=0,
             skipped_count=1,
             skip_reasons_json={"host_rate_limited": 1},
+            error_type=None,
+            error_message=None,
             started_at=NOW + timedelta(minutes=1),
             finished_at=NOW + timedelta(minutes=1),
             created_at=NOW + timedelta(minutes=1),
@@ -152,6 +156,8 @@ def test_admin_can_list_crawler_run_logs_newest_first_with_cursor() -> None:
                 "duplicates": 0,
                 "skipped": 1,
                 "skipReasons": {"host_rate_limited": 1},
+                "errorType": None,
+                "errorMessage": None,
                 "startedAt": "2026-06-03T01:01:00Z",
                 "finishedAt": "2026-06-03T01:01:00Z",
                 "createdAt": "2026-06-03T01:01:00Z",
@@ -162,3 +168,42 @@ def test_admin_can_list_crawler_run_logs_newest_first_with_cursor() -> None:
     assert second_page.status_code == 200
     assert second_page.json()["items"][0]["id"] == "run-1"
     assert second_page.json()["nextCursor"] is None
+
+
+def test_admin_can_list_failed_crawler_run_log_failure_fields() -> None:
+    client, session_factory = make_test_client(FakeAuthUseCases())
+    session = session_factory()
+    try:
+        session.add(
+            CrawlerRunLog(
+                id="run-failed",
+                task_name="crawl_live_urls",
+                status="failed",
+                scanned_count=1,
+                fetched_count=0,
+                accepted_count=0,
+                created_count=0,
+                duplicate_count=0,
+                skipped_count=0,
+                skip_reasons_json={},
+                error_type="RuntimeError",
+                error_message="crawler fetch failed",
+                started_at=NOW,
+                finished_at=NOW,
+                created_at=NOW,
+                updated_at=NOW,
+            )
+        )
+        session.commit()
+    finally:
+        session.close()
+
+    response = client.get(
+        "/api/v1/admin/crawler-runs",
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["status"] == "failed"
+    assert response.json()["items"][0]["errorType"] == "RuntimeError"
+    assert response.json()["items"][0]["errorMessage"] == "crawler fetch failed"

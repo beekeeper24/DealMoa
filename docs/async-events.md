@@ -187,10 +187,12 @@ Redis-backed rate window.
 Both `dealmoa.crawl_hot_deals_mock` and `dealmoa.crawl_live_urls` write completed run
 summaries to `crawler_run_logs`. The admin API exposes these logs through
 `GET /api/v1/admin/crawler-runs`, and the web admin console renders them at
-`/admin/crawler-runs`. The log currently records successful task summaries only:
-task name, status, scanned/fetched/accepted/created/duplicate/skipped counts, skip
-reasons, and run timestamps. Failed-run logging, retry metadata, scheduler controls, and
-manual crawler trigger buttons remain deferred.
+`/admin/crawler-runs`. The log records successful and failed task summaries: task name,
+status, scanned/fetched/accepted/created/duplicate/skipped counts, skip reasons, run
+timestamps, and bounded failure fields when an exception occurs. Failed crawler tasks
+rollback the main submission transaction, then write a failed run log in a separate
+short transaction and re-raise the original exception. Retry metadata, scheduler
+controls, and manual crawler trigger buttons remain deferred.
 
 `dealmoa.ai_review_submission_mock` is still a mock boundary. It returns
 `needs_admin_review` plus a deterministic reason and does not publish content. The API
