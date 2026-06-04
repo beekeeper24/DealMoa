@@ -57,8 +57,8 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - A non-empty proof reference is required for purchase verified review submission.
 - Normal MVP verified reviews publish immediately as `approved` after lightweight request
   validation. They do not call the AI review provider and do not consume AI review quota.
-- Suspicious, reported, or admin-flagged reviews move through post-publication
-  moderation.
+- Platform-risk or admin-flagged reviews move through post-publication moderation.
+- Consumer report buttons for verified reviews are deferred in the MVP.
 - Admin hide/restore/reject actions write `admin_audit_logs`.
 - Public approved-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.

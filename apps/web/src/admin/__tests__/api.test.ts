@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AdminReportApiError,
+  listAdminVerifiedReviews,
   listAdminCrawlerRunLogs,
   listAdminDiscussions,
   listAdminReports,
+  moderateAdminVerifiedReview,
   moderateAdminDiscussion,
   reviewAdminReport,
   triggerAdminCrawlerRun
@@ -56,6 +58,26 @@ const discussionFixture = {
   moderatedAt: null,
   createdAt: "2026-06-01T00:00:00Z",
   updatedAt: "2026-06-01T00:00:00Z"
+};
+
+const verifiedReviewFixture = {
+  id: "review-1",
+  productId: "product-1",
+  userId: "user-1",
+  rating: 5,
+  title: "실구매 기준 만족",
+  body: "배송과 제품 상태 모두 좋았습니다.",
+  proofType: "receipt",
+  proofReference: "order-123",
+  status: "approved",
+  aiDecision: null,
+  aiReason: null,
+  aiReviewedAt: null,
+  reviewedByUserId: null,
+  resolutionNote: null,
+  resolvedAt: null,
+  createdAt: "2026-06-04T00:00:00Z",
+  updatedAt: "2026-06-04T00:00:00Z"
 };
 
 describe("admin reports api", () => {
@@ -177,6 +199,63 @@ describe("admin reports api", () => {
     expect(result.moderationNote).toBe("욕설 포함");
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/discussions/discussion-1", {
       body: JSON.stringify({ action: "hide", moderationNote: "욕설 포함" }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "PATCH"
+    });
+  });
+
+  it("lists admin verified reviews with status, limit, cursor, and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        items: [verifiedReviewFixture],
+        nextCursor: "review-2"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const page = await listAdminVerifiedReviews({
+      accessToken: "access-1",
+      cursor: "cursor-1",
+      status: "approved"
+    });
+
+    expect(page.items[0].proofReference).toBe("order-123");
+    expect(page.nextCursor).toBe("review-2");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/admin/verified-reviews?status=approved&limit=20&cursor=cursor-1",
+      {
+        headers: { Accept: "application/json", Authorization: "Bearer access-1" }
+      }
+    );
+  });
+
+  it("moderates an admin verified review with action, note, and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        ...verifiedReviewFixture,
+        status: "hidden",
+        reviewedByUserId: "admin-1",
+        resolutionNote: "허위 증빙",
+        resolvedAt: "2026-06-04T00:01:00Z"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await moderateAdminVerifiedReview({
+      accessToken: "access-1",
+      action: "hide",
+      reviewId: "review-1",
+      resolutionNote: "허위 증빙"
+    });
+
+    expect(result.status).toBe("hidden");
+    expect(result.resolutionNote).toBe("허위 증빙");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/verified-reviews/review-1", {
+      body: JSON.stringify({ action: "hide", resolutionNote: "허위 증빙" }),
       headers: {
         Accept: "application/json",
         Authorization: "Bearer access-1",

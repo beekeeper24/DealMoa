@@ -8,10 +8,11 @@ This document covers the first MVP foundation for product evidence:
 - authenticated verified review submission;
 - receipt/order-history proof reference validation;
 - automatic public display for normal MVP verified reviews;
-- post-publication admin moderation for suspicious, reported, or admin-flagged reviews.
+- post-publication admin moderation for platform-risk or admin-flagged reviews.
 
 Receipt image upload, OCR, automatic proof matching, suspicious-review AI escalation,
-review scoring impact, and richer moderation queues remain deferred.
+consumer report buttons, review scoring impact, and richer moderation queues remain
+deferred.
 
 ## Price History
 
@@ -79,8 +80,8 @@ receipt-verified review products: users do not wait for a human to approve ordin
 reviews, and admins do not spend time on every normal review.
 
 The AI review provider is not called for every normal verified-review submission. It is
-reserved for future suspicious-review escalation, 신고 누적, or targeted abuse review.
-This avoids unnecessary token spend and keeps admin attention on exceptional cases.
+reserved for future platform-risk escalation or targeted abuse review. This avoids
+unnecessary token spend and keeps admin attention on exceptional cases.
 
 When `AI_REVIEW_PROVIDER=openai`, the adapter sends review text and proof metadata shape
 to the provider, but not the raw `proofReference`. Provider output can only populate
@@ -120,7 +121,7 @@ Patch request:
 ```json
 {
   "action": "hide",
-  "resolutionNote": "신고 확인"
+  "resolutionNote": "증빙 불일치"
 }
 ```
 
@@ -131,6 +132,7 @@ Rules:
 - `hide` moves an approved review to `hidden`, removing it from public product detail;
 - `restore` moves a hidden review back to `approved`;
 - `approve` and `reject` remain for future suspicious-review `pending_review` rows;
+- consumer report buttons for verified reviews are deferred in the MVP;
 - all moderation actions write `admin_audit_logs`;
 - creation and restore/approval to public status write a `review.verified`
   transactional outbox event.

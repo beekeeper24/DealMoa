@@ -112,3 +112,38 @@ export type AdminDiscussionModerationRequest = {
   commentId: string;
   moderationNote?: string;
 };
+
+export type AdminVerifiedReviewStatus = "pending_review" | "approved" | "rejected" | "hidden";
+export type AdminVerifiedReviewModerationAction = "approve" | "reject" | "hide" | "restore";
+
+export type AdminVerifiedReview = {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  title: string;
+  body: string;
+  proofType: string;
+  proofReference: string | null;
+  status: AdminVerifiedReviewStatus;
+  aiDecision: string | null;
+  aiReason: string | null;
+  aiReviewedAt: string | null;
+  reviewedByUserId: string | null;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminVerifiedReviewListResponse = {
+  items: AdminVerifiedReview[];
+  nextCursor: string | null;
+};
+
+export type AdminVerifiedReviewModerationRequest = {
+  accessToken: string;
+  action: AdminVerifiedReviewModerationAction;
+  reviewId: string;
+  resolutionNote?: string;
+};
