@@ -8,8 +8,15 @@ import { useAuthSession } from "../auth/useAuthSession";
 import { listMySubmissions, listMyVerifiedReviews, MyPageApiError } from "./api";
 import type { Submission, SubmissionStatus, VerifiedReview } from "./types";
 
-const statusLabels: Record<SubmissionStatus, string> = {
+const submissionStatusLabels: Record<SubmissionStatus, string> = {
   approved: "승인됨",
+  pending_review: "검토 대기",
+  rejected: "거절됨"
+};
+
+const reviewStatusLabels: Record<VerifiedReview["status"], string> = {
+  approved: "공개됨",
+  hidden: "숨김",
   pending_review: "검토 대기",
   rejected: "거절됨"
 };
@@ -227,7 +234,7 @@ function SubmissionHistoryCard({ submission }: { submission: Submission }) {
               {submission.offerType === "deal" ? "핫딜" : "경매"}
             </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
-              {statusLabels[submission.status]}
+              {submissionStatusLabels[submission.status]}
             </span>
           </div>
           <h3 className="mt-3 text-lg font-bold">{submission.title}</h3>
@@ -292,7 +299,7 @@ function VerifiedReviewHistoryCard({ review }: { review: VerifiedReview }) {
               인증 후기
             </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
-              {statusLabels[review.status]}
+              {reviewStatusLabels[review.status]}
             </span>
           </div>
           <h3 className="mt-3 text-lg font-bold">{review.title}</h3>

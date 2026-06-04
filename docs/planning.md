@@ -23,10 +23,10 @@
 - 홈 화면: 현재 진행 중인 경매 중 활성도가 높은 항목을 회전초밥 느낌의 가로 레일로 노출.
 - 핫딜 랭킹: 가격 점수를 가장 크게 보고 관심도와 신뢰도를 보조 지표로 사용.
 - 경매 랭킹: 관심도보다 실제 입찰 활성도를 우선한다.
-- 구매 인증 후기: 사이트 구매내역 또는 영수증 기반 인증, AI 1차 검수 후 관리자 승인.
+- 구매 인증 후기: 사이트 구매내역 또는 영수증 기반 인증. MVP 초기에는 정상 제출을 자동 공개하고, 의심 신호/신고/관리자 판단 건만 사후 검수한다.
 - 사용자 제보: 자동 게시하지 않고 AI 1차 검수 후 관리자 승인.
 - 커뮤니티: 자유게시판 중심이 아니라 상품별 토론/후기 흐름을 둔다.
-- 관리자: 제보, 인증 후기, 상품 매칭, 신고, 크롤러 로그, 수동 등록을 관리.
+- 관리자: 제보, 신고된 인증 후기, 상품 매칭, 신고, 크롤러 로그, 수동 등록을 관리.
 - 모니터링/부하 테스트: Prometheus/Grafana와 JMeter로 트래픽 집중 상황을 검증.
 
 ## Technology Stack
@@ -94,7 +94,7 @@
 2. Product/search basics: Product, Deal, Auction CRUD, Elasticsearch indexing, product/deal/auction search, cursor pagination.
 3. Auth/favorites/notifications: Google/Kakao/Naver OAuth, access/refresh tokens, favorites, new deal/auction alerts, auction ending-soon alerts, notification popup API, my page lists.
 4. Admin/submission/review workflow: user submissions, AI first-pass mock, admin approval/rejection, crawler mock batch, admin product matching, report review.
-5. Ranking/price history/verified reviews: HotDealScore, AuctionActivityScore, price history, verified purchase reviews, receipt-based review path, product discussion.
+5. Ranking/price history/verified reviews: HotDealScore, AuctionActivityScore, price history, verified purchase reviews, receipt/order-history based auto-publish review path, post-publication moderation, product discussion.
 6. AI search/purchase assistant: AI search button, SearchIntent validation, Elasticsearch multi-search, vector candidate search, purchase check report based on verified reviews.
 7. Observability/load test/hardening: Prometheus/Grafana, JMeter scenarios, Kafka/Celery hardening, expanded Playwright e2e, operational docs.
 

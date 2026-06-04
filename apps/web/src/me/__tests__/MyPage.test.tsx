@@ -78,12 +78,12 @@ function verifiedReviewFixture(overrides: Record<string, unknown> = {}) {
     proofType: "receipt",
     proofReference: "order-123",
     status: "approved",
-    aiDecision: "needs_admin_review",
-    aiReason: "mock review passed: receipt proof requires admin approval",
-    aiReviewedAt: "2026-06-01T00:00:00Z",
-    reviewedByUserId: "admin-1",
-    resolutionNote: "영수증 확인",
-    resolvedAt: "2026-06-01T00:05:00Z",
+    aiDecision: null,
+    aiReason: null,
+    aiReviewedAt: null,
+    reviewedByUserId: null,
+    resolutionNote: null,
+    resolvedAt: null,
     createdAt: "2026-06-01T00:00:00Z",
     updatedAt: "2026-06-01T00:05:00Z",
     ...overrides
@@ -175,7 +175,7 @@ describe("MyPage", () => {
           items: [
             verifiedReviewFixture({
               status: "approved",
-              resolutionNote: "영수증 확인"
+              resolutionNote: null
             })
           ],
           nextCursor: "review-2"
@@ -203,9 +203,9 @@ describe("MyPage", () => {
             verifiedReviewFixture({
               id: "review-2",
               rating: 3,
-              title: "검토 대기 후기",
-              status: "pending_review",
-              resolutionNote: null
+              title: "사후 검수 숨김 후기",
+              status: "hidden",
+              resolutionNote: "신고 확인"
             })
           ],
           nextCursor: null
@@ -243,20 +243,20 @@ describe("MyPage", () => {
     const reviewCard = await screen.findByRole("article", {
       name: "실구매 기준 만족 인증 후기 이력"
     });
-    expect(within(reviewCard).getByText("승인됨")).toBeInTheDocument();
+    expect(within(reviewCard).getByText("공개됨")).toBeInTheDocument();
     expect(within(reviewCard).getByText("★★★★★")).toBeInTheDocument();
     expect(
-      within(reviewCard).getByText("mock review passed: receipt proof requires admin approval")
-    ).toBeInTheDocument();
-    expect(within(reviewCard).getByText("영수증 확인")).toBeInTheDocument();
+      within(reviewCard).queryByText("mock review flagged for manual moderation")
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "인증 후기 더보기" }));
 
-    const pendingReviewCard = await screen.findByRole("article", {
-      name: "검토 대기 후기 인증 후기 이력"
+    const hiddenReviewCard = await screen.findByRole("article", {
+      name: "사후 검수 숨김 후기 인증 후기 이력"
     });
-    expect(within(pendingReviewCard).getByText("검토 대기")).toBeInTheDocument();
-    expect(within(pendingReviewCard).getByText("★★★☆☆")).toBeInTheDocument();
+    expect(within(hiddenReviewCard).getByText("숨김")).toBeInTheDocument();
+    expect(within(hiddenReviewCard).getByText("★★★☆☆")).toBeInTheDocument();
+    expect(within(hiddenReviewCard).getByText("신고 확인")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/admin/submissions"),
       expect.anything()

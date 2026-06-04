@@ -4,8 +4,6 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import cast
 
-import pytest
-from app.core.exceptions import AIReviewRateLimitExceededException
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
@@ -179,7 +177,7 @@ def test_auction_bid_records_price_history_snapshot() -> None:
     assert [item["price"] for item in history_response.json()["items"]] == [730000, 720000]
 
 
-def test_verified_review_requires_auth_and_admin_approval() -> None:
+def test_verified_review_requires_auth_and_auto_publishes() -> None:
     user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
     product = create_product(user_client)
@@ -193,38 +191,18 @@ def test_verified_review_requires_auth_and_admin_approval() -> None:
         json=verified_review_payload(),
         headers={"Authorization": "Bearer access-1"},
     )
-    public_before_approval = user_client.get(
-        f"/api/v1/products/{product['id']}/verified-reviews"
-    )
-
-    admin_client, _session_factory = make_test_client(
-        FakeAuthUseCases(role="ADMIN"),
-        session_factory,
-    )
-    list_response = admin_client.get(
-        "/api/v1/admin/verified-reviews?status=pending_review",
-        headers={"Authorization": "Bearer access-1"},
-    )
-    review_id = create_response.json()["id"]
-    approve_response = admin_client.patch(
-        f"/api/v1/admin/verified-reviews/{review_id}",
-        json={"action": "approve", "resolutionNote": "영수증 확인"},
-        headers={"Authorization": "Bearer access-1"},
-    )
-    public_after_approval = user_client.get(
+    public_after_create = user_client.get(
         f"/api/v1/products/{product['id']}/verified-reviews"
     )
 
     assert anonymous_response.status_code == 401
     assert create_response.status_code == 201
-    assert create_response.json()["status"] == "pending_review"
-    assert create_response.json()["aiDecision"] == "needs_admin_review"
-    assert public_before_approval.json()["items"] == []
-    assert list_response.status_code == 200
-    assert list_response.json()["items"][0]["id"] == review_id
-    assert approve_response.status_code == 200
-    assert approve_response.json()["status"] == "approved"
-    public_review = public_after_approval.json()["items"][0]
+    review_id = create_response.json()["id"]
+    assert create_response.json()["status"] == "approved"
+    assert create_response.json()["aiDecision"] is None
+    assert create_response.json()["aiReason"] is None
+    assert create_response.json()["aiReviewedAt"] is None
+    public_review = public_after_create.json()["items"][0]
     assert public_review["id"] == review_id
     assert public_review["title"] == "실구매 기준 만족"
     assert "userId" not in public_review
@@ -233,16 +211,13 @@ def test_verified_review_requires_auth_and_admin_approval() -> None:
     assert "resolutionNote" not in public_review
 
 
-def test_verified_review_stores_provider_review_but_stays_pending() -> None:
-    class FixedReviewProvider:
+def test_verified_review_does_not_call_ai_provider_for_auto_publish() -> None:
+    class RaisingReviewProvider:
         def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
             raise AssertionError("submission provider should not be called")
 
         def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
-            return AIReviewResult(
-                decision="reject_candidate",
-                reason="provider flagged suspicious proof",
-            )
+            raise AssertionError("verified review provider should not be called")
 
     client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
     seed_users(session_factory)
@@ -252,7 +227,7 @@ def test_verified_review_stores_provider_review_but_stays_pending() -> None:
         use_cases = EvidenceUseCases(
             evidence_repository=EvidenceRepository(session),
             product_repository=ProductRepository(session),
-            ai_review_provider=FixedReviewProvider(),
+            ai_review_provider=RaisingReviewProvider(),
             now=lambda: NOW,
         )
 
@@ -269,12 +244,13 @@ def test_verified_review_stores_provider_review_but_stays_pending() -> None:
     finally:
         session.close()
 
-    assert review.status == "pending_review"
-    assert review.ai_decision == "reject_candidate"
-    assert review.ai_reason == "provider flagged suspicious proof"
+    assert review.status == "approved"
+    assert review.ai_decision is None
+    assert review.ai_reason is None
+    assert review.ai_reviewed_at is None
 
 
-def test_verified_review_rejects_ai_review_when_user_window_limit_is_exceeded() -> None:
+def test_verified_review_auto_publish_does_not_consume_ai_review_quota() -> None:
     class CountingReviewProvider:
         calls = 0
 
@@ -312,31 +288,88 @@ def test_verified_review_rejects_ai_review_when_user_window_limit_is_exceeded() 
             role="USER",
         )
 
-        use_cases.create_verified_review(
+        first = use_cases.create_verified_review(
             actor=actor,
             product_id=str(product["id"]),
             request=VerifiedReviewCreateRequest.model_validate(verified_review_payload()),
         )
-        with pytest.raises(AIReviewRateLimitExceededException) as exc_info:
-            use_cases.create_verified_review(
-                actor=actor,
-                product_id=str(product["id"]),
-                request=VerifiedReviewCreateRequest.model_validate(
-                    {
-                        **verified_review_payload(),
-                        "title": "두 번째 실구매 후기",
-                    }
-                ),
-            )
+        second = use_cases.create_verified_review(
+            actor=actor,
+            product_id=str(product["id"]),
+            request=VerifiedReviewCreateRequest.model_validate(
+                {
+                    **verified_review_payload(),
+                    "proofReference": "order-456",
+                    "title": "두 번째 실구매 후기",
+                }
+            ),
+        )
 
         usage_events = list(session.scalars(select(AIReviewUsageEvent)))
     finally:
         session.close()
 
-    assert provider.calls == 1
-    assert len(usage_events) == 1
-    assert usage_events[0].target_type == "verified_review"
-    assert exc_info.value.details == {"limit": 1, "windowHours": 24}
+    assert first.status == "approved"
+    assert second.status == "approved"
+    assert provider.calls == 0
+    assert usage_events == []
+
+
+def test_verified_review_requires_purchase_proof_reference() -> None:
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(client)
+
+    response = client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json={**verified_review_payload(), "proofReference": "   "},
+        headers={"Authorization": "Bearer access-1"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_admin_can_hide_and_restore_auto_published_verified_review() -> None:
+    user_client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(user_client)
+    create_response = user_client.post(
+        f"/api/v1/products/{product['id']}/verified-reviews",
+        json=verified_review_payload(),
+        headers={"Authorization": "Bearer access-1"},
+    )
+    review_id = create_response.json()["id"]
+    assert user_client.get(
+        f"/api/v1/products/{product['id']}/verified-reviews"
+    ).json()["items"][0]["id"] == review_id
+
+    admin_client, _session_factory = make_test_client(
+        FakeAuthUseCases(role="ADMIN"),
+        session_factory,
+    )
+    hide_response = admin_client.patch(
+        f"/api/v1/admin/verified-reviews/{review_id}",
+        json={"action": "hide", "resolutionNote": "신고 확인"},
+        headers={"Authorization": "Bearer access-1"},
+    )
+    public_after_hide = user_client.get(
+        f"/api/v1/products/{product['id']}/verified-reviews"
+    )
+    restore_response = admin_client.patch(
+        f"/api/v1/admin/verified-reviews/{review_id}",
+        json={"action": "restore", "resolutionNote": "오해 소명"},
+        headers={"Authorization": "Bearer access-1"},
+    )
+    public_after_restore = user_client.get(
+        f"/api/v1/products/{product['id']}/verified-reviews"
+    )
+
+    assert hide_response.status_code == 200
+    assert hide_response.json()["status"] == "hidden"
+    assert public_after_hide.json()["items"] == []
+    assert restore_response.status_code == 200
+    assert restore_response.json()["status"] == "approved"
+    assert public_after_restore.json()["items"][0]["id"] == review_id
 
 
 def test_my_verified_reviews_list_only_current_user_reviews_with_cursor() -> None:

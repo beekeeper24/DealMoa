@@ -3,8 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
-ReviewStatus = Literal["pending_review", "approved", "rejected"]
-ReviewAction = Literal["approve", "reject"]
+ReviewStatus = Literal["pending_review", "approved", "rejected", "hidden"]
+ReviewAction = Literal["approve", "reject", "hide", "restore"]
 
 
 def serialize_utc_datetime(value: datetime | None) -> str | None:
@@ -40,11 +40,13 @@ class PriceHistoryListResponse(BaseModel):
 
 
 class VerifiedReviewCreateRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     rating: int = Field(ge=1, le=5)
     title: str = Field(min_length=1, max_length=255)
     body: str = Field(min_length=1, max_length=4000)
     proof_type: str = Field(alias="proofType", min_length=1, max_length=80)
-    proof_reference: str | None = Field(default=None, alias="proofReference", max_length=255)
+    proof_reference: str = Field(alias="proofReference", min_length=1, max_length=255)
 
 
 class VerifiedReviewReviewRequest(BaseModel):

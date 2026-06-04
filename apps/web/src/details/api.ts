@@ -85,7 +85,7 @@ export async function createVerifiedReview(request: {
     accessToken: request.accessToken,
     body: {
       body: request.body.trim(),
-      proofReference: request.proofReference.trim() || null,
+      proofReference: request.proofReference.trim(),
       proofType: request.proofType,
       rating: request.rating,
       title: request.title.trim()
