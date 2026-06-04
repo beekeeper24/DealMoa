@@ -350,6 +350,8 @@ after local verification and required CI/review checks pass.
   plus public-safe evidence.
 - Search UI AI button opens an AI result panel.
 - Product detail exposes an AI purchase-check button and report panel.
+- Browser smoke e2e covers product detail public evidence rendering and AI purchase-check
+  panel rendering with mocked API responses.
 - Added an AI assistant provider boundary for AI search intent parsing and purchase-check
   recommendation text.
 - The default `AI_ASSISTANT_PROVIDER=mock` preserves deterministic local/CI behavior.
@@ -571,6 +573,9 @@ after local verification and required CI/review checks pass.
   (`숨김`).
 - Public verified-review responses still exclude internal user ids, proof references, AI
   review text, admin reviewer ids, and resolution notes.
+- Browser smoke e2e covers logged-in verified-review submission, immediate public display,
+  same-user/product duplicate error display, and public product detail exclusion of
+  proof/admin/internal review metadata.
 
 ## Completed AI Review Provider Boundary Scope
 

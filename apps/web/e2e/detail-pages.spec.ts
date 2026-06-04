@@ -26,6 +26,17 @@ const auction = {
   updatedAt: "2026-05-25T00:00:00Z"
 };
 
+const userSession = {
+  user: {
+    id: "user-1",
+    email: "user@example.com",
+    nickname: "Deal User",
+    role: "USER"
+  },
+  accessToken: "access-1",
+  tokenType: "Bearer"
+};
+
 test("opens product detail from product search results", async ({ page }) => {
   await page.route("**/api/v1/auth/token/refresh", async (route) => {
     await route.fulfill({
@@ -102,19 +113,9 @@ test("opens product detail from product search results", async ({ page }) => {
           {
             id: "review-1",
             productId: "product-1",
-            userId: "user-1",
             rating: 5,
             title: "실구매 기준 만족",
             body: "배송과 제품 상태 모두 좋았습니다.",
-            proofType: "receipt",
-            proofReference: "order-123",
-            status: "approved",
-            aiDecision: "needs_admin_review",
-            aiReason: "mock review passed: receipt proof requires admin approval",
-            aiReviewedAt: "2026-06-01T00:00:00Z",
-            reviewedByUserId: "admin-1",
-            resolutionNote: "영수증 확인",
-            resolvedAt: "2026-06-01T00:05:00Z",
             createdAt: "2026-06-01T00:00:00Z",
             updatedAt: "2026-06-01T00:05:00Z"
           }
@@ -183,11 +184,139 @@ test("opens product detail from product search results", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Galaxy S26 sealed auction" })).toBeVisible();
   await expect(page.getByText("가격 이력")).toBeVisible();
   await expect(page.getByText("실구매 기준 만족")).toBeVisible();
+  await expect(page.getByText("order-123")).toBeHidden();
+  await expect(page.getByText("mock review passed")).toBeHidden();
+  await expect(page.getByText("admin-1")).toBeHidden();
+  await expect(page.getByText("영수증 확인")).toBeHidden();
   await expect(page.getByText("상품 토론").first()).toBeVisible();
   await expect(page.getByText("이 가격이면 실사용 기준으로 괜찮아 보입니다.")).toBeVisible();
   await page.getByRole("button", { name: "AI 구매 체크" }).click();
   await expect(page.getByText("구매 후보 · 78%")).toBeVisible();
   await expect(page.getByText("최저 경매")).toBeVisible();
+});
+
+test("submits an auto-published verified review and shows duplicate errors", async ({ page }) => {
+  let submitCount = 0;
+
+  await page.route("**/api/v1/auth/token/refresh", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(userSession)
+    });
+  });
+  await page.route("**/api/v1/notifications/unread-count", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ count: 0 })
+    });
+  });
+  await page.route("**/api/v1/products/product-1", async (route) => {
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(product) });
+  });
+  await page.route("**/api/v1/products/product-1/deals?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], nextCursor: null })
+    });
+  });
+  await page.route("**/api/v1/products/product-1/auctions?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], nextCursor: null })
+    });
+  });
+  await page.route("**/api/v1/products/product-1/price-history?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], nextCursor: null })
+    });
+  });
+  await page.route("**/api/v1/products/product-1/discussions?**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], nextCursor: null })
+    });
+  });
+  await page.route("**/api/v1/products/product-1/verified-reviews**", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ items: [], nextCursor: null })
+      });
+      return;
+    }
+
+    expect(route.request().headers().authorization).toBe("Bearer access-1");
+    expect(route.request().postDataJSON()).toEqual({
+      body: "배송이 빠르고 상태가 좋았습니다.",
+      proofReference: "order-456",
+      proofType: "receipt",
+      rating: 5,
+      title: "실구매 후기"
+    });
+
+    submitCount += 1;
+    if (submitCount === 1) {
+      await route.fulfill({
+        contentType: "application/json",
+        status: 201,
+        body: JSON.stringify({
+          id: "review-created",
+          productId: "product-1",
+          userId: "user-1",
+          rating: 5,
+          title: "실구매 후기",
+          body: "배송이 빠르고 상태가 좋았습니다.",
+          proofType: "receipt",
+          proofReference: "order-456",
+          status: "approved",
+          aiDecision: null,
+          aiReason: null,
+          aiReviewedAt: null,
+          reviewedByUserId: null,
+          resolutionNote: null,
+          resolvedAt: null,
+          createdAt: "2026-06-05T00:00:00Z",
+          updatedAt: "2026-06-05T00:00:00Z"
+        })
+      });
+      return;
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      status: 409,
+      body: JSON.stringify({
+        error: {
+          code: "VERIFIED_REVIEW_ALREADY_EXISTS",
+          message: "이미 이 상품에 작성한 인증 후기가 있습니다.",
+          details: {
+            productId: "product-1",
+            userId: "user-1"
+          },
+          traceId: "req-duplicate-review"
+        }
+      })
+    });
+  });
+
+  await page.goto("/products/product-1");
+  const reviewForm = page.getByRole("form", { name: "구매 인증 후기" });
+  await reviewForm.getByLabel("제목").fill(" 실구매 후기 ");
+  await reviewForm.getByLabel("후기").fill(" 배송이 빠르고 상태가 좋았습니다. ");
+  await reviewForm.getByLabel("구매 증빙 번호").fill(" order-456 ");
+  await reviewForm.getByRole("button", { name: "후기 제출" }).click();
+
+  await expect(page.getByText("인증 후기가 공개되었습니다.")).toBeVisible();
+  await expect(page.getByText("실구매 후기").first()).toBeVisible();
+  await expect(page.getByText("배송이 빠르고 상태가 좋았습니다.").first()).toBeVisible();
+
+  await reviewForm.getByLabel("제목").fill(" 실구매 후기 ");
+  await reviewForm.getByLabel("후기").fill(" 배송이 빠르고 상태가 좋았습니다. ");
+  await reviewForm.getByLabel("구매 증빙 번호").fill(" order-456 ");
+  await reviewForm.getByRole("button", { name: "후기 제출" }).click();
+
+  await expect(page.getByText("이미 이 상품에 작성한 인증 후기가 있습니다.")).toBeVisible();
 });
 
 test("places an auction bid from the auction detail page", async ({ page }) => {
