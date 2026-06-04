@@ -541,6 +541,9 @@ after local verification and required CI/review checks pass.
   auto-publish plus post-publication moderation.
 - `POST /api/v1/products/{product_id}/verified-reviews` now requires a non-empty
   `proofReference` and creates normal reviews directly as `approved`.
+- Verified-review creation rejects same-user/product duplicates with
+  `VERIFIED_REVIEW_ALREADY_EXISTS` and reused proof references with
+  `VERIFIED_REVIEW_PROOF_ALREADY_USED`.
 - Normal verified-review creation does not call the AI review provider and does not
   consume `AI_REVIEW_USER_WINDOW_LIMIT` quota.
 - Admin verified-review moderation supports `hide` and `restore`; hidden reviews are
@@ -549,8 +552,7 @@ after local verification and required CI/review checks pass.
   moderation with approved/hidden filters, cursor pagination, hide/restore actions, and
   resolution notes.
 - Verified reviews now store deterministic platform-risk signals for admin priority:
-  duplicate proof reference, repeated user/product review, off-platform contact,
-  repeated URL, and blocked commercial spam. Admin lists sort higher-risk reviews first.
+  off-platform contact, repeated URL, and blocked commercial spam. Admin lists sort higher-risk reviews first.
   Risk signals do not automatically hide, reject, down-rank, or penalize reviews/users.
 - Consumer report buttons for verified reviews are not part of the MVP; the current
   operating model is platform-risk/admin-flagged post-publication moderation.

@@ -139,6 +139,8 @@ Implemented Product API errors:
 | `BID_TOO_LOW` | 409 | Bid amount is below the fixed 1,000 KRW minimum increment. |
 | `VERIFIED_REVIEW_NOT_FOUND` | 404 | Verified review id does not exist. |
 | `VERIFIED_REVIEW_ALREADY_REVIEWED` | 409 | Requested verified-review moderation action is not valid for the current review status. |
+| `VERIFIED_REVIEW_ALREADY_EXISTS` | 409 | Current user already submitted a verified review for the product. |
+| `VERIFIED_REVIEW_PROOF_ALREADY_USED` | 409 | The submitted verified-review proof reference has already been used. |
 | `DISCUSSION_COMMENT_NOT_FOUND` | 404 | Discussion comment id does not exist. |
 | `UNAUTHORIZED` | 401 | Bid request is missing a valid bearer token. |
 | `FORBIDDEN` | 403 | Current user is not allowed to perform the requested admin action. |

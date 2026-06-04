@@ -22,18 +22,12 @@ class VerifiedReviewRiskAnalysis:
 def analyze_verified_review_risk(
     *,
     body: str,
-    duplicate_proof_reference: bool,
-    repeated_user_product_review: bool,
     title: str,
 ) -> VerifiedReviewRiskAnalysis:
     reasons: list[str] = []
     combined_text = f"{title}\n{body}"
     normalized = combined_text.lower()
 
-    if duplicate_proof_reference:
-        reasons.append("duplicate_proof_reference")
-    if repeated_user_product_review:
-        reasons.append("repeated_user_product_review")
     if EXTERNAL_CONTACT_PATTERN.search(combined_text):
         reasons.append("external_contact")
     if len(URL_PATTERN.findall(combined_text)) >= 2:
@@ -44,7 +38,6 @@ def analyze_verified_review_risk(
     if any(
         reason in reasons
         for reason in (
-            "duplicate_proof_reference",
             "external_contact",
             "blocked_commercial_spam",
         )

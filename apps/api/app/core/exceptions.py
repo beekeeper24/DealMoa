@@ -99,6 +99,16 @@ class ErrorCode(Enum):
         HTTPStatus.CONFLICT,
         "이미 검토가 완료된 인증 후기입니다.",
     )
+    VERIFIED_REVIEW_ALREADY_EXISTS = (
+        "VERIFIED_REVIEW_ALREADY_EXISTS",
+        HTTPStatus.CONFLICT,
+        "이미 이 상품에 작성한 인증 후기가 있습니다.",
+    )
+    VERIFIED_REVIEW_PROOF_ALREADY_USED = (
+        "VERIFIED_REVIEW_PROOF_ALREADY_USED",
+        HTTPStatus.CONFLICT,
+        "이미 사용된 구매 인증 정보입니다.",
+    )
     DISCUSSION_COMMENT_NOT_FOUND = (
         "DISCUSSION_COMMENT_NOT_FOUND",
         HTTPStatus.NOT_FOUND,
@@ -332,6 +342,22 @@ class VerifiedReviewAlreadyReviewedException(VerifiedReviewException):
         super().__init__(
             ErrorCode.VERIFIED_REVIEW_ALREADY_REVIEWED,
             details={"reviewId": review_id, "status": status},
+        )
+
+
+class VerifiedReviewAlreadyExistsException(VerifiedReviewException):
+    def __init__(self, *, product_id: str, user_id: str) -> None:
+        super().__init__(
+            ErrorCode.VERIFIED_REVIEW_ALREADY_EXISTS,
+            details={"productId": product_id, "userId": user_id},
+        )
+
+
+class VerifiedReviewProofAlreadyUsedException(VerifiedReviewException):
+    def __init__(self, proof_reference: str) -> None:
+        super().__init__(
+            ErrorCode.VERIFIED_REVIEW_PROOF_ALREADY_USED,
+            details={"proofReference": proof_reference},
         )
 
 

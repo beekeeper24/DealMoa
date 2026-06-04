@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -53,6 +53,8 @@ class VerifiedReview(TimestampMixin, Base):
             "created_at",
         ),
         Index("ix_verified_reviews_user_id_created_at", "user_id", "created_at"),
+        UniqueConstraint("user_id", "product_id", name="uq_verified_reviews_user_product"),
+        UniqueConstraint("proof_reference", name="uq_verified_reviews_proof_reference"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

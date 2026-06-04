@@ -4,8 +4,10 @@ from datetime import UTC, datetime
 from app.core.exceptions import (
     ForbiddenException,
     ProductNotFoundException,
+    VerifiedReviewAlreadyExistsException,
     VerifiedReviewAlreadyReviewedException,
     VerifiedReviewNotFoundException,
+    VerifiedReviewProofAlreadyUsedException,
 )
 from app.core.pagination import CursorPage
 from app.modules.admin.models import AdminAuditLog
@@ -91,20 +93,18 @@ class EvidenceUseCases:
         request: VerifiedReviewCreateRequest,
     ) -> VerifiedReview:
         self._ensure_product_exists(product_id)
+        if self.evidence_repository.has_user_verified_review_for_product(
+            product_id=product_id,
+            user_id=actor.id,
+        ):
+            raise VerifiedReviewAlreadyExistsException(product_id=product_id, user_id=actor.id)
+        if self.evidence_repository.has_verified_review_with_proof_reference(
+            request.proof_reference
+        ):
+            raise VerifiedReviewProofAlreadyUsedException(request.proof_reference)
         now = self.now()
         risk_analysis = analyze_verified_review_risk(
             body=request.body,
-            duplicate_proof_reference=(
-                self.evidence_repository.has_verified_review_with_proof_reference(
-                    request.proof_reference
-                )
-            ),
-            repeated_user_product_review=(
-                self.evidence_repository.has_user_verified_review_for_product(
-                    product_id=product_id,
-                    user_id=actor.id,
-                )
-            ),
             title=request.title,
         )
         review = self.evidence_repository.create_verified_review(
