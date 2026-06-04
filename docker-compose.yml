@@ -266,6 +266,32 @@ services:
     depends_on:
       - prometheus
 
+  jmeter:
+    image: alpine/jmeter:5.6.3
+    profiles: ["loadtest"]
+    working_dir: /jmeter
+    volumes:
+      - ./infra/jmeter:/jmeter
+    command:
+      [
+        "-f",
+        "-n",
+        "-t",
+        "/jmeter/dealmoa-search-baseline.jmx",
+        "-l",
+        "/jmeter/results/dealmoa-search-baseline.jtl",
+        "-j",
+        "/jmeter/results/jmeter.log",
+        "-Japi_base_url=${JMETER_API_BASE_URL:-http://api:8000}",
+        "-Japi_prefix=${JMETER_API_PREFIX:-/api/v1}",
+        "-Jthreads=${JMETER_THREADS:-5}",
+        "-Jramp_seconds=${JMETER_RAMP_SECONDS:-30}",
+        "-Jduration_seconds=${JMETER_DURATION_SECONDS:-60}",
+        "-Jsearch_query=${JMETER_SEARCH_QUERY:-Galaxy}",
+        "-Jsearch_limit=${JMETER_SEARCH_LIMIT:-10}",
+        "-Jthink_time_ms=${JMETER_THINK_TIME_MS:-250}",
+      ]
+
 volumes:
   postgres_data:
   redis_data:
