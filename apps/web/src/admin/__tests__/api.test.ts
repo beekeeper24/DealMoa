@@ -57,6 +57,8 @@ describe("admin reports api", () => {
             duplicates: 0,
             skipped: 1,
             skipReasons: { host_rate_limited: 1 },
+            errorType: null,
+            errorMessage: null,
             startedAt: "2026-06-03T01:00:00Z",
             finishedAt: "2026-06-03T01:00:01Z",
             createdAt: "2026-06-03T01:00:01Z"
@@ -74,6 +76,7 @@ describe("admin reports api", () => {
 
     expect(page.items[0].taskName).toBe("crawl_live_urls");
     expect(page.items[0].skipReasons.host_rate_limited).toBe(1);
+    expect(page.items[0].errorType).toBeNull();
     expect(page.nextCursor).toBe("run-2");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/admin/crawler-runs?limit=20&cursor=cursor-1",

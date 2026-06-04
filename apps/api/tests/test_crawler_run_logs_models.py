@@ -50,3 +50,46 @@ def test_repository_creates_crawler_run_log_with_summary_counts() -> None:
     assert persisted.scanned_count == 2
     assert persisted.fetched_count == 1
     assert persisted.skip_reasons_json == {"host_rate_limited": 1}
+    assert persisted.error_type is None
+    assert persisted.error_message is None
+
+
+def test_repository_creates_failed_crawler_run_log_with_failure_fields() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        CrawlerRunLogsRepository(session).create(
+            CrawlerRunLog(
+                task_name="crawl_live_urls",
+                status="failed",
+                scanned_count=1,
+                fetched_count=0,
+                accepted_count=0,
+                created_count=0,
+                duplicate_count=0,
+                skipped_count=0,
+                skip_reasons_json={},
+                error_type="RuntimeError",
+                error_message="crawler fetch failed",
+                started_at=NOW,
+                finished_at=NOW,
+                created_at=NOW,
+                updated_at=NOW,
+            )
+        )
+        session.commit()
+
+        persisted = session.scalar(select(CrawlerRunLog))
+    finally:
+        session.close()
+
+    assert persisted is not None
+    assert persisted.status == "failed"
+    assert persisted.error_type == "RuntimeError"
+    assert persisted.error_message == "crawler fetch failed"

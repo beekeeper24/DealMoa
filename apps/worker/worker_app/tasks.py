@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
@@ -113,8 +114,15 @@ def crawl_hot_deals_mock(now_iso: str | None = None) -> dict[str, object]:
         record_crawler_run_log(session=session, summary=summary, started_at=now, finished_at=now)
         session.commit()
         return summary
-    except Exception:
+    except Exception as error:
         session.rollback()
+        try_record_failed_crawler_run_log(
+            database_url=settings.database_url,
+            task_name="crawl_hot_deals_mock",
+            error=error,
+            started_at=now,
+            scanned=len(CRAWLER_RAW_ITEMS),
+        )
         raise
     finally:
         session.close()
@@ -138,8 +146,15 @@ def crawl_live_urls(now_iso: str | None = None) -> dict[str, object]:
             )
             session.commit()
             return summary
-        except Exception:
+        except Exception as error:
             session.rollback()
+            try_record_failed_crawler_run_log(
+                database_url=settings.database_url,
+                task_name="crawl_live_urls",
+                error=error,
+                started_at=now,
+                scanned=0,
+            )
             raise
         finally:
             session.close()
@@ -227,8 +242,21 @@ def execute_live_crawler(
         record_crawler_run_log(session=session, summary=summary, started_at=now, finished_at=now)
         session.commit()
         return summary
-    except Exception:
+    except Exception as error:
         session.rollback()
+        try_record_failed_crawler_run_log(
+            database_url=settings.database_url,
+            task_name="crawl_live_urls",
+            error=error,
+            started_at=now,
+            scanned=len(urls),
+            fetched=fetched_count,
+            accepted=accepted_count,
+            created=created_count,
+            duplicates=duplicate_count,
+            skipped=skipped_count,
+            skip_reasons=skip_reasons,
+        )
         raise
     finally:
         session.close()
@@ -291,12 +319,73 @@ def record_crawler_run_log(
             duplicate_count=summary_count(summary, "duplicates"),
             skipped_count=summary_count(summary, "skipped"),
             skip_reasons_json=skip_reasons if is_skip_reasons(skip_reasons) else {},
+            error_type=None,
+            error_message=None,
             started_at=started_at,
             finished_at=finished_at,
             created_at=finished_at,
             updated_at=finished_at,
         )
     )
+
+
+def record_failed_crawler_run_log(
+    *,
+    database_url: str,
+    task_name: str,
+    error: Exception,
+    started_at: datetime,
+    scanned: int,
+    fetched: int = 0,
+    accepted: int = 0,
+    created: int = 0,
+    duplicates: int = 0,
+    skipped: int = 0,
+    skip_reasons: dict[str, int] | None = None,
+) -> CrawlerRunLog:
+    finished_at = datetime.now(UTC)
+    session_factory = create_session_factory(database_url)
+    session: Session = session_factory()
+    try:
+        run_log = CrawlerRunLogsRepository(session).create(
+            CrawlerRunLog(
+                task_name=task_name,
+                status="failed",
+                scanned_count=scanned,
+                fetched_count=fetched,
+                accepted_count=accepted,
+                created_count=created,
+                duplicate_count=duplicates,
+                skipped_count=skipped,
+                skip_reasons_json=skip_reasons or {},
+                error_type=type(error).__name__[:120],
+                error_message=sanitize_crawler_error_message(str(error)),
+                started_at=started_at,
+                finished_at=finished_at,
+                created_at=finished_at,
+                updated_at=finished_at,
+            )
+        )
+        session.commit()
+        return run_log
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def try_record_failed_crawler_run_log(**kwargs: object) -> None:
+    try:
+        record_failed_crawler_run_log(**kwargs)  # type: ignore[arg-type]
+    except Exception:
+        return
+
+
+def sanitize_crawler_error_message(message: str) -> str:
+    redacted = re.sub(r"<[^>]+>[^<]*</[^>]+>", "[redacted]", message)
+    redacted = re.sub(r"<[^>]*>", "[redacted]", redacted)
+    return redacted[:500]
 
 
 def summary_count(summary: dict[str, object], key: str) -> int:

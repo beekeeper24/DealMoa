@@ -46,6 +46,8 @@ function crawlerRunFixture(overrides: Record<string, unknown> = {}) {
     duplicates: 0,
     skipped: 1,
     skipReasons: { host_rate_limited: 1 },
+    errorType: null,
+    errorMessage: null,
     startedAt: "2026-06-03T01:00:00Z",
     finishedAt: "2026-06-03T01:00:01Z",
     createdAt: "2026-06-03T01:00:01Z",
@@ -156,6 +158,34 @@ describe("AdminCrawlerRunLogPage", () => {
       "/api/v1/admin/crawler-runs?limit=20&cursor=run-2",
       expect.any(Object)
     );
+  });
+
+  it("shows failed crawler run error fields", async () => {
+    installFetch((url) => {
+      if (url === "/api/v1/auth/token/refresh") {
+        return jsonResponse(authSession("ADMIN"));
+      }
+      if (url === "/api/v1/admin/crawler-runs?limit=20") {
+        return jsonResponse({
+          items: [
+            crawlerRunFixture({
+              status: "failed",
+              errorType: "RuntimeError",
+              errorMessage: "crawler fetch failed with raw html [redacted]"
+            })
+          ],
+          nextCursor: null
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderWithAuthProvider();
+
+    const card = await screen.findByRole("article", { name: "crawl_live_urls 실행 로그" });
+    expect(within(card).getByText("failed")).toBeInTheDocument();
+    expect(within(card).getByText("RuntimeError")).toBeInTheDocument();
+    expect(within(card).getByText("crawler fetch failed with raw html [redacted]")).toBeInTheDocument();
   });
 
   it("shows admin api errors", async () => {

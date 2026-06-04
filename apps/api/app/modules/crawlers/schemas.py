@@ -22,6 +22,8 @@ class CrawlerRunLogResponse(BaseModel):
     duplicate_count: int = Field(alias="duplicates")
     skipped_count: int = Field(alias="skipped")
     skip_reasons_json: dict[str, int] = Field(alias="skipReasons")
+    error_type: str | None = Field(default=None, alias="errorType")
+    error_message: str | None = Field(default=None, alias="errorMessage")
     started_at: datetime = Field(alias="startedAt")
     finished_at: datetime = Field(alias="finishedAt")
     created_at: datetime = Field(alias="createdAt")

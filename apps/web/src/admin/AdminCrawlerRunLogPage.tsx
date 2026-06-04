@@ -171,6 +171,16 @@ function CrawlerRunLogCard({ item }: { item: AdminCrawlerRunLog }) {
               ))}
             </div>
           ) : null}
+          {item.errorType || item.errorMessage ? (
+            <div className="rounded border border-deal/30 bg-paper px-3 py-2">
+              {item.errorType ? (
+                <p className="text-xs font-bold text-deal">{item.errorType}</p>
+              ) : null}
+              {item.errorMessage ? (
+                <p className="mt-1 text-xs leading-5 text-black/70">{item.errorMessage}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </article>
