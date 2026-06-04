@@ -79,3 +79,32 @@ export type AdminCrawlerRunTriggerResponse = {
   taskName: AdminCrawlerTaskName;
   celeryTaskId: string;
 };
+
+export type AdminDiscussionStatus = "visible" | "hidden";
+export type AdminDiscussionModerationAction = "hide" | "restore";
+
+export type AdminDiscussionComment = {
+  id: string;
+  productId: string;
+  userId: string;
+  userNickname: string;
+  body: string;
+  status: AdminDiscussionStatus;
+  moderatedByUserId: string | null;
+  moderationNote: string | null;
+  moderatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminDiscussionListResponse = {
+  items: AdminDiscussionComment[];
+  nextCursor: string | null;
+};
+
+export type AdminDiscussionModerationRequest = {
+  accessToken: string;
+  action: AdminDiscussionModerationAction;
+  commentId: string;
+  moderationNote?: string;
+};

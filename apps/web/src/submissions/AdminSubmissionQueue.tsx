@@ -113,6 +113,12 @@ export function AdminSubmissionQueue() {
             </Link>
             <Link
               className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
+              href="/admin/discussions"
+            >
+              토론 검토
+            </Link>
+            <Link
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
               href="/admin/crawler-runs"
             >
               크롤러 로그
