@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -28,6 +28,12 @@ class ProductDiscussionComment(TimestampMixin, Base):
             "created_at",
         ),
         Index("ix_product_discussion_comments_status_created_at", "status", "created_at"),
+        Index(
+            "ix_product_discussion_comments_status_risk_created_at",
+            "status",
+            "moderation_risk_score",
+            "created_at",
+        ),
         Index("ix_product_discussion_comments_user_id_created_at", "user_id", "created_at"),
     )
 
@@ -36,6 +42,13 @@ class ProductDiscussionComment(TimestampMixin, Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
+    moderation_risk_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    moderation_risk_level: Mapped[str] = mapped_column(String(20), nullable=False, default="low")
+    moderation_risk_reasons_json: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
     moderated_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     moderation_note: Mapped[str | None] = mapped_column(Text)
     moderated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -11,6 +11,7 @@ from app.modules.admin.models import AdminAuditLog
 from app.modules.auth.use_cases import AuthenticatedUser
 from app.modules.discussions.models import ProductDiscussionComment
 from app.modules.discussions.repository import DiscussionsRepository
+from app.modules.discussions.risk_analysis import analyze_discussion_risk
 from app.modules.discussions.schemas import (
     DiscussionCreateRequest,
     DiscussionModerationRequest,
@@ -43,12 +44,16 @@ class DiscussionsUseCases:
     ) -> ProductDiscussionComment:
         self._ensure_product_exists(product_id)
         now = self.now()
+        risk = analyze_discussion_risk(request.body)
         return self.repository.create_comment(
             ProductDiscussionComment(
                 product_id=product_id,
                 user_id=actor.id,
                 body=request.body,
                 status="visible",
+                moderation_risk_score=risk.score,
+                moderation_risk_level=risk.level,
+                moderation_risk_reasons_json=risk.reasons,
                 created_at=now,
                 updated_at=now,
             )

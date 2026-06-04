@@ -82,6 +82,7 @@ export type AdminCrawlerRunTriggerResponse = {
 
 export type AdminDiscussionStatus = "visible" | "hidden";
 export type AdminDiscussionModerationAction = "hide" | "restore";
+export type AdminDiscussionRiskLevel = "low" | "medium" | "high";
 
 export type AdminDiscussionComment = {
   id: string;
@@ -90,6 +91,9 @@ export type AdminDiscussionComment = {
   userNickname: string;
   body: string;
   status: AdminDiscussionStatus;
+  riskScore: number;
+  riskLevel: AdminDiscussionRiskLevel;
+  riskReasons: string[];
   moderatedByUserId: string | null;
   moderationNote: string | null;
   moderatedAt: string | null;

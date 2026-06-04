@@ -260,6 +260,9 @@ function DiscussionModerationCard({
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold text-signal">
               {comment.status}
             </span>
+            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold text-deal">
+              {comment.riskLevel}
+            </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
               {comment.productId}
             </span>
@@ -271,6 +274,15 @@ function DiscussionModerationCard({
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-black/75">
             {comment.body}
           </p>
+          {comment.riskReasons.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {comment.riskReasons.map((reason) => (
+                <span className="rounded bg-paper px-2 py-1 text-xs font-semibold" key={reason}>
+                  {reason}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {comment.moderationNote ? (
             <p className="mt-3 rounded border border-black/10 bg-paper px-3 py-2 text-sm text-black/70">
               {comment.moderationNote}

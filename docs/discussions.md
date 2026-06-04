@@ -12,6 +12,7 @@ This foundation slice includes flat comments only:
 - Authenticated comment creation.
 - Admin moderation queue filtered by comment status.
 - Admin hide/restore action with audit logs.
+- Deterministic moderation risk signals for admin review priority.
 
 Deferred:
 
@@ -64,6 +65,12 @@ The MVP stores new comments as `visible`. Later abuse hardening can introduce
 rate limits, spam review, or pending states without changing the public list
 contract.
 
+On creation, comments are analyzed by deterministic moderation rules. The stored
+signals are `riskScore`, `riskLevel`, and `riskReasons`. Current reasons include
+external contact attempts, repeated URLs, and obvious commercial-spam phrases.
+These signals are advisory only: they do not automatically hide, delete, rank,
+or penalize the author.
+
 ## Moderation
 
 Statuses:
@@ -89,6 +96,10 @@ Admin moderation requires `role = ADMIN`. Each hide/restore writes an
 `admin_audit_logs` row with action `discussion_comment.hidden` or
 `discussion_comment.restored`.
 
+Admin list responses include risk fields and order comments within the selected
+status by risk score first, then newest first. Public responses do not include
+risk fields.
+
 ## Web Behavior
 
 Product detail calls `GET /api/v1/products/{product_id}/discussions?limit=10`
@@ -106,9 +117,10 @@ moderation notes. It does not let admins edit comment bodies or delete comments.
 
 - Discussion creation requires login.
 - Public responses exclude user ids, moderation notes, reviewer ids, and hidden
-  comments.
+  comments. They also exclude moderation risk fields.
 - Comment content is not used as AI purchase-check evidence.
 - Comment count and report count do not change offer ranking or trust scores.
 - Admin hide/restore is the only visibility mutation in this slice.
+- Risk signals do not automatically hide, delete, rank, or penalize comments/users.
 - Admin discussion web actions require the same bearer-token admin session as
   the admin API.

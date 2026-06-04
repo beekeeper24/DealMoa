@@ -42,6 +42,9 @@ function discussionFixture(overrides: Record<string, unknown> = {}) {
     userNickname: "Deal User",
     body: "이 가격이면 괜찮아 보입니다.",
     status: "visible",
+    riskScore: 0,
+    riskLevel: "low",
+    riskReasons: [],
     moderatedByUserId: null,
     moderationNote: null,
     moderatedAt: null,
@@ -114,7 +117,16 @@ describe("AdminDiscussionModerationPage", () => {
         return jsonResponse(authSession("ADMIN"));
       }
       if (url === "/api/v1/admin/discussions?status=visible&limit=20") {
-        return jsonResponse({ items: [discussionFixture()], nextCursor: null });
+        return jsonResponse({
+          items: [
+            discussionFixture({
+              riskScore: 100,
+              riskLevel: "high",
+              riskReasons: ["external_contact", "repeated_url"]
+            })
+          ],
+          nextCursor: null
+        });
       }
       if (url === "/api/v1/admin/discussions/discussion-1" && init?.method === "PATCH") {
         return jsonResponse(
@@ -133,6 +145,9 @@ describe("AdminDiscussionModerationPage", () => {
 
     const card = await screen.findByRole("article", { name: "Deal User 댓글" });
     expect(within(card).getByText("product-1")).toBeInTheDocument();
+    expect(within(card).getByText("high")).toBeInTheDocument();
+    expect(within(card).getByText("external_contact")).toBeInTheDocument();
+    expect(within(card).getByText("repeated_url")).toBeInTheDocument();
     expect(within(card).getByText("이 가격이면 괜찮아 보입니다.")).toBeInTheDocument();
 
     await user.type(within(card).getByLabelText("모더레이션 메모"), "욕설 포함");

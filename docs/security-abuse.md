@@ -43,6 +43,9 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Admin approval may attach an offer to an existing Product with `targetProductId`; missing
   product IDs fail with `PRODUCT_NOT_FOUND`.
 - Admin approval/rejection writes `admin_audit_logs`.
+- Product discussion comments store deterministic moderation risk signals for admin
+  priority only. Public discussion APIs do not expose risk fields, and risk signals do
+  not automatically hide, delete, rank, or penalize comments/users.
 - Distributed Redis-backed rate windows, production crawl scheduling, retry metadata,
   per-request crawler URL input, and automated duplicate cleanup are deferred security
   hardening items.

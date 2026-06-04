@@ -69,6 +69,9 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
     discussion_indexes = {
         index["name"] for index in inspector.get_indexes("product_discussion_comments")
     }
+    discussion_columns = {
+        column["name"] for column in inspector.get_columns("product_discussion_comments")
+    }
     crawler_run_log_indexes = {
         index["name"] for index in inspector.get_indexes("crawler_run_logs")
     }
@@ -140,7 +143,13 @@ def test_alembic_upgrade_head_creates_domain_tables(tmp_path: Path) -> None:
         "ix_product_discussion_comments_product_status_created_at",
         "ix_product_discussion_comments_status_created_at",
         "ix_product_discussion_comments_user_id_created_at",
+        "ix_product_discussion_comments_status_risk_created_at",
     } <= discussion_indexes
+    assert {
+        "moderation_risk_score",
+        "moderation_risk_level",
+        "moderation_risk_reasons_json",
+    } <= discussion_columns
     assert {
         "ix_crawler_run_logs_created_at",
         "ix_crawler_run_logs_task_name_created_at",
