@@ -6,12 +6,12 @@ This document covers the first MVP foundation for product evidence:
 
 - price history snapshots attached to a product;
 - authenticated verified review submission;
-- mock AI first-pass review;
-- admin approval or rejection;
-- public display of approved verified reviews only.
+- receipt/order-history proof reference validation;
+- automatic public display for normal MVP verified reviews;
+- post-publication admin moderation for suspicious, reported, or admin-flagged reviews.
 
-Receipt upload, OCR, real AI provider integration, review scoring impact, product
-discussion, and My Page review history remain deferred.
+Receipt image upload, OCR, automatic proof matching, suspicious-review AI escalation,
+review scoring impact, and richer moderation queues remain deferred.
 
 ## Price History
 
@@ -70,27 +70,28 @@ Request:
 }
 ```
 
-Verified-review intake uses the shared AI review provider boundary. The local and CI
-default records a deterministic mock AI review result:
+Verified-review intake validates the text fields and requires a non-empty proof
+reference. In the MVP this proof is an order number, receipt reference, or purchase
+history reference string. Receipt upload/OCR and automatic proof matching come later.
 
-```text
-decision = needs_admin_review
-reason = mock review passed: receipt proof requires admin approval
-```
+Normal verified reviews publish immediately as `approved`. This keeps the UX close to
+receipt-verified review products: users do not wait for a human to approve ordinary
+reviews, and admins do not spend time on every normal review.
 
-The review always starts as `pending_review`. AI output is evidence for the
-admin queue only; it never publishes the review by itself.
+The AI review provider is not called for every normal verified-review submission. It is
+reserved for future suspicious-review escalation, 신고 누적, or targeted abuse review.
+This avoids unnecessary token spend and keeps admin attention on exceptional cases.
 
 When `AI_REVIEW_PROVIDER=openai`, the adapter sends review text and proof metadata shape
 to the provider, but not the raw `proofReference`. Provider output can only populate
 `aiDecision` and `aiReason`; invalid/provider-failure responses fall back to
-`needs_admin_review`. Receipt image upload and OCR remain deferred.
+`needs_admin_review`. This provider boundary remains available for future escalation but
+is not part of the normal auto-publish path.
 
-Verified-review intake shares the same user-triggered AI review quota as submissions:
-`AI_REVIEW_USER_WINDOW_LIMIT` calls per `AI_REVIEW_USER_WINDOW_HOURS`. The default is
-20 calls per user per 24 hours, and exhaustion returns
-`AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429. The quota only limits first-pass review
-calls; it does not approve, reject, or publish reviews.
+Offer submissions still share the user-triggered AI review quota. Normal verified-review
+submission does not consume that AI quota because it does not call the AI provider in the
+MVP auto-publish path. Separate user/content rate limits for reviews can be added when
+traffic requires them.
 
 ## My Review History
 
@@ -105,12 +106,12 @@ lists. It returns the owner's review status, AI first-pass reason, proof metadat
 admin resolution fields so the user can understand review progress. The query is always
 scoped to the current bearer-token user; it does not expose another user's reviews.
 
-## Admin Review
+## Admin Moderation
 
 Admin routes:
 
 ```http
-GET /api/v1/admin/verified-reviews?status=pending_review
+GET /api/v1/admin/verified-reviews?status=approved
 PATCH /api/v1/admin/verified-reviews/{review_id}
 ```
 
@@ -118,28 +119,33 @@ Patch request:
 
 ```json
 {
-  "action": "approve",
-  "resolutionNote": "영수증 확인"
+  "action": "hide",
+  "resolutionNote": "신고 확인"
 }
 ```
 
 Rules:
 
-- only `ADMIN` users can list or review pending verified reviews;
-- only `pending_review` rows can be approved or rejected;
-- approval/rejection writes `admin_audit_logs`;
-- approval writes a `review.verified` transactional outbox event.
+- only `ADMIN` users can list or moderate verified reviews;
+- normal public reviews are `approved`;
+- `hide` moves an approved review to `hidden`, removing it from public product detail;
+- `restore` moves a hidden review back to `approved`;
+- `approve` and `reject` remain for future suspicious-review `pending_review` rows;
+- all moderation actions write `admin_audit_logs`;
+- creation and restore/approval to public status write a `review.verified`
+  transactional outbox event.
 
 ## Public Display Boundary
 
-Public product detail reads approved reviews only:
+Public product detail reads `approved` reviews only:
 
 ```http
 GET /api/v1/products/{product_id}/verified-reviews
 ```
 
-The public response intentionally excludes internal user ids, proof references,
-AI review text, admin reviewer ids, and resolution notes:
+The public response intentionally excludes internal user ids, proof references, AI review
+text, admin reviewer ids, and resolution notes. `hidden`, `pending_review`, and
+`rejected` reviews are not returned:
 
 ```json
 {
@@ -158,5 +164,5 @@ AI review text, admin reviewer ids, and resolution notes:
 }
 ```
 
-The admin and creation responses still include proof and review metadata because
-those paths are authenticated and need the data for moderation.
+The admin, creation, and My Page responses still include proof and moderation metadata
+because those paths are authenticated and need the data for owner/admin context.

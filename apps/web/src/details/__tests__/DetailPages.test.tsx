@@ -110,12 +110,12 @@ const verifiedReviewFixture = {
   proofType: "receipt",
   proofReference: "order-123",
   status: "approved",
-  aiDecision: "needs_admin_review",
-  aiReason: "mock review passed: receipt proof requires admin approval",
-  aiReviewedAt: "2026-06-01T00:00:00Z",
-  reviewedByUserId: "admin-1",
-  resolutionNote: "영수증 확인",
-  resolvedAt: "2026-06-01T00:05:00Z",
+  aiDecision: null,
+  aiReason: null,
+  aiReviewedAt: null,
+  reviewedByUserId: null,
+  resolutionNote: null,
+  resolvedAt: null,
   createdAt: "2026-06-01T00:00:00Z",
   updatedAt: "2026-06-01T00:05:00Z"
 };
@@ -222,7 +222,7 @@ describe("detail pages", () => {
     expect(screen.getByText("로그인 후 토론에 참여할 수 있습니다.")).toBeInTheDocument();
   });
 
-  it("submits an authenticated verified review candidate", async () => {
+  it("submits an authenticated verified review and publishes it immediately", async () => {
     const user = userEvent.setup();
     const fetchMock = installFetch((url, init) => {
       if (url === "/api/v1/auth/token/refresh") {
@@ -250,7 +250,10 @@ describe("detail pages", () => {
         return jsonResponse(
           {
             ...verifiedReviewFixture,
-            status: "pending_review",
+            status: "approved",
+            aiDecision: null,
+            aiReason: null,
+            aiReviewedAt: null,
             reviewedByUserId: null,
             resolutionNote: null,
             resolvedAt: null
@@ -271,9 +274,9 @@ describe("detail pages", () => {
     await user.type(within(form).getByLabelText("구매 증빙 번호"), "order-123");
     await user.click(within(form).getByRole("button", { name: "후기 제출" }));
 
-    expect(
-      await screen.findByText("인증 후기가 접수되었습니다. 관리자 승인 후 공개됩니다.")
-    ).toBeInTheDocument();
+    expect(await screen.findByText("인증 후기가 공개되었습니다.")).toBeInTheDocument();
+    expect(screen.getByText("실구매 기준 만족")).toBeInTheDocument();
+    expect(screen.getByText("배송과 제품 상태 모두 좋았습니다.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/products/product-1/verified-reviews", {
       body: JSON.stringify({
         body: "배송과 제품 상태 모두 좋았습니다.",

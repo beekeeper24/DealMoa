@@ -92,12 +92,12 @@ const verifiedReviewFixture = {
   proofType: "receipt",
   proofReference: "order-123",
   status: "approved",
-  aiDecision: "needs_admin_review",
-  aiReason: "mock review passed: receipt proof requires admin approval",
-  aiReviewedAt: "2026-06-01T00:00:00Z",
-  reviewedByUserId: "admin-1",
-  resolutionNote: "영수증 확인",
-  resolvedAt: "2026-06-01T00:05:00Z",
+  aiDecision: null,
+  aiReason: null,
+  aiReviewedAt: null,
+  reviewedByUserId: null,
+  resolutionNote: null,
+  resolvedAt: null,
   createdAt: "2026-06-01T00:00:00Z",
   updatedAt: "2026-06-01T00:05:00Z"
 };

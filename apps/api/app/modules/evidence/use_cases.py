@@ -91,14 +91,7 @@ class EvidenceUseCases:
     ) -> VerifiedReview:
         self._ensure_product_exists(product_id)
         now = self.now()
-        if self.ai_review_rate_limiter is not None:
-            self.ai_review_rate_limiter.check_and_record(
-                user_id=actor.id,
-                target_type="verified_review",
-                now=now,
-            )
-        ai_review = self.ai_review_provider.review_verified_review(request)
-        return self.evidence_repository.create_verified_review(
+        review = self.evidence_repository.create_verified_review(
             VerifiedReview(
                 product_id=product_id,
                 user_id=actor.id,
@@ -107,14 +100,17 @@ class EvidenceUseCases:
                 body=request.body,
                 proof_type=request.proof_type,
                 proof_reference=request.proof_reference,
-                status="pending_review",
-                ai_decision=ai_review.decision,
-                ai_reason=ai_review.reason,
-                ai_reviewed_at=now,
+                status="approved",
+                ai_decision=None,
+                ai_reason=None,
+                ai_reviewed_at=None,
                 created_at=now,
                 updated_at=now,
             )
         )
+        if self.domain_events is not None:
+            self.domain_events.record_review_verified(review)
+        return review
 
     def list_product_verified_reviews(
         self,
@@ -169,17 +165,28 @@ class EvidenceUseCases:
         review = self.evidence_repository.get_verified_review(review_id)
         if review is None:
             raise VerifiedReviewNotFoundException(review_id)
-        if review.status != "pending_review":
-            raise VerifiedReviewAlreadyReviewedException(review.id, review.status)
-
         now = self.now()
         previous_status = review.status
         if request.action == "approve":
+            if review.status != "pending_review":
+                raise VerifiedReviewAlreadyReviewedException(review.id, review.status)
             review.status = "approved"
             action = "verified_review.approved"
-        else:
+        elif request.action == "reject":
+            if review.status != "pending_review":
+                raise VerifiedReviewAlreadyReviewedException(review.id, review.status)
             review.status = "rejected"
             action = "verified_review.rejected"
+        elif request.action == "hide":
+            if review.status != "approved":
+                raise VerifiedReviewAlreadyReviewedException(review.id, review.status)
+            review.status = "hidden"
+            action = "verified_review.hidden"
+        else:
+            if review.status != "hidden":
+                raise VerifiedReviewAlreadyReviewedException(review.id, review.status)
+            review.status = "approved"
+            action = "verified_review.restored"
 
         review.reviewed_by_user_id = actor.id
         review.resolution_note = request.resolution_note

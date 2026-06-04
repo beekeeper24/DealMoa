@@ -13,8 +13,9 @@
 - Use Elasticsearch filters, BM25, vector search, and ranking signals.
 - Explain recommendations using structured evidence.
 - Generate purchase-check reports from price history, current deals/auctions, verified reviews, specs, and alternatives.
-- Perform first-pass review for user submissions and purchase verification materials.
-  Publication stays behind admin approval regardless of provider output.
+- Perform first-pass review for user offer submissions and future suspicious purchase
+  verification escalations. Normal verified purchase reviews auto-publish after
+  lightweight validation in the MVP and do not spend AI tokens.
 
 ## Current MVP Contract
 
@@ -70,17 +71,20 @@ uses the OpenAI Responses API with Structured Outputs. The model must return onl
 ```
 
 Allowed decisions are `needs_admin_review` and `reject_candidate`. Both are stored as
-review evidence only. Submissions and verified reviews still start as `pending_review`,
-and only an admin action can publish or reject them.
+review evidence only. User offer submissions still start as `pending_review`, and only
+an admin action can publish or reject them. Normal verified purchase reviews do not call
+this provider in the MVP auto-publish path; future suspicious-review escalation can store
+AI evidence without directly deciding publication.
 
 Provider failures, invalid JSON, or schema validation failures fall back to
 `needs_admin_review`. Verified-review `proofReference` remains internal metadata and is
 not sent to the model in this slice. Receipt image upload and OCR remain deferred.
 
-User-triggered submission and verified-review first-pass review calls are bounded by
+User-triggered first-pass review calls are bounded by
 `AI_REVIEW_USER_WINDOW_LIMIT` per `AI_REVIEW_USER_WINDOW_HOURS`. Usage is recorded in
 PostgreSQL through `ai_review_usage_events`, so the initial protection works across API
-process restarts and multiple API instances. Set the limit to `0` only for local
+process restarts and multiple API instances. Normal verified-review auto-publish does not
+consume this quota because it does not call AI. Set the limit to `0` only for local
 debugging when quota protection must be disabled.
 
 ## Guardrails

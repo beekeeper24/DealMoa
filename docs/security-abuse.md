@@ -54,12 +54,16 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 
 - Login required.
 - MVP proof data is a text receipt/order reference; receipt image upload and OCR are deferred.
-- AI first-pass review records reviewer-facing evidence only; it never publishes content.
-- Admin approval is required before a review is publicly visible.
-- Admin approval/rejection writes `admin_audit_logs`.
+- A non-empty proof reference is required for purchase verified review submission.
+- Normal MVP verified reviews publish immediately as `approved` after lightweight request
+  validation. They do not call the AI review provider and do not consume AI review quota.
+- Suspicious, reported, or admin-flagged reviews move through post-publication
+  moderation.
+- Admin hide/restore/reject actions write `admin_audit_logs`.
 - Public approved-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.
-- Only verified reviews are strong AI purchase-check evidence.
+- Only `approved` verified reviews are strong AI purchase-check evidence. `hidden`,
+  `pending_review`, and `rejected` reviews are excluded from public evidence.
 
 ## Product Discussions
 
@@ -131,9 +135,10 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   changes publish status.
 - Verified-review `proofReference` is internal proof metadata and is not sent to the AI
   review provider in the current slice. Receipt image OCR remains deferred.
-- User-triggered submission and verified-review AI first-pass review calls are limited by
+- User-triggered AI first-pass review calls are limited by
   `AI_REVIEW_USER_WINDOW_LIMIT` per `AI_REVIEW_USER_WINDOW_HOURS`, backed by
-  PostgreSQL `ai_review_usage_events`.
+  PostgreSQL `ai_review_usage_events`. Normal verified-review auto-publish does not use
+  this quota because it does not call AI.
 - Real provider production use still needs richer abuse logging and provider-level
   monitoring before launch.
 

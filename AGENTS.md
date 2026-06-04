@@ -162,7 +162,8 @@ Learning notes split:
 - Deal favorites are saved items and ranking signals.
 - Auction favorites are saved items, auction activity signals, and ending-soon alert targets.
 - Reports never automatically hide or down-rank content. They create an admin review priority signal only.
-- User submissions and verified reviews require AI first-pass review plus admin approval. No automatic publishing.
+- User offer submissions require AI first-pass review plus admin approval before publishing.
+- Verified purchase reviews are receipt/order-history based user content. In the MVP they publish automatically after lightweight validation and rate limiting; suspicious, reported, or admin-flagged reviews move through post-publication moderation. Do not spend AI tokens or admin review time on every normal verified review.
 - AI purchase checks should primarily use price history, current deal/auction conditions, verified purchase reviews, specs, and alternatives. Do not summarize manipulable community public opinion as fact.
 
 ## API And Error Rules

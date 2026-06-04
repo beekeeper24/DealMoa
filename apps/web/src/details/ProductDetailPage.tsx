@@ -381,7 +381,7 @@ function VerifiedReviewForm({
         rating,
         title
       });
-      setMessage("인증 후기가 접수되었습니다. 관리자 승인 후 공개됩니다.");
+      setMessage("인증 후기가 공개되었습니다.");
       setTitle("");
       setBody("");
       setProofReference("");
@@ -452,7 +452,13 @@ function VerifiedReviewForm({
       {errorMessage ? <p className="mt-3 text-sm font-semibold text-deal">{errorMessage}</p> : null}
       <button
         className="mt-4 rounded bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-black/40"
-        disabled={!accessToken || isSubmitting || !title.trim() || !body.trim()}
+        disabled={
+          !accessToken ||
+          isSubmitting ||
+          !title.trim() ||
+          !body.trim() ||
+          !proofReference.trim()
+        }
         type="submit"
       >
         {isSubmitting ? "접수 중" : "후기 제출"}

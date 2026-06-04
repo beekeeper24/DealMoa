@@ -36,7 +36,7 @@ class MockAiReviewProvider:
     def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
         return AIReviewResult(
             decision="needs_admin_review",
-            reason="mock review passed: receipt proof requires admin approval",
+            reason="mock review flagged for manual moderation",
         )
 
 

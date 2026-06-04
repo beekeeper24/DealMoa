@@ -73,7 +73,7 @@ export type VerifiedReview = {
   body: string;
   proofType: string;
   proofReference: string | null;
-  status: "approved" | "pending_review" | "rejected";
+  status: "approved" | "pending_review" | "rejected" | "hidden";
   aiDecision: string | null;
   aiReason: string | null;
   aiReviewedAt: string | null;

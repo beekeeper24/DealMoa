@@ -47,7 +47,10 @@ after local verification and required CI/review checks pass.
 - Hot-deal ranking: price first, then interest/freshness/trust.
 - Auction ranking: actual auction activity first.
 - Reports: admin review only; no automatic down-ranking/hiding.
-- User submissions and verified reviews: AI first-pass review plus admin approval.
+- User offer submissions: AI first-pass review plus admin approval before publishing.
+- Verified purchase reviews: receipt/order-history proof reference is required; normal
+  MVP reviews auto-publish and only suspicious, reported, or admin-flagged reviews move
+  through post-publication moderation.
 - CI starts from Milestone 1. Playwright joins CI when frontend is introduced.
 
 ## Documentation Map
@@ -61,7 +64,7 @@ after local verification and required CI/review checks pass.
 - `docs/notifications.md`: authenticated notification inbox API contract.
 - `docs/reports.md`: report intake, admin review queue, and ranking boundary.
 - `docs/submissions.md`: user submission intake, mock AI review, admin approval, and publishing boundary.
-- `docs/price-reviews.md`: price history snapshots, verified review submission, public display, and admin approval boundary.
+- `docs/price-reviews.md`: price history snapshots, verified review submission, automatic public display, and post-publication moderation boundary.
 - `docs/discussions.md`: product discussion comments, public visibility, and admin moderation boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
@@ -320,9 +323,13 @@ after local verification and required CI/review checks pass.
 - Auction creation and accepted auction bids record current-price snapshots.
 - Added public `GET /api/v1/products/{product_id}/price-history`.
 - Added authenticated `POST /api/v1/products/{product_id}/verified-reviews`.
-- Verified review intake records mock AI first-pass results and stays `pending_review`.
-- Added admin-only verified review queue and approve/reject API.
-- Admin review writes `admin_audit_logs`; approval writes a `review.verified` outbox event.
+- Verified review intake originally recorded mock AI first-pass results and stayed
+  `pending_review`; the current policy now auto-publishes normal verified purchase
+  reviews as `approved`.
+- Added admin-only verified review queue and approve/reject API; the current moderation
+  contract also supports hide/restore for post-publication review handling.
+- Admin moderation writes `admin_audit_logs`; publishing or restoring a public review
+  writes a `review.verified` outbox event.
 - Product detail now shows price history and approved verified reviews.
 - Public verified-review responses exclude internal user ids, proof references, AI review
   text, admin reviewer ids, and resolution notes.
@@ -527,6 +534,22 @@ after local verification and required CI/review checks pass.
 - Favorites, notifications history, connected accounts, edit/resubmit, and richer
   account settings remain deferred.
 
+## Completed Verified Review Auto-Publish Moderation Scope
+
+- Updated the purchase verified review policy from every-review admin approval to MVP
+  auto-publish plus post-publication moderation.
+- `POST /api/v1/products/{product_id}/verified-reviews` now requires a non-empty
+  `proofReference` and creates normal reviews directly as `approved`.
+- Normal verified-review creation does not call the AI review provider and does not
+  consume `AI_REVIEW_USER_WINDOW_LIMIT` quota.
+- Admin verified-review moderation supports `hide` and `restore`; hidden reviews are
+  excluded from public product detail and purchase-check evidence.
+- Product detail now shows successful verified-review submission as immediately public.
+- My Page distinguishes public reviews (`공개됨`) from post-moderation hidden reviews
+  (`숨김`).
+- Public verified-review responses still exclude internal user ids, proof references, AI
+  review text, admin reviewer ids, and resolution notes.
+
 ## Completed AI Review Provider Boundary Scope
 
 - Added a shared AI first-pass review provider port for submissions and verified reviews.
@@ -547,8 +570,9 @@ after local verification and required CI/review checks pass.
 
 - Added `ai_review_usage_events` for PostgreSQL-backed user AI review usage tracking.
 - Added `AI_REVIEW_USER_WINDOW_LIMIT` and `AI_REVIEW_USER_WINDOW_HOURS`.
-- User-triggered submission and verified-review first-pass review calls share the same
-  per-user time-window quota.
+- User-triggered AI first-pass review calls share the same per-user time-window quota.
+  Normal verified-review auto-publish no longer uses this quota because it does not call
+  AI.
 - Duplicate `sourceUrl` submissions return the existing submission before quota checks
   and do not consume additional AI review quota.
 - Limit exhaustion raises `AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429.
