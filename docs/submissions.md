@@ -74,6 +74,11 @@ Crawler tasks:
 - returns scanned, fetched, accepted, created, duplicate, skipped, and skip-reason counts
   where applicable.
 
+Admins may manually enqueue `crawl_hot_deals_mock` or `crawl_live_urls` from the admin
+crawler run log page/API. The trigger only starts the existing allowlisted Celery task; it
+does not accept arbitrary task names or per-request URLs and does not bypass AI first-pass
+review or admin approval. Live crawler targets still come from `CRAWLER_LIVE_URLS`.
+
 Crawler ingestion does not publish Product/Deal/Auction rows or bypass admin approval.
 Crawler run logs are operational summaries only; they do not store fetched HTML. Failed
 run logs store an exception type and a bounded, redacted error message.

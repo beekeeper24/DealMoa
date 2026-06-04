@@ -5,14 +5,16 @@ import React, { ReactNode, useEffect, useState } from "react";
 
 import { useAuthSession } from "../auth/useAuthSession";
 
-import { AdminReportApiError, listAdminCrawlerRunLogs } from "./api";
-import type { AdminCrawlerRunLog } from "./types";
+import { AdminReportApiError, listAdminCrawlerRunLogs, triggerAdminCrawlerRun } from "./api";
+import type { AdminCrawlerRunLog, AdminCrawlerTaskName } from "./types";
 
 export function AdminCrawlerRunLogPage() {
   const authSession = useAuthSession();
   const [items, setItems] = useState<AdminCrawlerRunLog[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [triggeringTask, setTriggeringTask] = useState<AdminCrawlerTaskName | null>(null);
+  const [triggerMessage, setTriggerMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isAdmin = authSession.session?.user.role === "ADMIN";
   const accessToken =
@@ -52,6 +54,31 @@ export function AdminCrawlerRunLogPage() {
     }
   }
 
+  async function triggerCrawlerRun(taskName: AdminCrawlerTaskName) {
+    if (!accessToken) {
+      return;
+    }
+    setTriggeringTask(taskName);
+    setTriggerMessage(null);
+    setErrorMessage(null);
+    try {
+      const result = await triggerAdminCrawlerRun({
+        accessToken,
+        taskName
+      });
+      setTriggerMessage(`요청됨 ${result.celeryTaskId}`);
+      await fetchRunLogs({ append: false, cursor: null, token: accessToken });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof AdminReportApiError
+          ? error.message
+          : "크롤러 실행 요청에 실패했습니다."
+      );
+    } finally {
+      setTriggeringTask(null);
+    }
+  }
+
   if (authSession.status === "loading") {
     return <AdminShell>관리자 세션 확인 중</AdminShell>;
   }
@@ -69,10 +96,26 @@ export function AdminCrawlerRunLogPage() {
           <div>
             <h1 className="text-3xl font-bold">크롤러 실행 로그</h1>
             <p className="mt-2 text-sm leading-6 text-black/65">
-              worker가 완료한 crawler task의 요약을 확인합니다. 실행 제어와 재시도는 아직 제공하지 않습니다.
+              worker가 완료한 crawler task의 요약을 확인하고 허용된 작업을 수동 실행합니다.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={triggeringTask !== null}
+              onClick={() => void triggerCrawlerRun("crawl_hot_deals_mock")}
+              type="button"
+            >
+              {triggeringTask === "crawl_hot_deals_mock" ? "요청 중" : "Mock 크롤러 실행"}
+            </button>
+            <button
+              className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={triggeringTask !== null}
+              onClick={() => void triggerCrawlerRun("crawl_live_urls")}
+              type="button"
+            >
+              {triggeringTask === "crawl_live_urls" ? "요청 중" : "Live 크롤러 실행"}
+            </button>
             <Link
               className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
               href="/admin"
@@ -88,8 +131,18 @@ export function AdminCrawlerRunLogPage() {
           </div>
         </div>
 
+        {triggerMessage ? (
+          <p className="mt-6 rounded-md border border-signal/30 bg-white px-4 py-3 text-sm font-semibold text-signal">
+            {triggerMessage}
+          </p>
+        ) : null}
+
         {errorMessage ? (
-          <p className="mt-6 rounded-md border border-deal/30 bg-white px-4 py-3 text-sm font-semibold text-deal">
+          <p
+            className={`rounded-md border border-deal/30 bg-white px-4 py-3 text-sm font-semibold text-deal ${
+              triggerMessage ? "mt-3" : "mt-6"
+            }`}
+          >
             {errorMessage}
           </p>
         ) : null}

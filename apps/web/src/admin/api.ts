@@ -1,5 +1,7 @@
 import type {
   AdminCrawlerRunLogListResponse,
+  AdminCrawlerRunTriggerResponse,
+  AdminCrawlerTaskName,
   AdminReport,
   AdminReportErrorResponse,
   AdminReportListResponse,
@@ -59,6 +61,25 @@ export async function listAdminCrawlerRunLogs(request: {
     throwAdminReportError(body);
   }
   return body as AdminCrawlerRunLogListResponse;
+}
+
+export async function triggerAdminCrawlerRun(request: {
+  accessToken: string;
+  taskName: AdminCrawlerTaskName;
+}): Promise<AdminCrawlerRunTriggerResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/admin/crawler-runs/trigger`, {
+    body: JSON.stringify({ taskName: request.taskName }),
+    headers: {
+      ...authHeaders(request.accessToken),
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+  const body = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(body);
+  }
+  return body as AdminCrawlerRunTriggerResponse;
 }
 
 export async function reviewAdminReport(

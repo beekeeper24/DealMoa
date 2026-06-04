@@ -33,6 +33,10 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
 - Crawler task summaries are visible only through the admin-only crawler run log API and
   web page. These logs expose counts, skip reasons, and bounded failure fields, not
   fetched HTML.
+- Manual crawler execution is admin-only and accepts only the allowlisted task names
+  `crawl_hot_deals_mock` and `crawl_live_urls`. It does not accept arbitrary task names or
+  per-request URLs, so live fetch targets remain controlled by `CRAWLER_LIVE_URLS` and
+  worker-side source/parser/SSRF/rate-limit checks.
 - The crawler system user is non-admin.
 - Admin approval is required before Product, Deal, or Auction rows are created.
 - Product matching suggestions are admin-only hints and never publish content by themselves.
@@ -40,7 +44,7 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   product IDs fail with `PRODUCT_NOT_FOUND`.
 - Admin approval/rejection writes `admin_audit_logs`.
 - Distributed Redis-backed rate windows, production crawl scheduling, retry metadata,
-  manual crawler controls, and automated duplicate cleanup are deferred security
+  per-request crawler URL input, and automated duplicate cleanup are deferred security
   hardening items.
 
 ## Verified Reviews

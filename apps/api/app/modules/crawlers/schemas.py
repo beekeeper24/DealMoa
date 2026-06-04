@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from app.modules.crawlers.task_queue import CrawlerTaskName
+
 
 def serialize_utc_datetime(value: datetime) -> str:
     if value.tzinfo is None:
@@ -44,3 +46,12 @@ class CrawlerRunLogResponse(BaseModel):
 class CrawlerRunLogListResponse(BaseModel):
     items: list[CrawlerRunLogResponse]
     next_cursor: str | None = Field(alias="nextCursor")
+
+
+class CrawlerRunTriggerRequest(BaseModel):
+    task_name: CrawlerTaskName = Field(alias="taskName")
+
+
+class CrawlerRunTriggerResponse(BaseModel):
+    task_name: CrawlerTaskName = Field(alias="taskName")
+    celery_task_id: str = Field(alias="celeryTaskId")
