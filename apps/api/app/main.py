@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exception_handlers import register_exception_handlers
+from app.core.metrics import register_metrics
 
 
 def create_app() -> FastAPI:
@@ -22,6 +23,8 @@ def create_app() -> FastAPI:
         return {"status": "ok", "service": "api"}
 
     register_exception_handlers(app)
+    if settings.api_metrics_enabled:
+        register_metrics(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     return app
 
