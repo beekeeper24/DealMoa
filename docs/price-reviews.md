@@ -92,6 +92,19 @@ Verified-review intake shares the same user-triggered AI review quota as submiss
 `AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429. The quota only limits first-pass review
 calls; it does not approve, reject, or publish reviews.
 
+## My Review History
+
+Authenticated users can list only their own verified-review submissions:
+
+```http
+GET /api/v1/me/verified-reviews?limit=20&cursor=...
+```
+
+The response uses the same `items` and `nextCursor` shape as other cursor-paginated
+lists. It returns the owner's review status, AI first-pass reason, proof metadata, and
+admin resolution fields so the user can understand review progress. The query is always
+scoped to the current bearer-token user; it does not expose another user's reviews.
+
 ## Admin Review
 
 Admin routes:

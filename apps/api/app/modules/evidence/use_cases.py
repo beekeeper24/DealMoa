@@ -145,6 +145,19 @@ class EvidenceUseCases:
             cursor=cursor,
         )
 
+    def list_my_verified_reviews(
+        self,
+        *,
+        actor: AuthenticatedUser,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPage[VerifiedReview]:
+        return self.evidence_repository.list_user_verified_reviews(
+            user_id=actor.id,
+            limit=limit,
+            cursor=cursor,
+        )
+
     def review_verified_review(
         self,
         *,

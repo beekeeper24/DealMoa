@@ -8,6 +8,7 @@ from app.modules.crawlers.router import admin_router as admin_crawler_run_logs_r
 from app.modules.discussions.router import admin_router as admin_discussions_router
 from app.modules.discussions.router import router as discussions_router
 from app.modules.evidence.router import admin_router as admin_evidence_router
+from app.modules.evidence.router import me_router as me_evidence_router
 from app.modules.evidence.router import router as evidence_router
 from app.modules.favorites.router import router as favorites_router
 from app.modules.notifications.router import router as notifications_router
@@ -32,6 +33,7 @@ api_router.include_router(reports_router)
 api_router.include_router(admin_reports_router)
 api_router.include_router(submissions_router)
 api_router.include_router(me_submissions_router)
+api_router.include_router(me_evidence_router)
 api_router.include_router(admin_submissions_router)
 api_router.include_router(products_router)
 api_router.include_router(discussions_router)
