@@ -49,8 +49,9 @@ after local verification and required CI/review checks pass.
 - Reports: admin review only; no automatic down-ranking/hiding.
 - User offer submissions: AI first-pass review plus admin approval before publishing.
 - Verified purchase reviews: receipt/order-history proof reference is required; normal
-  MVP reviews auto-publish and only suspicious, reported, or admin-flagged reviews move
-  through post-publication moderation.
+  MVP reviews auto-publish and only platform-risk or admin-flagged reviews move through
+  post-publication moderation. Consumer report buttons for verified reviews are deferred
+  in the MVP.
 - CI starts from Milestone 1. Playwright joins CI when frontend is introduced.
 
 ## Documentation Map
@@ -544,6 +545,11 @@ after local verification and required CI/review checks pass.
   consume `AI_REVIEW_USER_WINDOW_LIMIT` quota.
 - Admin verified-review moderation supports `hide` and `restore`; hidden reviews are
   excluded from public product detail and purchase-check evidence.
+- Added `/admin/verified-reviews` web UI for admin-only post-publication review
+  moderation with approved/hidden filters, cursor pagination, hide/restore actions, and
+  resolution notes.
+- Consumer report buttons for verified reviews are not part of the MVP; the current
+  operating model is platform-risk/admin-flagged post-publication moderation.
 - Product detail now shows successful verified-review submission as immediately public.
 - My Page distinguishes public reviews (`공개됨`) from post-moderation hidden reviews
   (`숨김`).

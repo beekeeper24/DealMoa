@@ -5,22 +5,22 @@ import React, { FormEvent, ReactNode, useEffect, useMemo, useState } from "react
 
 import { useAuthSession } from "../auth/useAuthSession";
 
-import { AdminReportApiError, listAdminDiscussions, moderateAdminDiscussion } from "./api";
+import { AdminReportApiError, listAdminVerifiedReviews, moderateAdminVerifiedReview } from "./api";
 import type {
-  AdminDiscussionComment,
-  AdminDiscussionModerationAction,
-  AdminDiscussionStatus
+  AdminVerifiedReview,
+  AdminVerifiedReviewModerationAction,
+  AdminVerifiedReviewStatus
 } from "./types";
 
-const discussionStatuses: Array<{ key: AdminDiscussionStatus; label: string }> = [
-  { key: "visible", label: "공개 댓글" },
-  { key: "hidden", label: "숨김 댓글" }
+const reviewStatuses: Array<{ key: AdminVerifiedReviewStatus; label: string }> = [
+  { key: "approved", label: "공개 후기" },
+  { key: "hidden", label: "숨김 후기" }
 ];
 
-export function AdminDiscussionModerationPage() {
+export function AdminVerifiedReviewModerationPage() {
   const authSession = useAuthSession();
-  const [activeStatus, setActiveStatus] = useState<AdminDiscussionStatus>("visible");
-  const [items, setItems] = useState<AdminDiscussionComment[]>([]);
+  const [activeStatus, setActiveStatus] = useState<AdminVerifiedReviewStatus>("approved");
+  const [items, setItems] = useState<AdminVerifiedReview[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export function AdminDiscussionModerationPage() {
     if (!accessToken) {
       return;
     }
-    void fetchDiscussions({
+    void fetchReviews({
       append: false,
       cursor: null,
       status: activeStatus,
@@ -41,20 +41,20 @@ export function AdminDiscussionModerationPage() {
   }, [accessToken, activeStatus]);
 
   const statusLabel = useMemo(
-    () => discussionStatuses.find((status) => status.key === activeStatus)?.label ?? activeStatus,
+    () => reviewStatuses.find((status) => status.key === activeStatus)?.label ?? activeStatus,
     [activeStatus]
   );
 
-  async function fetchDiscussions(request: {
+  async function fetchReviews(request: {
     append: boolean;
     cursor: string | null;
-    status: AdminDiscussionStatus;
+    status: AdminVerifiedReviewStatus;
     token: string;
   }) {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const page = await listAdminDiscussions({
+      const page = await listAdminVerifiedReviews({
         accessToken: request.token,
         cursor: request.cursor,
         status: request.status
@@ -67,7 +67,7 @@ export function AdminDiscussionModerationPage() {
       setErrorMessage(
         error instanceof AdminReportApiError
           ? error.message
-          : "토론 댓글 목록을 불러오지 못했습니다."
+          : "인증 후기 목록을 불러오지 못했습니다."
       );
     } finally {
       setIsLoading(false);
@@ -78,7 +78,7 @@ export function AdminDiscussionModerationPage() {
     if (!accessToken || !nextCursor || isLoading) {
       return;
     }
-    await fetchDiscussions({
+    await fetchReviews({
       append: true,
       cursor: nextCursor,
       status: activeStatus,
@@ -87,18 +87,18 @@ export function AdminDiscussionModerationPage() {
   }
 
   async function handleModeration(request: {
-    action: AdminDiscussionModerationAction;
-    commentId: string;
-    moderationNote: string;
+    action: AdminVerifiedReviewModerationAction;
+    resolutionNote: string;
+    reviewId: string;
   }) {
     if (!accessToken) {
       return;
     }
-    const moderated = await moderateAdminDiscussion({
+    const moderated = await moderateAdminVerifiedReview({
       accessToken,
       action: request.action,
-      commentId: request.commentId,
-      moderationNote: request.moderationNote
+      reviewId: request.reviewId,
+      resolutionNote: request.resolutionNote
     });
     setItems((current) => {
       if (moderated.status !== activeStatus) {
@@ -123,9 +123,10 @@ export function AdminDiscussionModerationPage() {
       <section className="mx-auto max-w-6xl px-5 py-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">토론 검토</h1>
+            <h1 className="text-3xl font-bold">인증 후기 검수</h1>
             <p className="mt-2 text-sm leading-6 text-black/65">
-              상품 토론 댓글의 공개 상태를 검토합니다. 댓글 본문 수정은 제공하지 않습니다.
+              자동 공개된 구매 인증 후기를 사후 검수합니다. 공개 증빙 원문은 관리자 화면에서만
+              확인합니다.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -146,9 +147,9 @@ export function AdminDiscussionModerationPage() {
             </Link>
             <Link
               className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
-              href="/admin/verified-reviews"
+              href="/admin/discussions"
             >
-              인증 후기 검수
+              토론 검토
             </Link>
             <Link
               className="rounded border border-black/15 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal hover:text-signal"
@@ -159,8 +160,8 @@ export function AdminDiscussionModerationPage() {
           </div>
         </div>
 
-        <div aria-label="토론 댓글 상태" className="mt-6 flex gap-2" role="tablist">
-          {discussionStatuses.map((status) => (
+        <div aria-label="인증 후기 상태" className="mt-6 flex gap-2" role="tablist">
+          {reviewStatuses.map((status) => (
             <button
               aria-selected={activeStatus === status.key}
               className="rounded border border-black/10 bg-white px-3 py-2 text-sm font-semibold transition hover:border-signal aria-selected:border-signal aria-selected:bg-signal aria-selected:text-white"
@@ -183,21 +184,21 @@ export function AdminDiscussionModerationPage() {
         <div className="mt-6 space-y-3">
           {isLoading && items.length === 0 ? (
             <p className="rounded-md border border-black/10 bg-white px-4 py-6 text-sm text-black/65">
-              토론 댓글을 불러오는 중
+              인증 후기를 불러오는 중
             </p>
           ) : null}
 
           {!isLoading && !errorMessage && items.length === 0 ? (
             <p className="rounded-md border border-black/10 bg-white px-4 py-6 text-sm text-black/65">
-              표시할 댓글이 없습니다.
+              표시할 인증 후기가 없습니다.
             </p>
           ) : null}
 
-          {items.map((comment) => (
-            <DiscussionModerationCard
-              comment={comment}
-              key={comment.id}
+          {items.map((review) => (
+            <VerifiedReviewModerationCard
+              key={review.id}
               onModerate={handleModeration}
+              review={review}
             />
           ))}
         </div>
@@ -217,21 +218,22 @@ export function AdminDiscussionModerationPage() {
   );
 }
 
-function DiscussionModerationCard({
-  comment,
-  onModerate
+function VerifiedReviewModerationCard({
+  onModerate,
+  review
 }: {
-  comment: AdminDiscussionComment;
   onModerate: (request: {
-    action: AdminDiscussionModerationAction;
-    commentId: string;
-    moderationNote: string;
+    action: AdminVerifiedReviewModerationAction;
+    resolutionNote: string;
+    reviewId: string;
   }) => Promise<void>;
+  review: AdminVerifiedReview;
 }) {
-  const [moderationNote, setModerationNote] = useState("");
+  const [resolutionNote, setResolutionNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const action: AdminDiscussionModerationAction = comment.status === "visible" ? "hide" : "restore";
+  const action: AdminVerifiedReviewModerationAction =
+    review.status === "approved" ? "hide" : "restore";
   const buttonLabel = action === "hide" ? "숨김 처리" : "복구";
 
   async function submitModeration(event: FormEvent<HTMLFormElement>) {
@@ -241,14 +243,14 @@ function DiscussionModerationCard({
     try {
       await onModerate({
         action,
-        commentId: comment.id,
-        moderationNote
+        resolutionNote,
+        reviewId: review.id
       });
     } catch (error) {
       setErrorMessage(
         error instanceof AdminReportApiError
           ? error.message
-          : "토론 댓글 처리 저장에 실패했습니다."
+          : "인증 후기 처리 저장에 실패했습니다."
       );
     } finally {
       setIsSaving(false);
@@ -257,52 +259,66 @@ function DiscussionModerationCard({
 
   return (
     <article
-      aria-label={`${comment.userNickname} 댓글`}
+      aria-label={`${review.title} 인증 후기`}
       className="rounded-md border border-black/10 bg-white p-4 transition hover:border-signal"
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold text-signal">
-              {comment.status}
-            </span>
-            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold text-deal">
-              {comment.riskLevel}
+              {review.status}
             </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
-              {comment.productId}
+              {review.rating}점
             </span>
             <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
-              {formatDateTime(comment.createdAt)}
+              {review.productId}
+            </span>
+            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
+              {review.userId}
+            </span>
+            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
+              {formatDateTime(review.createdAt)}
             </span>
           </div>
-          <h2 className="mt-3 text-lg font-bold">{comment.userNickname}</h2>
+          <h2 className="mt-3 text-lg font-bold">{review.title}</h2>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-black/75">
-            {comment.body}
+            {review.body}
           </p>
-          {comment.riskReasons.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {comment.riskReasons.map((reason) => (
-                <span className="rounded bg-paper px-2 py-1 text-xs font-semibold" key={reason}>
-                  {reason}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          {comment.moderationNote ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
+              {review.proofType}
+            </span>
+            {review.proofReference ? (
+              <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
+                {review.proofReference}
+              </span>
+            ) : null}
+            {review.aiDecision ? (
+              <span className="rounded bg-paper px-2 py-1 text-xs font-semibold">
+                {review.aiDecision}
+              </span>
+            ) : null}
+          </div>
+          {review.aiReason ? (
             <p className="mt-3 rounded border border-black/10 bg-paper px-3 py-2 text-sm text-black/70">
-              {comment.moderationNote}
+              {review.aiReason}
+            </p>
+          ) : null}
+          {review.resolutionNote ? (
+            <p className="mt-3 rounded border border-black/10 bg-paper px-3 py-2 text-sm text-black/70">
+              {review.resolutionNote}
             </p>
           ) : null}
         </div>
 
         <form className="grid content-start gap-3" onSubmit={submitModeration}>
           <label className="grid gap-1 text-sm font-semibold">
-            모더레이션 메모
+            처리 메모
             <textarea
               className="min-h-24 resize-y rounded border border-black/15 bg-paper px-3 py-2 text-sm font-normal"
-              onChange={(event) => setModerationNote(event.target.value)}
-              value={moderationNote}
+              onChange={(event) => setResolutionNote(event.target.value)}
+              value={resolutionNote}
             />
           </label>
           {errorMessage ? <p className="text-sm font-semibold text-deal">{errorMessage}</p> : null}

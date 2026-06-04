@@ -10,7 +10,11 @@ import type {
   AdminReportErrorResponse,
   AdminReportListResponse,
   AdminReportReviewRequest,
-  AdminReportStatus
+  AdminReportStatus,
+  AdminVerifiedReview,
+  AdminVerifiedReviewListResponse,
+  AdminVerifiedReviewModerationRequest,
+  AdminVerifiedReviewStatus
 } from "./types";
 
 export class AdminReportApiError extends Error {
@@ -135,6 +139,57 @@ export async function moderateAdminDiscussion(
     throwAdminReportError(parsed);
   }
   return parsed as AdminDiscussionComment;
+}
+
+export async function listAdminVerifiedReviews(request: {
+  accessToken: string;
+  cursor?: string | null;
+  status: AdminVerifiedReviewStatus;
+}): Promise<AdminVerifiedReviewListResponse> {
+  const params = new URLSearchParams({
+    status: request.status,
+    limit: "20"
+  });
+  if (request.cursor) {
+    params.set("cursor", request.cursor);
+  }
+  const response = await fetch(`${getApiBaseUrl()}/admin/verified-reviews?${params.toString()}`, {
+    headers: authHeaders(request.accessToken)
+  });
+  const body = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(body);
+  }
+  return body as AdminVerifiedReviewListResponse;
+}
+
+export async function moderateAdminVerifiedReview(
+  request: AdminVerifiedReviewModerationRequest
+): Promise<AdminVerifiedReview> {
+  const body: {
+    action: AdminVerifiedReviewModerationRequest["action"];
+    resolutionNote?: string;
+  } = {
+    action: request.action
+  };
+  const resolutionNote = request.resolutionNote?.trim();
+  if (resolutionNote) {
+    body.resolutionNote = resolutionNote;
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/admin/verified-reviews/${request.reviewId}`, {
+    body: JSON.stringify(body),
+    headers: {
+      ...authHeaders(request.accessToken),
+      "Content-Type": "application/json"
+    },
+    method: "PATCH"
+  });
+  const parsed = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(parsed);
+  }
+  return parsed as AdminVerifiedReview;
 }
 
 export async function reviewAdminReport(
