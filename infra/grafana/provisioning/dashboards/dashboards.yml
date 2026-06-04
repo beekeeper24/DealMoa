@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: DealMoa
+    orgId: 1
+    folder: DealMoa
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
