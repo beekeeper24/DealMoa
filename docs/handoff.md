@@ -153,6 +153,20 @@ after local verification and required CI/review checks pass.
 - The current worker metrics path is local-MVP oriented; production multiprocess Celery
   metrics need a dedicated setup before enabling externally.
 
+## Completed JMeter Load-Test Baseline Scope
+
+- Added `infra/jmeter/dealmoa-search-baseline.jmx` as the first repeatable load-test
+  scenario.
+- The scenario covers root health, product search, hot-deal ranking, and auction activity
+  ranking.
+- Added Docker Compose `loadtest` profile with `alpine/jmeter:5.6.3`.
+- Added `JMETER_API_BASE_URL`, `JMETER_API_PREFIX`, `JMETER_THREADS`,
+  `JMETER_RAMP_SECONDS`, `JMETER_DURATION_SECONDS`, `JMETER_SEARCH_QUERY`,
+  `JMETER_SEARCH_LIMIT`, and `JMETER_THINK_TIME_MS` to `.env.example`.
+- JMeter result files are written under `infra/jmeter/results/` and ignored by Git.
+- This is a runnable baseline, not a tuned SLO. Meaningful numbers still require
+  representative data, initialized Elasticsearch indexes, and environment-specific runs.
+
 ## Completed Product API MVP Scope
 
 - Product, Deal, Auction SQLAlchemy models and Alembic migration.

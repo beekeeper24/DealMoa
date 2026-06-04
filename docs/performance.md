@@ -4,6 +4,50 @@
 
 - Apache JMeter.
 
+## JMeter Baseline
+
+The first repeatable JMeter baseline lives at:
+
+```text
+infra/jmeter/dealmoa-search-baseline.jmx
+```
+
+It exercises:
+
+- `GET /health`
+- `GET /api/v1/search/products?q=<query>&limit=<limit>`
+- `GET /api/v1/search/deals/hot?limit=<limit>`
+- `GET /api/v1/search/auctions/activity?limit=<limit>`
+
+Local Docker Compose command:
+
+```bash
+docker compose --profile core --profile loadtest run --rm jmeter
+```
+
+The runner writes:
+
+- `infra/jmeter/results/dealmoa-search-baseline.jtl`
+- `infra/jmeter/results/jmeter.log`
+
+Configurable variables:
+
+```env
+JMETER_API_BASE_URL=http://api:8000
+JMETER_API_PREFIX=/api/v1
+JMETER_THREADS=5
+JMETER_RAMP_SECONDS=30
+JMETER_DURATION_SECONDS=60
+JMETER_SEARCH_QUERY=Galaxy
+JMETER_SEARCH_LIMIT=10
+JMETER_THINK_TIME_MS=250
+```
+
+The baseline is small by design. It checks repeatability and observability readiness
+before real tuning. Meaningful search/ranking numbers require initialized Elasticsearch
+indexes, representative data, and an API runtime similar to the environment being
+measured.
+
 ## Frontend Verification
 
 - Add Playwright as soon as the frontend app is introduced.
@@ -27,3 +71,11 @@
 - Error rate should remain below an agreed threshold under demo load.
 - Kafka consumer lag should recover after spikes.
 - Elasticsearch indexing delay should remain visible and measurable.
+
+## Current Non-Goals
+
+- Production SLOs.
+- Long-running soak tests.
+- CI-gated performance thresholds.
+- Automatic Grafana alert rules.
+- Tuning Elasticsearch, DB indexes, or worker concurrency from the first baseline.
