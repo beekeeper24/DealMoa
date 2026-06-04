@@ -5,6 +5,43 @@
 - Prometheus for metrics collection.
 - Grafana for dashboards.
 
+## Local Docker Compose Profile
+
+Local observability runs through the `observability` Docker Compose profile:
+
+```bash
+docker compose --profile core --profile observability up
+```
+
+Local URLs:
+
+- API metrics: `http://localhost:8000/metrics`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+
+Environment variables:
+
+```env
+PROMETHEUS_PORT=9090
+GRAFANA_PORT=3001
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=replace-with-local-grafana-password
+```
+
+Prometheus scrapes:
+
+- `prometheus:9090`
+- `api:8000/metrics`
+
+Grafana provisioning:
+
+- datasource: Prometheus at `http://prometheus:9090`
+- dashboard: `DealMoa API Overview`
+
+The first dashboard is intentionally small. It covers API request rate, 5xx ratio, and
+p95 latency from the API metrics MVP. It is a local skeleton for development and demo
+visibility, not a production monitoring setup.
+
 ## API Metrics MVP
 
 FastAPI exposes Prometheus-compatible text metrics at:
@@ -44,8 +81,6 @@ do not inflate API traffic numbers.
 
 Current non-goals:
 
-- Grafana dashboard JSON;
-- Prometheus container scrape config;
 - alert rules;
 - worker, consumer, Kafka, Celery, Redis, PostgreSQL, and Elasticsearch metrics;
 - business metric counters beyond request traffic and latency.

@@ -111,8 +111,22 @@ after local verification and required CI/review checks pass.
 - `/metrics` scrape requests are excluded from API request metrics.
 - `API_METRICS_ENABLED=false` disables `/metrics`; public deployments should protect the
   metrics path with platform/network access controls before enabling external scraping.
-- Grafana dashboards, Prometheus scrape config, alert rules, worker/consumer metrics, and
-  business metrics remain deferred.
+- Production Grafana dashboards, production Prometheus scrape config, alert rules,
+  worker/consumer metrics, and business metrics remain deferred.
+
+## Completed Local Observability Profile Scope
+
+- Added Docker Compose `observability` profile with Prometheus and Grafana OSS.
+- Prometheus uses `infra/prometheus/prometheus.yml` and scrapes `api:8000/metrics`.
+- Grafana provisions the Prometheus datasource from
+  `infra/grafana/provisioning/datasources/prometheus.yml`.
+- Grafana provisions the `DealMoa API Overview` dashboard from
+  `infra/grafana/dashboards/api-overview.json`.
+- The initial dashboard includes API request rate, 5xx ratio, and p95 latency panels.
+- Local ports are configurable through `PROMETHEUS_PORT` and `GRAFANA_PORT`; Grafana local
+  admin credentials are configured by `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`.
+- Production Railway/Vercel observability, alert rules, worker/consumer metrics,
+  exporters for backing services, and real SLO tuning remain deferred.
 
 ## Completed Product API MVP Scope
 
