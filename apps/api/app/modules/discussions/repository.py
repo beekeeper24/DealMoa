@@ -71,6 +71,7 @@ class DiscussionsRepository:
             .options(joinedload(ProductDiscussionComment.user))
             .where(ProductDiscussionComment.status == status)
             .order_by(
+                ProductDiscussionComment.moderation_risk_score.desc(),
                 ProductDiscussionComment.created_at.desc(),
                 ProductDiscussionComment.id.desc(),
             )
@@ -79,7 +80,7 @@ class DiscussionsRepository:
             cursor_item = self.session.get(ProductDiscussionComment, cursor)
             if cursor_item is None or cursor_item.status != status:
                 raise InvalidSearchCursorException(cursor)
-            statement = self._apply_cursor(statement, cursor_item)
+            statement = self._apply_admin_cursor(statement, cursor_item)
         return self._page(statement, limit)
 
     def create_audit_log(self, audit_log: AdminAuditLog) -> AdminAuditLog:
@@ -106,6 +107,29 @@ class DiscussionsRepository:
             or_(
                 ProductDiscussionComment.created_at < cursor_item.created_at,
                 and_(
+                    ProductDiscussionComment.created_at == cursor_item.created_at,
+                    ProductDiscussionComment.id < cursor_item.id,
+                ),
+            )
+        )
+
+    def _apply_admin_cursor(
+        self,
+        statement: Select[tuple[ProductDiscussionComment]],
+        cursor_item: ProductDiscussionComment,
+    ) -> Select[tuple[ProductDiscussionComment]]:
+        return statement.where(
+            or_(
+                ProductDiscussionComment.moderation_risk_score
+                < cursor_item.moderation_risk_score,
+                and_(
+                    ProductDiscussionComment.moderation_risk_score
+                    == cursor_item.moderation_risk_score,
+                    ProductDiscussionComment.created_at < cursor_item.created_at,
+                ),
+                and_(
+                    ProductDiscussionComment.moderation_risk_score
+                    == cursor_item.moderation_risk_score,
                     ProductDiscussionComment.created_at == cursor_item.created_at,
                     ProductDiscussionComment.id < cursor_item.id,
                 ),

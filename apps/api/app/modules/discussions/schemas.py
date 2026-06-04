@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 DiscussionStatus = Literal["visible", "hidden"]
 DiscussionModerationAction = Literal["hide", "restore"]
+DiscussionRiskLevel = Literal["low", "medium", "high"]
 
 
 def serialize_utc_datetime(value: datetime | None) -> str | None:
@@ -50,6 +51,9 @@ class DiscussionCommentResponse(BaseModel):
     user_nickname: str = Field(alias="userNickname")
     body: str
     status: DiscussionStatus
+    moderation_risk_score: int = Field(alias="riskScore")
+    moderation_risk_level: DiscussionRiskLevel = Field(alias="riskLevel")
+    moderation_risk_reasons_json: list[str] = Field(alias="riskReasons")
     moderated_by_user_id: str | None = Field(alias="moderatedByUserId")
     moderation_note: str | None = Field(alias="moderationNote")
     moderated_at: datetime | None = Field(alias="moderatedAt")

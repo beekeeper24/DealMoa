@@ -353,9 +353,15 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
 - Product detail now shows visible discussion comments and an authenticated comment form.
 - Added `/admin/discussions` web queue with visible/hidden filters, pagination,
   hide/restore actions, and moderation note input.
+- Added deterministic comment moderation risk signals for external contact attempts,
+  repeated URLs, and obvious commercial-spam phrases.
+- Admin discussion queues expose `riskScore`, `riskLevel`, and `riskReasons` and order
+  comments by risk priority within each visibility status.
 - Public discussion responses exclude internal user ids, moderation notes, and reviewer ids.
+- Public discussion responses also exclude moderation risk fields.
 - Discussion text is rendered as plain React text and is not used as AI purchase-check
   evidence or ranking signal.
+- Risk signals do not automatically hide, delete, rank, or penalize comments/users.
 - Nested replies, voting, notifications, author edit/delete, spam/rate-limit hardening,
   and AI summarization remain deferred.
 
