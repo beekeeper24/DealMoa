@@ -4,10 +4,14 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import cast
 
+import pytest
+from app.core.exceptions import AIReviewRateLimitExceededException
 from app.db.base import Base
 from app.db.session import get_session
 from app.main import create_app
+from app.modules.ai_review.models import AIReviewUsageEvent
 from app.modules.ai_review.provider import AIReviewResult
+from app.modules.ai_review.rate_limits import AIReviewRateLimiter, AIReviewUsageRepository
 from app.modules.auth.models import User
 from app.modules.auth.router import get_auth_use_cases
 from app.modules.auth.use_cases import AuthenticatedUser
@@ -19,7 +23,7 @@ from app.modules.products import models as product_models  # noqa: F401
 from app.modules.products.repository import ProductRepository
 from app.modules.submissions.schemas import SubmissionCreateRequest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -267,6 +271,71 @@ def test_verified_review_stores_provider_review_but_stays_pending() -> None:
     assert review.status == "pending_review"
     assert review.ai_decision == "reject_candidate"
     assert review.ai_reason == "provider flagged suspicious proof"
+
+
+def test_verified_review_rejects_ai_review_when_user_window_limit_is_exceeded() -> None:
+    class CountingReviewProvider:
+        calls = 0
+
+        def review_submission(self, request: SubmissionCreateRequest) -> AIReviewResult:
+            raise AssertionError("submission provider should not be called")
+
+        def review_verified_review(self, request: VerifiedReviewCreateRequest) -> AIReviewResult:
+            self.calls += 1
+            return AIReviewResult(
+                decision="needs_admin_review",
+                reason="provider called",
+            )
+
+    client, session_factory = make_test_client(FakeAuthUseCases(role="USER"))
+    seed_users(session_factory)
+    product = create_product(client)
+    session = session_factory()
+    try:
+        provider = CountingReviewProvider()
+        use_cases = EvidenceUseCases(
+            evidence_repository=EvidenceRepository(session),
+            product_repository=ProductRepository(session),
+            ai_review_provider=provider,
+            ai_review_rate_limiter=AIReviewRateLimiter(
+                repository=AIReviewUsageRepository(session),
+                window_limit=1,
+                window_hours=24,
+            ),
+            now=lambda: NOW,
+        )
+        actor = AuthenticatedUser(
+            id="user-1",
+            email="user@example.com",
+            nickname="User",
+            role="USER",
+        )
+
+        use_cases.create_verified_review(
+            actor=actor,
+            product_id=str(product["id"]),
+            request=VerifiedReviewCreateRequest.model_validate(verified_review_payload()),
+        )
+        with pytest.raises(AIReviewRateLimitExceededException) as exc_info:
+            use_cases.create_verified_review(
+                actor=actor,
+                product_id=str(product["id"]),
+                request=VerifiedReviewCreateRequest.model_validate(
+                    {
+                        **verified_review_payload(),
+                        "title": "두 번째 실구매 후기",
+                    }
+                ),
+            )
+
+        usage_events = list(session.scalars(select(AIReviewUsageEvent)))
+    finally:
+        session.close()
+
+    assert provider.calls == 1
+    assert len(usage_events) == 1
+    assert usage_events[0].target_type == "verified_review"
+    assert exc_info.value.details == {"limit": 1, "windowHours": 24}
 
 
 def test_admin_verified_review_queue_requires_admin_role() -> None:

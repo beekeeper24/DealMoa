@@ -45,6 +45,16 @@ class Settings(BaseSettings):
         default=8.0,
         validation_alias="OPENAI_TIMEOUT_SECONDS",
     )
+    ai_review_user_window_limit: int = Field(
+        default=20,
+        ge=0,
+        validation_alias="AI_REVIEW_USER_WINDOW_LIMIT",
+    )
+    ai_review_user_window_hours: int = Field(
+        default=24,
+        ge=1,
+        validation_alias="AI_REVIEW_USER_WINDOW_HOURS",
+    )
     jwt_secret_key: str = Field(
         default="replace-with-local-jwt-secret-minimum-32-bytes",
         validation_alias="JWT_SECRET_KEY",

@@ -104,6 +104,11 @@ class ErrorCode(Enum):
         HTTPStatus.NOT_FOUND,
         "토론 댓글을 찾을 수 없습니다.",
     )
+    AI_REVIEW_RATE_LIMIT_EXCEEDED = (
+        "AI_REVIEW_RATE_LIMIT_EXCEEDED",
+        HTTPStatus.TOO_MANY_REQUESTS,
+        "AI 검토 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+    )
     VALIDATION_ERROR = (
         "VALIDATION_ERROR",
         HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -327,6 +332,18 @@ class VerifiedReviewAlreadyReviewedException(VerifiedReviewException):
         super().__init__(
             ErrorCode.VERIFIED_REVIEW_ALREADY_REVIEWED,
             details={"reviewId": review_id, "status": status},
+        )
+
+
+class AIReviewException(DealMoaException):
+    pass
+
+
+class AIReviewRateLimitExceededException(AIReviewException):
+    def __init__(self, *, limit: int, window_hours: int) -> None:
+        super().__init__(
+            ErrorCode.AI_REVIEW_RATE_LIMIT_EXCEEDED,
+            details={"limit": limit, "windowHours": window_hours},
         )
 
 

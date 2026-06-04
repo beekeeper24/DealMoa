@@ -37,3 +37,15 @@ def test_settings_reads_ai_review_provider_env() -> None:
     assert settings.openai_base_url == "https://api.openai.test/v1"
     assert settings.openai_review_model == "gpt-4o-mini"
     assert settings.openai_timeout_seconds == 5.5
+
+
+def test_settings_reads_ai_review_rate_limit_env() -> None:
+    settings = Settings.model_validate(
+        {
+            "AI_REVIEW_USER_WINDOW_LIMIT": "3",
+            "AI_REVIEW_USER_WINDOW_HOURS": "12",
+        }
+    )
+
+    assert settings.ai_review_user_window_limit == 3
+    assert settings.ai_review_user_window_hours == 12

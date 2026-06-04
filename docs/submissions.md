@@ -103,6 +103,12 @@ same port. Provider output can only populate `aiDecision` and `aiReason`; the su
 status remains `pending_review`, and invalid/provider-failure responses fall back to
 `needs_admin_review`.
 
+User-triggered AI first-pass review calls are limited by
+`AI_REVIEW_USER_WINDOW_LIMIT` per `AI_REVIEW_USER_WINDOW_HOURS`. The default is 20
+calls per user per 24 hours. Duplicate `sourceUrl` submissions return the existing
+submission before the limiter runs, so they do not consume extra quota. Limit
+exhaustion returns `AI_REVIEW_RATE_LIMIT_EXCEEDED` with HTTP 429.
+
 ## Admin Queue API
 
 Admins can list and review submissions:

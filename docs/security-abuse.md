@@ -131,8 +131,11 @@ Only an admin status decision, such as moving a deal or auction to `active`, `ve
   changes publish status.
 - Verified-review `proofReference` is internal proof metadata and is not sent to the AI
   review provider in the current slice. Receipt image OCR remains deferred.
-- Real provider production use still needs cost controls, rate limits, abuse logging, and
-  provider-level monitoring before launch.
+- User-triggered submission and verified-review AI first-pass review calls are limited by
+  `AI_REVIEW_USER_WINDOW_LIMIT` per `AI_REVIEW_USER_WINDOW_HOURS`, backed by
+  PostgreSQL `ai_review_usage_events`.
+- Real provider production use still needs richer abuse logging and provider-level
+  monitoring before launch.
 
 ## Admin
 
