@@ -98,6 +98,10 @@ The web UI renders comment bodies as React text with `white-space: pre-wrap`.
 It does not use raw HTML rendering. Anonymous users can read visible comments
 but must log in before posting.
 
+Admins can review comments at `/admin/discussions`. The page supports visible
+and hidden filters, cursor pagination, hide/restore actions, and optional
+moderation notes. It does not let admins edit comment bodies or delete comments.
+
 ## Security Boundaries
 
 - Discussion creation requires login.
@@ -106,3 +110,5 @@ but must log in before posting.
 - Comment content is not used as AI purchase-check evidence.
 - Comment count and report count do not change offer ranking or trust scores.
 - Admin hide/restore is the only visibility mutation in this slice.
+- Admin discussion web actions require the same bearer-token admin session as
+  the admin API.

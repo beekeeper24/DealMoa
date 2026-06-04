@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AdminReportApiError,
   listAdminCrawlerRunLogs,
+  listAdminDiscussions,
   listAdminReports,
+  moderateAdminDiscussion,
   reviewAdminReport,
   triggerAdminCrawlerRun
 } from "../api";
@@ -40,6 +42,20 @@ const reportFixture = {
     seller: "Example Store",
     sourceUrl: "https://example.com/deals/galaxy"
   }
+};
+
+const discussionFixture = {
+  id: "discussion-1",
+  productId: "product-1",
+  userId: "user-1",
+  userNickname: "Deal User",
+  body: "이 가격이면 괜찮아 보입니다.",
+  status: "visible",
+  moderatedByUserId: null,
+  moderationNote: null,
+  moderatedAt: null,
+  createdAt: "2026-06-01T00:00:00Z",
+  updatedAt: "2026-06-01T00:00:00Z"
 };
 
 describe("admin reports api", () => {
@@ -110,6 +126,63 @@ describe("admin reports api", () => {
         "Content-Type": "application/json"
       },
       method: "POST"
+    });
+  });
+
+  it("lists admin discussions with status, limit, cursor, and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        items: [discussionFixture],
+        nextCursor: "discussion-2"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const page = await listAdminDiscussions({
+      accessToken: "access-1",
+      cursor: "cursor-1",
+      status: "visible"
+    });
+
+    expect(page.items[0].body).toBe("이 가격이면 괜찮아 보입니다.");
+    expect(page.nextCursor).toBe("discussion-2");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/admin/discussions?status=visible&limit=20&cursor=cursor-1",
+      {
+        headers: { Accept: "application/json", Authorization: "Bearer access-1" }
+      }
+    );
+  });
+
+  it("moderates an admin discussion with action, note, and bearer token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        ...discussionFixture,
+        status: "hidden",
+        moderatedByUserId: "admin-1",
+        moderationNote: "욕설 포함",
+        moderatedAt: "2026-06-01T00:01:00Z"
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await moderateAdminDiscussion({
+      accessToken: "access-1",
+      action: "hide",
+      commentId: "discussion-1",
+      moderationNote: "욕설 포함"
+    });
+
+    expect(result.status).toBe("hidden");
+    expect(result.moderationNote).toBe("욕설 포함");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/discussions/discussion-1", {
+      body: JSON.stringify({ action: "hide", moderationNote: "욕설 포함" }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer access-1",
+        "Content-Type": "application/json"
+      },
+      method: "PATCH"
     });
   });
 

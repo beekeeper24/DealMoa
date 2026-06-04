@@ -2,6 +2,10 @@ import type {
   AdminCrawlerRunLogListResponse,
   AdminCrawlerRunTriggerResponse,
   AdminCrawlerTaskName,
+  AdminDiscussionComment,
+  AdminDiscussionListResponse,
+  AdminDiscussionModerationRequest,
+  AdminDiscussionStatus,
   AdminReport,
   AdminReportErrorResponse,
   AdminReportListResponse,
@@ -80,6 +84,57 @@ export async function triggerAdminCrawlerRun(request: {
     throwAdminReportError(body);
   }
   return body as AdminCrawlerRunTriggerResponse;
+}
+
+export async function listAdminDiscussions(request: {
+  accessToken: string;
+  cursor?: string | null;
+  status: AdminDiscussionStatus;
+}): Promise<AdminDiscussionListResponse> {
+  const params = new URLSearchParams({
+    status: request.status,
+    limit: "20"
+  });
+  if (request.cursor) {
+    params.set("cursor", request.cursor);
+  }
+  const response = await fetch(`${getApiBaseUrl()}/admin/discussions?${params.toString()}`, {
+    headers: authHeaders(request.accessToken)
+  });
+  const body = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(body);
+  }
+  return body as AdminDiscussionListResponse;
+}
+
+export async function moderateAdminDiscussion(
+  request: AdminDiscussionModerationRequest
+): Promise<AdminDiscussionComment> {
+  const body: {
+    action: AdminDiscussionModerationRequest["action"];
+    moderationNote?: string;
+  } = {
+    action: request.action
+  };
+  const moderationNote = request.moderationNote?.trim();
+  if (moderationNote) {
+    body.moderationNote = moderationNote;
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/admin/discussions/${request.commentId}`, {
+    body: JSON.stringify(body),
+    headers: {
+      ...authHeaders(request.accessToken),
+      "Content-Type": "application/json"
+    },
+    method: "PATCH"
+  });
+  const parsed = await parseJson(response);
+  if (!response.ok) {
+    throwAdminReportError(parsed);
+  }
+  return parsed as AdminDiscussionComment;
 }
 
 export async function reviewAdminReport(

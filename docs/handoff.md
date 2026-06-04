@@ -351,11 +351,13 @@ Current integration branch is `develop`. Create each coherent feature/MVP slice 
   `PATCH /api/v1/admin/discussions/{comment_id}` for hide/restore moderation.
 - Admin discussion moderation writes `admin_audit_logs`.
 - Product detail now shows visible discussion comments and an authenticated comment form.
+- Added `/admin/discussions` web queue with visible/hidden filters, pagination,
+  hide/restore actions, and moderation note input.
 - Public discussion responses exclude internal user ids, moderation notes, and reviewer ids.
 - Discussion text is rendered as plain React text and is not used as AI purchase-check
   evidence or ranking signal.
 - Nested replies, voting, notifications, author edit/delete, spam/rate-limit hardening,
-  and a dedicated admin discussion web queue remain deferred.
+  and AI summarization remain deferred.
 
 ## Completed Product Matching Foundation Scope
 
