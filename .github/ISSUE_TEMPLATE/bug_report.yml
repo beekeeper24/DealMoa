@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a reproducible defect or regression.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        재현 가능한 버그나 회귀를 기록합니다. 가능한 한 실제 동작과 기대 동작을 분리해서 작성해 주세요.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: 어떤 문제가 발생했는지 짧게 설명해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce it?
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: 기대한 동작을 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: 실제 동작, 에러 코드, 로그를 적어 주세요.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - apps/api
+        - apps/web
+        - apps/worker
+        - apps/consumer
+        - docker-compose
+        - docs
+        - ci
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, screenshots, request/response examples, or failing tests.
+      placeholder: 관련 증거가 있으면 붙여 주세요.
+    validations:
+      required: false
