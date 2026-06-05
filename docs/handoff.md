@@ -2,10 +2,12 @@
 
 ## Current Status
 
-The feature MVP is complete as of 2026-06-05. The project is now in release-readiness
-work before the first Vercel/Railway deployment. See
-`docs/mvp-closure-audit-2026-06-05.md` for the closure audit and remaining release
-sequence. The active working path is:
+The feature MVP is complete as of 2026-06-05. The local full demo smoke passed on
+2026-06-05 after fixing runtime blockers found in Docker Compose, worker/consumer
+commands, metrics port mapping, and package dependencies. The project is now ready for
+the first Vercel/Railway deployment setup. See `docs/mvp-closure-audit-2026-06-05.md`
+for the closure audit and `docs/local-demo-smoke-2026-06-05.md` for the smoke evidence.
+The active working path is:
 
 ```text
 \\wsl.localhost\Ubuntu\home\beekeeper24\projects\DealMoa
@@ -74,6 +76,8 @@ after local verification and required CI/review checks pass.
 - `docs/release-readiness.md`: first deployment preparation checklist for Vercel/Railway
   env, secrets, OAuth callbacks, worker/consumer services, metrics exposure, and stop
   conditions.
+- `docs/local-demo-smoke-2026-06-05.md`: full local API/Web/worker/consumer/observability
+  smoke result, fixes made during smoke, and rerun commands.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
 - `docs/performance.md`: JMeter and Playwright verification direction.
@@ -86,11 +90,12 @@ after local verification and required CI/review checks pass.
 
 ## Next Activation Steps
 
-1. Run a full local demo smoke with real API/Web runtime before production deploy.
-2. Use `docs/release-readiness.md` to prepare Vercel/Railway env values, OAuth provider
+1. Use `docs/release-readiness.md` to prepare Vercel/Railway env values, OAuth provider
    callback URLs, JWT secret, backing service URLs, and metrics exposure policy.
-3. Configure Vercel/Railway deployment only after the local demo smoke is coherent and
-   required user-provided values are available.
+2. Configure the first Vercel web project and Railway API service after required
+   user-provided values are available.
+3. Keep deployed worker/consumer disabled until Redis/Kafka/backing-service decisions are
+   intentionally ready for deployed async runtime.
 4. Run deployed smoke and a deployed JMeter observation after the first deployment.
 
 Do not add new feature slices unless they are required to make the first deployment
@@ -159,8 +164,9 @@ Before the first deployment setup, the user needs to prepare:
   `infra/grafana/dashboards/api-overview.json`.
 - The dashboard is now titled `DealMoa Runtime Overview` and includes API request rate,
   5xx ratio, p95 latency, consumer event throughput, and worker task throughput panels.
-- Local ports are configurable through `PROMETHEUS_PORT` and `GRAFANA_PORT`; Grafana local
-  admin credentials are configured by `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`.
+- Local Prometheus/Grafana ports are configurable through `PROMETHEUS_PORT` and
+  `GRAFANA_PORT`; Grafana local admin credentials are configured by
+  `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`.
 - Prometheus also scrapes local `consumer:9101` and `worker:9102` targets when those
   profiles are running.
 - `CONSUMER_METRICS_ENABLED` / `CONSUMER_METRICS_PORT` control consumer metrics.
@@ -183,8 +189,10 @@ Before the first deployment setup, the user needs to prepare:
 - `apps/worker` exposes local Prometheus metrics on port `9102` when enabled.
 - Worker Celery signals record `dealmoa_worker_tasks_total` with `status` and `task`
   labels plus `dealmoa_worker_task_duration_seconds` with a `task` label.
-- Docker Compose exposes `CONSUMER_METRICS_PORT` and `WORKER_METRICS_PORT`, and the
-  local Prometheus config scrapes both targets.
+- Docker Compose exposes consumer/worker metrics. `CONSUMER_METRICS_PORT` and
+  `WORKER_METRICS_PORT` are container listen ports; `CONSUMER_METRICS_HOST_PORT` and
+  `WORKER_METRICS_HOST_PORT` are host port overrides for local port-conflict avoidance.
+  The local Prometheus config scrapes `consumer:9101` and `worker:9102`.
 - The current worker metrics path is local-MVP oriented; production multiprocess Celery
   metrics need a dedicated setup before enabling externally.
 
