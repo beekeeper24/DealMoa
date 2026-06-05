@@ -98,6 +98,18 @@
 6. AI search/purchase assistant: AI search button, SearchIntent validation, Elasticsearch multi-search, vector candidate search, purchase check report based on verified reviews.
 7. Observability/load test/hardening: Prometheus/Grafana, JMeter scenarios, Kafka/Celery hardening, expanded Playwright e2e, operational docs.
 
+## MVP Closure Status
+
+Feature MVP implementation is complete as of 2026-06-05. See
+`docs/mvp-closure-audit-2026-06-05.md` for the milestone-by-milestone closure audit,
+the resolved 2026-05-31 gap list, and the remaining release-readiness sequence.
+
+This status means the planned MVP product capabilities are implemented and locally
+verified enough to stop adding new feature slices before first deployment. It does not
+mean the project is production-ready. The next phase is release readiness: environment
+audit, full local demo smoke, Vercel/Railway setup, deployed smoke, and deployed JMeter
+observation.
+
 ## Exclusions
 
 - No automatic publishing of user submissions.

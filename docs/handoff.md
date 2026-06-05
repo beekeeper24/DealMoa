@@ -2,8 +2,10 @@
 
 ## Current Status
 
-The project is past foundation/planning and is in MVP feature build-out. The
-active working path is:
+The feature MVP is complete as of 2026-06-05. The project is now in release-readiness
+work before the first Vercel/Railway deployment. See
+`docs/mvp-closure-audit-2026-06-05.md` for the closure audit and remaining release
+sequence. The active working path is:
 
 ```text
 \\wsl.localhost\Ubuntu\home\beekeeper24\projects\DealMoa
@@ -76,15 +78,29 @@ after local verification and required CI/review checks pass.
 - `docs/security-abuse.md`: abuse/security guardrails.
 - `docs/project-planning-review-2026-05-31.md`: one-time whole-project planning
   validation, current MVP gaps, next PR sequence, and workflow usage rules.
+- `docs/mvp-closure-audit-2026-06-05.md`: feature MVP completion decision,
+  release-readiness sequence, and post-MVP backlog split.
 
 ## Next Activation Steps
 
-1. Define the next GitHub Task as a PR-sized coherent slice, not as a tiny
-   intermediate implementation step.
-2. Start the next coherent feature branch from `develop`.
-3. Keep small substeps inside the Task acceptance criteria/checklist.
-4. Open PRs only when each feature/MVP slice is integration-ready or when the
-   user explicitly asks.
+1. Start release-readiness checklist and environment audit from `develop`.
+2. Verify `.env.example`, Vercel/Railway variables, OAuth callback URLs, CORS,
+   refresh-cookie settings, and metrics exposure policy.
+3. Run a full local demo smoke with real API/Web runtime before production deploy.
+4. Configure Vercel/Railway deployment only after the local demo smoke is coherent.
+5. Run deployed smoke and a deployed JMeter observation after the first deployment.
+
+Do not add new feature slices unless they are required to make the first deployment
+coherent. New feature ideas should move to the post-MVP backlog.
+
+## MVP Closure Decision
+
+- Feature MVP implementation is complete as of 2026-06-05.
+- The closure decision is documented in `docs/mvp-closure-audit-2026-06-05.md`.
+- Remaining work is release readiness, deployment, deployed smoke, and post-deploy
+  observation.
+- Production SLOs, CI performance gates, realtime updates, receipt OCR, direct checkout,
+  and large-scale crawler/source-parser work remain post-MVP backlog.
 
 ## Completed Foundation Scope
 

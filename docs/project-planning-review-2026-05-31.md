@@ -1,5 +1,12 @@
 # Project Planning Review - 2026-05-31
 
+## 2026-06-05 Status Note
+
+This document is a historical planning snapshot. The remaining MVP gaps listed below
+were re-audited after the JMeter local baseline work. The current closure decision is in
+`docs/mvp-closure-audit-2026-06-05.md`: DealMoa's feature MVP is complete, and the next
+phase is release readiness rather than additional feature implementation.
+
 ## Purpose
 
 This is the one-time whole-project planning validation agreed before continuing
