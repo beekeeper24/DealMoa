@@ -71,6 +71,9 @@ after local verification and required CI/review checks pass.
 - `docs/discussions.md`: product discussion comments, public visibility, and admin moderation boundary.
 - `docs/async-events.md`: transactional outbox, Kafka publisher, and Celery worker boundary.
 - `docs/deployment.md`: Vercel/Railway deployment contract and environment variables.
+- `docs/release-readiness.md`: first deployment preparation checklist for Vercel/Railway
+  env, secrets, OAuth callbacks, worker/consumer services, metrics exposure, and stop
+  conditions.
 - `docs/search-ranking.md`: ranking and search decisions.
 - `docs/ai-assistant.md`: AI search and purchase assistant decisions.
 - `docs/performance.md`: JMeter and Playwright verification direction.
@@ -83,15 +86,31 @@ after local verification and required CI/review checks pass.
 
 ## Next Activation Steps
 
-1. Start release-readiness checklist and environment audit from `develop`.
-2. Verify `.env.example`, Vercel/Railway variables, OAuth callback URLs, CORS,
-   refresh-cookie settings, and metrics exposure policy.
-3. Run a full local demo smoke with real API/Web runtime before production deploy.
-4. Configure Vercel/Railway deployment only after the local demo smoke is coherent.
-5. Run deployed smoke and a deployed JMeter observation after the first deployment.
+1. Run a full local demo smoke with real API/Web runtime before production deploy.
+2. Use `docs/release-readiness.md` to prepare Vercel/Railway env values, OAuth provider
+   callback URLs, JWT secret, backing service URLs, and metrics exposure policy.
+3. Configure Vercel/Railway deployment only after the local demo smoke is coherent and
+   required user-provided values are available.
+4. Run deployed smoke and a deployed JMeter observation after the first deployment.
 
 Do not add new feature slices unless they are required to make the first deployment
 coherent. New feature ideas should move to the post-MVP backlog.
+
+## User-Prepared Deployment Inputs
+
+Before the first deployment setup, the user needs to prepare:
+
+- Vercel web domain.
+- Railway API domain.
+- Railway PostgreSQL URL.
+- Railway Redis URL.
+- Elasticsearch HTTP URL reachable from Railway API and consumer services.
+- JWT secret with at least 32 random bytes.
+- Google OAuth client id and client secret.
+- Kakao OAuth client id and client secret.
+- Naver OAuth client id and client secret.
+- Optional OpenAI API key only if `AI_REVIEW_PROVIDER` or `AI_ASSISTANT_PROVIDER` will be
+  switched from `mock` to `openai`.
 
 ## MVP Closure Decision
 
