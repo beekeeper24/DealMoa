@@ -21,4 +21,4 @@ USER dealmoa
 
 ENV PYTHONPATH=/workspace/apps/api:/workspace/apps/worker
 
-CMD ["uv", "run", "celery", "-A", "worker_app.celery_app:celery_app", "worker", "--loglevel=INFO"]
+CMD ["/workspace/.venv/bin/celery", "-A", "worker_app.celery_app:celery_app", "worker", "--loglevel=INFO"]

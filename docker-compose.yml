@@ -155,8 +155,14 @@ services:
       CONSUMER_METRICS_ENABLED: ${CONSUMER_METRICS_ENABLED:-true}
       CONSUMER_METRICS_PORT: ${CONSUMER_METRICS_PORT:-9101}
     ports:
-      - "${CONSUMER_METRICS_PORT:-9101}:9101"
-    command: ["uv", "run", "python", "-m", "consumer_app.main", "publish-outbox"]
+      - "${CONSUMER_METRICS_HOST_PORT:-${CONSUMER_METRICS_PORT:-9101}}:${CONSUMER_METRICS_PORT:-9101}"
+    command:
+      [
+        "/workspace/.venv/bin/python",
+        "-m",
+        "consumer_app.main",
+        "publish-outbox",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -188,12 +194,10 @@ services:
       WORKER_METRICS_ENABLED: ${WORKER_METRICS_ENABLED:-true}
       WORKER_METRICS_PORT: ${WORKER_METRICS_PORT:-9102}
     ports:
-      - "${WORKER_METRICS_PORT:-9102}:9102"
+      - "${WORKER_METRICS_HOST_PORT:-${WORKER_METRICS_PORT:-9102}}:${WORKER_METRICS_PORT:-9102}"
     command:
       [
-        "uv",
-        "run",
-        "celery",
+        "/workspace/.venv/bin/celery",
         "-A",
         "worker_app.celery_app:celery_app",
         "worker",
@@ -229,7 +233,13 @@ services:
       CRAWLER_MAX_URLS_PER_HOST: ${CRAWLER_MAX_URLS_PER_HOST:-20}
       CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-DealMoaBot/0.1 (+https://dealmoa.local/crawler)}
     command:
-      ["uv", "run", "celery", "-A", "worker_app.celery_app:celery_app", "beat", "--loglevel=INFO"]
+      [
+        "/workspace/.venv/bin/celery",
+        "-A",
+        "worker_app.celery_app:celery_app",
+        "beat",
+        "--loglevel=INFO",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -251,7 +261,7 @@ services:
       - prometheus_data:/prometheus
 
   grafana:
-    image: grafana/grafana-oss:12.3.0
+    image: grafana/grafana-oss:12.1.1
     profiles: ["observability"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}

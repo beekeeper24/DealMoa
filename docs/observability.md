@@ -36,8 +36,10 @@ GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=replace-with-local-grafana-password
 CONSUMER_METRICS_ENABLED=true
 CONSUMER_METRICS_PORT=9101
+CONSUMER_METRICS_HOST_PORT=9101
 WORKER_METRICS_ENABLED=true
 WORKER_METRICS_PORT=9102
+WORKER_METRICS_HOST_PORT=9102
 ```
 
 Prometheus scrapes:
@@ -46,6 +48,11 @@ Prometheus scrapes:
 - `api:8000/metrics`
 - `consumer:9101`
 - `worker:9102`
+
+`CONSUMER_METRICS_PORT` and `WORKER_METRICS_PORT` are the container listen ports. Keep
+them at `9101` and `9102` for the local Prometheus config unless the Prometheus target
+config changes too. Use `CONSUMER_METRICS_HOST_PORT` and `WORKER_METRICS_HOST_PORT` when
+only the local host ports need to move because another project already uses the defaults.
 
 Grafana provisioning:
 
