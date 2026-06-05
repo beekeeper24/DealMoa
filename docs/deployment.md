@@ -4,6 +4,11 @@ DealMoa deploys with Vercel for the web app and Railway for backend services.
 
 This document is the deployment contract. Local development should mimic this contract with different values, not different application behavior.
 
+Use `docs/release-readiness.md` as the step-by-step preparation checklist before
+entering real Vercel/Railway values. It separates Vercel public env, Railway secrets,
+OAuth provider setup, optional OpenAI activation, worker/consumer readiness, and stop
+conditions.
+
 ## Service Ownership
 
 | Runtime | Platform | Source | Notes |
@@ -63,10 +68,14 @@ DATABASE_URL=postgresql+psycopg://...
 REDIS_URL=redis://...
 ELASTICSEARCH_URL=https://...
 AI_REVIEW_PROVIDER=mock
+AI_ASSISTANT_PROVIDER=mock
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_REVIEW_MODEL=gpt-4o-mini
+OPENAI_ASSISTANT_MODEL=gpt-4o-mini
 OPENAI_TIMEOUT_SECONDS=8
+AI_REVIEW_USER_WINDOW_LIMIT=20
+AI_REVIEW_USER_WINDOW_HOURS=24
 JWT_SECRET_KEY=<at-least-32-random-bytes>
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=14
@@ -86,6 +95,83 @@ Use `AUTH_REFRESH_COOKIE_SAMESITE=none` with `AUTH_REFRESH_COOKIE_SECURE=true` w
 Keep `AI_REVIEW_PROVIDER=mock` until provider cost controls, rate limits, and monitoring
 are ready. When switching to `openai`, set `OPENAI_API_KEY` only in Railway secrets, not
 in committed files.
+
+Keep `AI_ASSISTANT_PROVIDER=mock` for the first deployment unless OpenAI budget and
+monitoring are intentionally enabled. The assistant provider shares `OPENAI_API_KEY`,
+`OPENAI_BASE_URL`, and `OPENAI_TIMEOUT_SECONDS`, and uses `OPENAI_ASSISTANT_MODEL`.
+
+For the first public API deploy, prefer `API_METRICS_ENABLED=false` unless `/metrics` is
+protected by Railway networking or another access-control layer.
+
+## Railway Worker Settings
+
+Create a separate Railway worker service when deployed Celery tasks should run.
+
+Recommended settings:
+
+- Source: GitHub repository `beekeeper24/DealMoa`
+- Root Directory: repository root
+- Dockerfile Path: `apps/worker/Dockerfile`
+- Public Networking: disabled unless metrics are intentionally protected
+
+Required worker variables:
+
+```text
+DATABASE_URL=postgresql+psycopg://...
+CELERY_BROKER_URL=redis://...
+CELERY_RESULT_BACKEND=redis://...
+AUCTION_ENDING_SOON_LOOKAHEAD_MINUTES=60
+AUCTION_ENDING_SOON_BATCH_SIZE=100
+AUCTION_ENDING_SOON_SCHEDULE_SECONDS=300
+CRAWLER_SYSTEM_USER_ID=system-crawler
+CRAWLER_SYSTEM_USER_EMAIL=crawler@dealmoa.local
+CRAWLER_SYSTEM_USER_NICKNAME=DealMoa Crawler
+CRAWLER_SOURCE_PROFILES=mock.example.com:trusted:allow
+CRAWLER_SOURCE_PARSERS=mock.example.com:dealmoa_article
+CRAWLER_LIVE_URLS=
+CRAWLER_HTTP_TIMEOUT_SECONDS=5
+CRAWLER_HTTP_MAX_BYTES=1048576
+CRAWLER_MAX_URLS_PER_HOST=20
+CRAWLER_USER_AGENT=DealMoaBot/0.1 (+https://<project-domain>/crawler)
+WORKER_METRICS_ENABLED=false
+WORKER_METRICS_PORT=9102
+```
+
+Keep `CRAWLER_LIVE_URLS` empty for the first deployment unless source hosts and parser
+mappings have been reviewed.
+
+## Railway Consumer Settings
+
+Create consumer services when deployed Kafka event processing is ready. Search indexing
+and notification generation use separate commands so they can be deployed as separate
+Railway services if needed.
+
+Recommended settings:
+
+- Source: GitHub repository `beekeeper24/DealMoa`
+- Root Directory: repository root
+- Dockerfile Path: `apps/consumer/Dockerfile`
+- Public Networking: disabled unless metrics are intentionally protected
+- Search indexing command: `uv run python -m consumer_app.main consume-search-index`
+- Notification command: `uv run python -m consumer_app.main consume-notifications`
+
+Required consumer variables:
+
+```text
+DATABASE_URL=postgresql+psycopg://...
+KAFKA_BOOTSTRAP_SERVERS=<broker-host:port>
+KAFKA_DOMAIN_EVENTS_TOPIC=dealmoa.domain-events
+KAFKA_SEARCH_INDEX_GROUP_ID=dealmoa-search-indexer
+KAFKA_NOTIFICATION_GROUP_ID=dealmoa-notification-generator
+ELASTICSEARCH_URL=https://...
+CONSUMER_POLL_INTERVAL_SECONDS=1
+CONSUMER_BATCH_SIZE=100
+CONSUMER_METRICS_ENABLED=false
+CONSUMER_METRICS_PORT=9101
+```
+
+If Kafka is not provisioned for the first deployment, keep consumer services disabled and
+use admin reindex plus direct API smoke paths for the first release check.
 
 ## OAuth Redirect URLs
 
@@ -157,4 +243,5 @@ Before promoting a slice toward deployment:
 
 - Vercel monorepo root-directory deployment: https://vercel.com/docs/monorepos
 - Railway monorepo deployment and service root settings: https://docs.railway.com/guides/monorepo
+- Railway healthchecks: https://docs.railway.com/reference/healthchecks
 - Railway config/build settings including Dockerfile path and start command: https://docs.railway.com/reference/config-as-code
