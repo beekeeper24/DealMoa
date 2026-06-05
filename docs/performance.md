@@ -38,6 +38,22 @@ The runner writes:
 - `infra/jmeter/results/dealmoa-search-baseline.jtl`
 - `infra/jmeter/results/jmeter.log`
 
+Summarize the CSV result after a run:
+
+```bash
+uv run python infra/jmeter/summarize_jtl.py infra/jmeter/results/dealmoa-search-baseline.jtl
+```
+
+For automation or later comparison scripts, use JSON output:
+
+```bash
+uv run python infra/jmeter/summarize_jtl.py infra/jmeter/results/dealmoa-search-baseline.jtl --json
+```
+
+The summary reports total and per-endpoint request count, success count, failure count,
+error rate, average latency, p95 latency, and max latency. It is a local reading aid,
+not a CI performance gate.
+
 Configurable variables:
 
 ```env

@@ -181,6 +181,18 @@ after local verification and required CI/review checks pass.
 - This is local/demo data only. Production data import, realistic large data generation,
   and performance tuning remain separate work.
 
+## Completed JMeter Result Summary Scope
+
+- Added `infra/jmeter/summarize_jtl.py` for reading JMeter CSV `.jtl` result files.
+- The summary includes total and per-label request count, success count, failure count,
+  error rate, average latency, p95 latency, and max latency.
+- The CLI prints human-readable text by default and machine-readable JSON with `--json`.
+- Added a small sample `.jtl` fixture and pytest coverage for parser behavior, summary
+  math, empty result handling, missing column validation, and CLI JSON output.
+- Backend CI now includes the JMeter summary tool in lint, mypy, and pytest checks.
+- CI-gated performance thresholds, trend comparison, and Grafana dashboard generation
+  remain deferred.
+
 ## Completed Product API MVP Scope
 
 - Product, Deal, Auction SQLAlchemy models and Alembic migration.

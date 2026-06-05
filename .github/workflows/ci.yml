@@ -27,13 +27,13 @@ jobs:
         run: uv sync --all-packages --dev
 
       - name: Lint backend services
-        run: uv run ruff check apps/api apps/consumer apps/worker
+        run: uv run ruff check apps/api apps/consumer apps/worker infra/jmeter
 
       - name: Typecheck backend services
-        run: MYPYPATH=apps/api:apps/consumer:apps/worker uv run mypy apps/api/app apps/api/tests apps/consumer/consumer_app apps/consumer/tests apps/worker/worker_app apps/worker/tests
+        run: MYPYPATH=apps/api:apps/consumer:apps/worker uv run mypy apps/api/app apps/api/tests apps/consumer/consumer_app apps/consumer/tests apps/worker/worker_app apps/worker/tests infra/jmeter/summarize_jtl.py infra/jmeter/tests
 
       - name: Test backend services
-        run: PYTHONPATH=apps/api:apps/consumer:apps/worker uv run pytest apps/api/tests apps/consumer/tests apps/worker/tests
+        run: PYTHONPATH=apps/api:apps/consumer:apps/worker uv run pytest apps/api/tests apps/consumer/tests apps/worker/tests infra/jmeter/tests
 
       - name: Build API Docker image
         run: docker build -f apps/api/Dockerfile -t dealmoa-api-ci .
