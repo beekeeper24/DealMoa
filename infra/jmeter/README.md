@@ -23,6 +23,12 @@ Start the API and required local services:
 docker compose --profile core up -d
 ```
 
+Seed Korean demo data and rebuild search indexes:
+
+```bash
+docker compose --profile core exec api uv run python -m app.modules.demo_seed.cli --reindex
+```
+
 Run the baseline:
 
 ```bash
@@ -71,4 +77,6 @@ The `.jtl` file is CSV. Useful first checks:
   network problems.
 
 Search and ranking endpoints require Elasticsearch indexes to exist. A fresh local stack
-may need migrations, seed data, and an admin reindex before this baseline is meaningful.
+needs migrations, Korean demo seed data, and reindexing before this baseline is
+meaningful. The demo seed is intentionally Korean because DealMoa search depends on
+Korean product names, categories, specs, and deal/auction titles.

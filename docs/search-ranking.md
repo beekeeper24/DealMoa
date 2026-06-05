@@ -53,6 +53,29 @@ Domain-event indexing also updates single documents:
 
 The admin full reindex endpoint remains the recovery path when mappings change or an index needs rebuilding from PostgreSQL.
 
+## Korean Demo Seed And Reindex
+
+Local performance/search demos can seed representative Korean data through:
+
+```bash
+uv run python -m app.modules.demo_seed.cli --reindex
+```
+
+Inside Docker Compose:
+
+```bash
+docker compose --profile core exec api uv run python -m app.modules.demo_seed.cli --reindex
+```
+
+The seed command creates or updates a small fixed set of Korean products, hot deals,
+auctions, demo users, auction bids, and favorite signals. It is idempotent: repeated runs
+reuse existing demo rows by stable model names, source URLs, and demo user IDs instead of
+creating duplicates.
+
+`--reindex` calls the existing full search reindex use case after the database seed step.
+It does not introduce a second indexing path. This keeps Elasticsearch documents aligned
+with the same `SearchUseCases.rebuild_indexes()` behavior used by the admin reindex API.
+
 Deal and auction search documents carry a status-derived `trustScore` read-model field.
 For the current MVP, `active` and `verified` offers receive the full trust score and all
 other statuses receive zero. General deal and auction search filters to `status = active`

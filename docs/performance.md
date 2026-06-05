@@ -25,6 +25,14 @@ Local Docker Compose command:
 docker compose --profile core --profile loadtest run --rm jmeter
 ```
 
+For meaningful local results, prepare Korean demo data first:
+
+```bash
+docker compose --profile core up -d
+docker compose --profile core exec api uv run python -m app.modules.demo_seed.cli --reindex
+docker compose --profile core --profile loadtest run --rm jmeter
+```
+
 The runner writes:
 
 - `infra/jmeter/results/dealmoa-search-baseline.jtl`
@@ -47,6 +55,9 @@ The baseline is small by design. It checks repeatability and observability readi
 before real tuning. Meaningful search/ranking numbers require initialized Elasticsearch
 indexes, representative data, and an API runtime similar to the environment being
 measured.
+
+The demo seed data intentionally uses Korean product names, categories, deal titles,
+auction titles, and specs because DealMoa search quality depends on Korean/Nori behavior.
 
 ## Frontend Verification
 

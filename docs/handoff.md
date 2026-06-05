@@ -167,6 +167,20 @@ after local verification and required CI/review checks pass.
 - This is a runnable baseline, not a tuned SLO. Meaningful numbers still require
   representative data, initialized Elasticsearch indexes, and environment-specific runs.
 
+## Completed Korean Demo Seed And Reindex Scope
+
+- Added `python -m app.modules.demo_seed.cli` for local Korean demo data seeding.
+- Seed data includes Korean product names, categories, specs, hot-deal titles, auction
+  titles, demo users, auction bids, and favorite signals.
+- The seed flow is idempotent and reuses rows by stable demo user IDs, product model
+  names, and offer source URLs.
+- `--reindex` calls the existing `SearchUseCases.rebuild_indexes()` path after seeding.
+  It does not introduce a separate Elasticsearch indexing implementation.
+- JMeter local runs should use this order: start core services, run migrations, seed with
+  `--reindex`, then run the `loadtest` profile.
+- This is local/demo data only. Production data import, realistic large data generation,
+  and performance tuning remain separate work.
+
 ## Completed Product API MVP Scope
 
 - Product, Deal, Auction SQLAlchemy models and Alembic migration.
