@@ -193,6 +193,23 @@ after local verification and required CI/review checks pass.
 - CI-gated performance thresholds, trend comparison, and Grafana dashboard generation
   remain deferred.
 
+## Completed JMeter Local Baseline Observation Scope
+
+- Ran the JMeter baseline against an isolated local WSL Docker Compose project
+  `dealmoa_perf` with shifted host ports to avoid conflicts with other local containers.
+- Applied Alembic migrations, seeded Korean demo data, and rebuilt search indexes before
+  the load test.
+- Used `JMETER_SEARCH_QUERY=갤럭시` so the product search sampler exercises Korean demo
+  search behavior.
+- Fixed the JMeter response assertion so HTTP `200` responses are counted as successful
+  samples instead of false failures.
+- Recorded the 2026-06-05 local observation in `docs/performance.md`: 897 total samples,
+  0 failures, overall p95 32ms, max 88ms.
+- Raw generated files under `infra/jmeter/results/` remain ignored and are not part of
+  the committed baseline.
+- The recorded values are local demo observations only. Production SLOs, CI thresholds,
+  trend comparison, and performance tuning remain separate work.
+
 ## Completed Product API MVP Scope
 
 - Product, Deal, Auction SQLAlchemy models and Alembic migration.

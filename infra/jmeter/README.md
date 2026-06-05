@@ -15,6 +15,9 @@ search and ranking APIs.
 The baseline is intentionally small. It proves that the test flow, result file, and
 observability wiring exist before we tune real p95 targets.
 
+Each sampler currently asserts HTTP `200`. Keep this assertion explicit so API errors
+are visible in the generated `.jtl` summary.
+
 ## Local Docker Compose Run
 
 Start the API and required local services:
