@@ -1,0 +1,5 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1760000000000,40,GET /health,200,OK,Thread Group 1-1,text,true,,128,64,1,1,http://api:8000/health,35,0,4
+1760000000100,120,GET /api/v1/search/products,200,OK,Thread Group 1-1,text,true,,1024,128,1,1,http://api:8000/api/v1/search/products?q=갤럭시,105,0,9
+1760000000200,300,GET /api/v1/search/products,500,Error,Thread Group 1-2,text,false,server error,512,128,2,2,http://api:8000/api/v1/search/products?q=갤럭시,280,0,12
+1760000000300,90,GET /api/v1/search/deals/hot,200,OK,Thread Group 1-1,text,true,,900,128,2,2,http://api:8000/api/v1/search/deals/hot,82,0,5

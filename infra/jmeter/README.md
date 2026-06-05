@@ -40,6 +40,18 @@ Generated files:
 - `infra/jmeter/results/dealmoa-search-baseline.jtl`
 - `infra/jmeter/results/jmeter.log`
 
+Summarize the CSV result:
+
+```bash
+uv run python infra/jmeter/summarize_jtl.py infra/jmeter/results/dealmoa-search-baseline.jtl
+```
+
+Use JSON when a later script or CI job needs machine-readable output:
+
+```bash
+uv run python infra/jmeter/summarize_jtl.py infra/jmeter/results/dealmoa-search-baseline.jtl --json
+```
+
 ## Runtime Variables
 
 The Docker Compose runner maps these environment variables into JMeter properties:
@@ -75,6 +87,15 @@ The `.jtl` file is CSV. Useful first checks:
 - `label` shows which endpoint sampler produced the row.
 - `responseCode` shows whether failures are API errors, unavailable dependencies, or
   network problems.
+
+The summary script reports the same checks in a repeatable format:
+
+- `count`: request count.
+- `success` / `failure`: successful and failed request counts.
+- `error_rate`: failed request ratio.
+- `avg`: average request latency in milliseconds.
+- `p95`: latency at the 95th percentile using nearest-rank calculation.
+- `max`: slowest request latency in milliseconds.
 
 Search and ranking endpoints require Elasticsearch indexes to exist. A fresh local stack
 needs migrations, Korean demo seed data, and reindexing before this baseline is
